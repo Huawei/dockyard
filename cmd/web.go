@@ -9,6 +9,8 @@ import (
 
 	"github.com/codegangsta/cli"
 
+	"github.com/Unknwon/macaron"
+
 	"github.com/containerops/dockyard/setting"
 	"github.com/containerops/dockyard/utils"
 	"github.com/containerops/dockyard/web"
@@ -34,7 +36,10 @@ var CmdWeb = cli.Command{
 }
 
 func runWeb(c *cli.Context) {
-	m := web.NewInstance()
+	m := macaron.New()
+
+	//Set Macaron Web Middleware And Routers
+	web.SetMacaron(m)
 
 	switch setting.ListenMode {
 	case "http":
