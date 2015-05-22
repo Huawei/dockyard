@@ -25,3 +25,4 @@ _testmain.go
 
 dockyard
 conf/runtime.conf
+Godeps/_workspace/*
