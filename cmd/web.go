@@ -39,7 +39,7 @@ func runWeb(c *cli.Context) {
 	m := macaron.New()
 
 	//Set Macaron Web Middleware And Routers
-	web.SetMacaron(m)
+	web.SetDockyardMacaron(m)
 
 	switch setting.ListenMode {
 	case "http":
