@@ -7,7 +7,7 @@ import (
 	"github.com/containerops/dockyard/router"
 )
 
-func SetMacaron(m *macaron.Macaron) {
+func SetDockyardMacaron(m *macaron.Macaron) {
 	//设置 Setting
 
 	//设置 Middleware
