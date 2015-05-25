@@ -12,13 +12,13 @@
 		},
 		{
 			"ImportPath": "github.com/astaxie/beego/config",
-			"Comment": "v1.4.3-4-gc4aa33f",
-			"Rev": "c4aa33fb1b7ee01fa7dcc9bb29bbdf408b47fa72"
+			"Comment": "v1.4.3-6-gaf71289",
+			"Rev": "af71289c25f64e35b688376d5115dbf8b93d87ab"
 		},
 		{
 			"ImportPath": "github.com/astaxie/beego/logs",
-			"Comment": "v1.4.3-4-gc4aa33f",
-			"Rev": "c4aa33fb1b7ee01fa7dcc9bb29bbdf408b47fa72"
+			"Comment": "v1.4.3-6-gaf71289",
+			"Rev": "af71289c25f64e35b688376d5115dbf8b93d87ab"
 		},
 		{
 			"ImportPath": "github.com/codegangsta/cli",
