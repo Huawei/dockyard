@@ -18,6 +18,9 @@ var (
 	HttpsCertFile string
 	HttpsKeyFile  string
 	LogPath       string
+	DBURI         string
+	DBPasswd      string
+	DBDB          int64
 )
 
 func init() {
@@ -67,4 +70,11 @@ func init() {
 	if logpath := conf.String("log::filepath"); logpath != "" {
 		LogPath = logpath
 	}
+
+	if dburi := conf.String("db::uri"); dburi != "" {
+		DBURI = dburi
+	}
+
+	DBPasswd = conf.String("db::passwd")
+	DBDB, _ = conf.Int64("db::db")
 }
