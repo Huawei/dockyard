@@ -8,10 +8,8 @@ import (
 )
 
 func SetDockyardMacaron(m *macaron.Macaron) {
-	//设置 Setting
-
-	//设置 Middleware
+	//Setting Middleware
 	middleware.SetMiddlewares(m)
-	//设置 Router
+	//Setting Router
 	router.SetRouters(m)
 }

@@ -13,4 +13,9 @@ httpskeyfile = cert/containerops/containerops.key
 
 [log]
 filepath = log/containerops-log
+
+[db]
+uri = localhost:6379
+passwd = containerops
+db = 8
 ```
