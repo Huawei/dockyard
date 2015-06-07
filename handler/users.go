@@ -7,7 +7,7 @@ import (
 
 	"github.com/Unknwon/macaron"
 
-	sails "github.com/containerops/sails/modules"
+	crew "github.com/containerops/crew/modules"
 	"github.com/containerops/wrench/utils"
 )
 
@@ -20,7 +20,7 @@ func GetUsersV1Handler(ctx *macaron.Context) (int, []byte) {
 		result, _ := json.Marshal(map[string]string{"error": "Decode authorization failure"})
 		return http.StatusUnauthorized, result
 	} else {
-		if _, err := sails.GetUser(username, passwd); err != nil {
+		if _, err := crew.GetUser(username, passwd); err != nil {
 			fmt.Printf("[DOCKER REGISTRY API V1] Search user error: %v", err.Error())
 
 			result, _ := json.Marshal(map[string]string{"error": "User authorization failure"})
