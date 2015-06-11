@@ -30,18 +30,17 @@ type OutputObject struct {
 	Downloadurl string `json:"downloadurl"`
 }
 
-/**
-input:
-	 file, eg."/home/liugenping/gowsp/src/github.com/containerops/dockyard/2.png"
-return:
-	key, eg."2.png"
-*/
+type ShareChannel struct {
+	in         chan string
+	outSuccess chan string
+	outFail    chan string
+}
 
 func init() {
 
 	err := getconfile("conf/runtime.conf")
 	if err != nil {
-		fmt.Errorf("读取配置文件 conf/runtime.conf 错误: %v", err)
+		fmt.Errorf("read conf/runtime.conf fail: %v", err)
 	}
 }
 
@@ -95,6 +94,51 @@ func getconfile(file string) (err error) {
 	return nil
 }
 
+func NewShareChannel(bufferSize int) *ShareChannel {
+
+	return &ShareChannel{make(chan string, bufferSize),
+		make(chan string, bufferSize),
+		make(chan string, bufferSize)}
+}
+
+func (sc *ShareChannel) PutIn(jsonObj string) {
+	sc.in <- jsonObj
+}
+
+func (sc *ShareChannel) getIn() (jsonObj string) {
+	return <-sc.in
+}
+
+func (sc *ShareChannel) putOutSuccess(jsonObj string) {
+	sc.outSuccess <- jsonObj
+}
+
+func (sc *ShareChannel) GutOutSuccess() (jsonObj string) {
+	return <-sc.outSuccess
+}
+
+func (sc *ShareChannel) putOutFail(jsonObj string) {
+	sc.outFail <- jsonObj
+}
+
+func (sc *ShareChannel) GutOutFail() (jsonObj string) {
+	return <-sc.outFail
+}
+
+func (sc *ShareChannel) StartRoutine() {
+	go func() {
+		for {
+			obj := sc.getIn()
+			outJson, err := Save(obj)
+			if nil != err {
+				sc.putOutFail(obj)
+			} else {
+				sc.putOutSuccess(outJson)
+			}
+		}
+	}()
+}
+
 func Save(inputJson string) (outJson string, err error) {
 
 	var tmpErr error
@@ -119,7 +163,6 @@ func Save(inputJson string) (outJson string, err error) {
 
 	if nil != tmpErr {
 		return "", tmpErr
-
 	}
 
 	outputObj := &OutputObject{Key: inputObj.Key, Uploadfile: inputObj.Uploadfile, Downloadurl: url}
