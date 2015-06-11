@@ -2,19 +2,11 @@ package backend
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 
 	"github.com/upyun/go-sdk/upyun"
 )
-
-/**
-input:
-	 file, eg."/home/liugenping/gowsp/src/github.com/containerops/dockyard/2.png"
-return:
-	key, eg."2.png"
-*/
 
 func upyunsave(file string) (url string, err error) {
 
@@ -26,7 +18,6 @@ func upyunsave(file string) (url string, err error) {
 	tempUrl := "http://" + ENDPOINT + opath
 
 	var u *upyun.UpYun
-
 	u = upyun.NewUpYun(BUCKETNAME, USER, PASSWD)
 	if nil == u {
 		return "", errors.New("UpYun.NewUpYun Fail")
@@ -44,7 +35,6 @@ func upyunsave(file string) (url string, err error) {
 	if err != nil {
 		return "", err
 	}
-	fmt.Println("u.Put=" + str)
 	return tempUrl, nil
 
 }
