@@ -12,8 +12,6 @@ import (
 )
 
 func GetUsersV1Handler(ctx *macaron.Context) (int, []byte) {
-	TmpPrepare(ctx)
-
 	if username, passwd, err := utils.DecodeBasicAuth(ctx.Req.Header.Get("Authorization")); err != nil {
 		fmt.Errorf("[DOCKER REGISTRY API V1] Decode Basic Auth Error:%v", err.Error())
 
@@ -35,8 +33,6 @@ func GetUsersV1Handler(ctx *macaron.Context) (int, []byte) {
 }
 
 func PostUsersV1Handler(ctx *macaron.Context) (int, []byte) {
-	TmpPrepare(ctx)
-
 	result, _ := json.Marshal(map[string]string{"message": ""})
 	return http.StatusUnauthorized, result
 }
