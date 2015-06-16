@@ -1,21 +1,33 @@
 package middleware
 
 import (
+	"fmt"
 	"github.com/Unknwon/macaron"
-
+	"github.com/containerops/crew/setting"
 	_ "github.com/macaron-contrib/session/redis"
 )
 
 func SetMiddlewares(m *macaron.Macaron) {
-	//设置静态文件目录，静态文件的访问不进行日志输出
+	//Set static file directory,static file access without log output
 	m.Use(macaron.Static("static", macaron.StaticOptions{
 		Expires: func() string { return "max-age=0" },
 	}))
 
-	//设置全局 Logger
+	//Set global Logger
 	m.Map(Log)
-	//设置 logger 的 Handler 函数，处理所有 Request 的日志输出
+	//Set logger handler function, deal with all the Request log output
 	m.Use(logger())
+
+	//TBD:codes as below should be updated when user config management is ready
+	m.Use(func(ctx *macaron.Context) {
+		ctx.Resp.Header().Set("Content-Type", "application/json;charset=UTF-8")
+		ctx.Resp.Header().Set("X-Docker-Registry-Standalone", "True")                                         //Standalone
+		ctx.Resp.Header().Set("X-Docker-Registry-Version", setting.Version)                                   //Version
+		ctx.Resp.Header().Set("X-Docker-Registry-Config", "dev")                                              //Config
+		ctx.Resp.Header().Set("X-Docker-Encrypt", "false")                                                    //Encrypt
+		ctx.Resp.Header().Set("WWW-Authenticate", fmt.Sprintf("Basic realm=\"%s\",Token", "containerops.me")) //docker V2
+		ctx.Resp.Header().Set("Docker-Distribution-API-Version", "registry/2.0")                              //docker V2
+	})
 
 	//设置 panic 的 Recovery
 	m.Use(macaron.Recovery())

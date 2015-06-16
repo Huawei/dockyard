@@ -26,7 +26,7 @@ var (
 func init() {
 	var err error
 
-	conf, err = config.NewConfig("ini", "conf/dockyard.conf")
+	conf, err = config.NewConfig("ini", "conf/containerops.conf")
 	if err != nil {
 		fmt.Errorf("读取配置文件 conf/dockyard.conf 错误: %v", err)
 	}
