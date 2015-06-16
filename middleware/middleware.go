@@ -29,6 +29,6 @@ func SetMiddlewares(m *macaron.Macaron) {
 		ctx.Resp.Header().Set("Docker-Distribution-API-Version", "registry/2.0")                              //docker V2
 	})
 
-	//设置 panic 的 Recovery
+	//Set recovery handler to returns a middleware that recovers from any panics
 	m.Use(macaron.Recovery())
 }
