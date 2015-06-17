@@ -42,5 +42,8 @@ usr = silverry
 passwd = lgp257029
 
 [gcs]
+bucketname = dockyad
+jsonkeyfile = ./gcs/key.json
+projectid = dockyad-test
 
 ```
