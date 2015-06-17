@@ -157,6 +157,8 @@ func Save(inputJson string) (outJson string, err error) {
 		url, tmpErr = qiniusave(inputObj.Uploadfile)
 	case "ali":
 		url, tmpErr = alisave(inputObj.Uploadfile)
+	case "gcs":
+		url, tmpErr = Gcssave(inputObj.Uploadfile)
 	default:
 		return "", errors.New("no saving place is config")
 	}
