@@ -97,7 +97,7 @@ func Gcssave(file string) (url string, err error) {
 		log.Fatalf("GCS Objects.Insert failed: %v", err)
 	}
 	retUrl := objs.MediaLink + "&access_token=" + gcsToken.AccessToken
-	fmt.Println(fmt.Sprintf("GCS tmpUrl=%s", retUrl))
+	//fmt.Println(fmt.Sprintf("GCS tmpUrl=%s", retUrl))
 
 	if err != nil {
 		return "", err
