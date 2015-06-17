@@ -19,18 +19,10 @@ var (
 	driverType  string
 )
 
-/*
-//Should Open this const config to replace below one when use testgcs.go
-const (
-	jsonfile   = "./gcs/key.json"
-	bucketName = "dockyad-example-bucket"
-	projectID  = "dockyad-test"
-)
-*/
 func init() {
 
 	//Reading config file named conf/runtime.conf for backend
-	conf, err := config.NewConfig("ini", "./runtime.conf")
+	conf, err := config.NewConfig("ini", "conf/runtime.conf")
 	if err != nil {
 		log.Fatalf("GCS reading conf/runtime.conf err %v", err)
 	}
