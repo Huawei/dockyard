@@ -13,7 +13,7 @@ import (
 
 func GetUsersV1Handler(ctx *macaron.Context) (int, []byte) {
 	if username, passwd, err := utils.DecodeBasicAuth(ctx.Req.Header.Get("Authorization")); err != nil {
-		fmt.Errorf("[DOCKER REGISTRY API V1] Decode Basic Auth Error:%v", err.Error())
+		fmt.Errorf("[DOCKER REGISTRY API V1] Decode Basic Auth Error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"error": "Decode authorization failure"})
 		return http.StatusUnauthorized, result

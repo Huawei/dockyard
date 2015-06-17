@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Unknwon/macaron"
-	"github.com/containerops/crew/models"
-	"github.com/containerops/crew/setting"
+	crew "github.com/containerops/crew/models"
+	"github.com/containerops/dockyard/models"
+	"github.com/containerops/dockyard/setting"
 	"github.com/containerops/wrench/db"
 	"github.com/containerops/wrench/utils"
 	"net/http"
@@ -23,9 +24,8 @@ func PutTagV1Handler(ctx *macaron.Context) (int, []byte) {
 	r, _ := regexp.Compile(`"([[:alnum:]]+)"`)
 	imageIds := r.FindStringSubmatch(bodystr)
 
-	repo := new(models.Repository)
-	if err := repo.PutTag(imageIds[1], namespace, repository, tag); err != nil {
-		fmt.Errorf("[REGISTRY API V1] Put repository tag error:", err.Error())
+	if err := models.PutTag(imageIds[1], namespace, repository, tag); err != nil {
+		fmt.Errorf("[REGISTRY API V1] Put repository tag error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"Error": err.Error()})
 		return http.StatusForbidden, result
@@ -40,7 +40,7 @@ func PutTagV1Handler(ctx *macaron.Context) (int, []byte) {
 	//this.Ctx.Output.Context.Output.SetStatus(http.StatusOK)
 	//this.Ctx.Output.Context.Output.Body([]byte(""))
 	if _, err := ctx.Resp.Write([]byte("")); err != nil {
-		fmt.Errorf("[REGISTRY API V1] PutRepositoryImagesV1Handler Write response content Error")
+		fmt.Errorf("[REGISTRY API V1] PutTagV1Handler write response content Error")
 	}
 
 	result, _ := json.Marshal(map[string]string{"message": "Put repository tag success"})
@@ -51,10 +51,10 @@ func PutRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repo_name")
 
-	repo := new(models.Repository)
-	if err := repo.PutImages(namespace, repository); err != nil {
-		fmt.Errorf("[REGISTRY API V1] Update Uploaded flag error: %s", namespace, repository, err.Error())
-		result, _ := json.Marshal(map[string]string{"message": "Update Uploaded flag error"})
+	if err := models.PutImages(namespace, repository, ctx); err != nil {
+		fmt.Errorf("[REGISTRY API V1] Put images error: %v", err.Error())
+
+		result, _ := json.Marshal(map[string]string{"message": "Put images error"})
 		return http.StatusBadRequest, result
 	}
 	//TBD
@@ -64,42 +64,10 @@ func PutRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
 			beego.Error("[REGISTRY API V1] Log Erro:", err.Error())
 		}
 	*/
-	org := new(models.Organization)
-	isOrg, _, err := org.Has(namespace)
-	if err != nil {
-		fmt.Errorf("[REGISTRY API V1] Search Organization Error: ", err.Error())
-		result, _ := json.Marshal(map[string]string{"message": "Search Organization Error"})
-		return http.StatusBadRequest, result
-	}
 
-	user := new(models.User)
-	authUsername, _, _ := utils.DecodeBasicAuth(ctx.Req.Header.Get("Authorization"))
-	isUser, _, err := user.Has(authUsername)
-	if err != nil {
-		fmt.Errorf("[REGISTRY API V1] Search User Error: ", err.Error())
-		result, _ := json.Marshal(map[string]string{"Error": err.Error()})
-		return http.StatusBadRequest, result
-	}
-
-	if !isUser && !isOrg {
-		fmt.Errorf("[REGISTRY API V1] Search Namespace Error")
-		result, _ := json.Marshal(map[string]string{"message": "Search Namespace Error"})
-		return http.StatusBadRequest, result
-	}
-
-	if isUser {
-		user.Repositories = append(user.Repositories, repo.UUID)
-		user.Save()
-	}
-	if isOrg {
-		org.Repositories = append(org.Repositories, repo.UUID)
-		org.Save()
-	}
-
-	//this.Ctx.Output.Context.Output.SetStatus(http.StatusNoContent)
 	//this.Ctx.Output.Context.Output.Body([]byte(""))
 	if _, err := ctx.Resp.Write([]byte("")); err != nil {
-		fmt.Errorf("[REGISTRY API V1] PutRepositoryImagesV1Handler Write response content Error")
+		fmt.Errorf("[REGISTRY API V1] PutRepositoryImagesV1Handler write response content Error")
 	}
 
 	result, _ := json.Marshal(map[string]string{"message": ""})
@@ -107,14 +75,77 @@ func PutRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
 }
 
 func GetRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{"message": ""})
+	namespace := ctx.Params(":namespace")
+	repository := ctx.Params(":repo_name")
 
+	repo := new(crew.Repository)
+	if has, _, err := repo.Has(namespace, repository); err != nil {
+		fmt.Errorf("[REGISTRY API V1] Read repository json error: %v", err.Error())
+
+		result, _ := json.Marshal(map[string]string{"message": "Read repository json error"})
+		return http.StatusBadRequest, result
+	} else if has == false {
+		fmt.Errorf("[REGISTRY API V1] Read repository no found, %v/%v", namespace, repository)
+
+		result, _ := json.Marshal(map[string]string{"message": "Read repository no found"})
+		return http.StatusBadRequest, result
+	}
+
+	repo.Download += 1
+
+	if err := repo.Save(); err != nil {
+		fmt.Errorf("[REGISTRY API V1] Update download count error: %v", err.Error())
+	}
+	/*
+		memo, _ := json.Marshal(this.Ctx.Input.Header)
+		if err := repo.Log(models.ACTION_GET_REPO, models.LEVELINFORMATIONAL, models.TYPE_APIV1, repo.UUID, memo); err != nil {
+			beego.Error("[REGISTRY API V1] Log Erro:", err.Error())
+		}
+	*/
+	if _, err := ctx.Resp.Write([]byte(repo.JSON)); err != nil {
+		fmt.Errorf("[REGISTRY API V1] GetRepositoryImagesV1Handler write response content Error")
+	}
+
+	result, _ := json.Marshal(map[string]string{"message": ""})
 	return http.StatusOK, result
 }
 
 func GetTagV1Handler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{"message": ""})
+	namespace := ctx.Params(":namespace")
+	repository := ctx.Params(":repo_name")
 
+	repo := new(crew.Repository)
+	if has, _, err := repo.Has(namespace, repository); err != nil {
+		fmt.Errorf("[REGISTRY API V1] Read repository json error: %v", err.Error())
+
+		result, _ := json.Marshal(map[string]string{"message": "Read repository json error"})
+		return http.StatusBadRequest, result
+	} else if has == false {
+		fmt.Errorf("[REGISTRY API V1] Read repository no found. %v/%v", namespace, repository)
+
+		result, _ := json.Marshal(map[string]string{"message": "Read repository no found"})
+		return http.StatusBadRequest, result
+	}
+
+	tag := map[string]string{}
+
+	for _, value := range repo.Tags {
+		t := new(crew.Tag)
+		if err := crew.Get(t, value); err != nil {
+			fmt.Errorf(fmt.Sprintf("[REGISTRY API V1]  %s/%s Tags is not exist", namespace, repository))
+
+			result, _ := json.Marshal(map[string]string{"message": fmt.Sprintf("%s/%s Tags is not exist", namespace, repository)})
+			return http.StatusBadRequest, result
+		}
+
+		tag[t.Name] = t.ImageId
+	}
+
+	//this.Data["json"] = tag
+	//this.Ctx.Output.Context.Output.SetStatus(http.StatusOK)
+	//this.ServeJson()
+
+	result, _ := json.Marshal(map[string]string{"message": ""})
 	return http.StatusOK, result
 }
 
@@ -127,15 +158,14 @@ func PutRepositoryV1Handler(ctx *macaron.Context) (int, []byte) {
 
 	requestbody, err := ctx.Req.Body().String()
 	if err != nil {
-		fmt.Errorf("[REGISTRY API V1] Get request body error:", err.Error())
+		fmt.Errorf("[REGISTRY API V1] Get request body error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": ""})
 		return http.StatusForbidden, result
 	}
 
-	repo := new(models.Repository)
-	if err := repo.Put(namespace, repository, requestbody, ctx.Req.Header.Get("User-Agent"), setting.APIVERSION_V1); err != nil {
-		fmt.Errorf("[REGISTRY API V1] Put repository error:", err.Error())
+	if err := models.Put(namespace, repository, requestbody, ctx.Req.Header.Get("User-Agent"), setting.APIVERSION_V1); err != nil {
+		fmt.Errorf("[REGISTRY API V1] Put repository error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"Error": err.Error()})
 		//TBD : code as below just for testing,it will be updated later
@@ -152,9 +182,9 @@ func PutRepositoryV1Handler(ctx *macaron.Context) (int, []byte) {
 
 	//memo, _ := json.Marshal(this.Ctx.Input.Header)
 
-	user := new(models.User)
+	user := new(crew.User)
 	if _, _, err := user.Has(username); err != nil {
-		fmt.Errorf("[REGISTRY API V1] Get user error:", err.Error())
+		fmt.Errorf("[REGISTRY API V1] Get user error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"Error": err.Error()})
 		return http.StatusForbidden, result
@@ -173,7 +203,7 @@ func PutRepositoryV1Handler(ctx *macaron.Context) (int, []byte) {
 	ctx.Resp.Header().Set("X-Docker-Endpoints", "containerops.com")
 
 	if _, err := ctx.Resp.Write([]byte("")); err != nil {
-		fmt.Errorf("[REGISTRY API V1] PutRepositoryV1Handler Write response content Error")
+		fmt.Errorf("[REGISTRY API V1] PutRepositoryV1Handler write response content Error")
 	}
 
 	result, _ := json.Marshal(map[string]string{"message": ""})
