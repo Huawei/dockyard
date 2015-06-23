@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Unknwon/macaron"
-	crew "github.com/containerops/crew/models"
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/dockyard/setting"
 	"github.com/containerops/wrench/utils"
@@ -18,7 +17,7 @@ func GetImageAncestryV1Handler(ctx *macaron.Context) (int, []byte) {
 
 	imageId := ctx.Params(":image_id")
 
-	i := new(crew.Image)
+	i := new(models.Image)
 	if has, _, err := i.Has(imageId); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Read Image Ancestry Error: %v", err.Error())
 
@@ -76,7 +75,7 @@ func GetImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
 
 	imageId := ctx.Params(":image_id")
 
-	i := new(crew.Image)
+	i := new(models.Image)
 	if has, _, err := i.Has(imageId); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Read Image Layer File Status Error: %v", err.Error())
 
