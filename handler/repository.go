@@ -78,7 +78,7 @@ func GetRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repo_name")
 
-	repo := new(crew.Repository)
+	repo := new(models.Repository)
 	if has, _, err := repo.Has(namespace, repository); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Read repository json error: %v", err.Error())
 
@@ -114,7 +114,7 @@ func GetTagV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repo_name")
 
-	repo := new(crew.Repository)
+	repo := new(models.Repository)
 	if has, _, err := repo.Has(namespace, repository); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Read repository json error: %v", err.Error())
 
@@ -130,8 +130,8 @@ func GetTagV1Handler(ctx *macaron.Context) (int, []byte) {
 	tag := map[string]string{}
 
 	for _, value := range repo.Tags {
-		t := new(crew.Tag)
-		if err := crew.Get(t, value); err != nil {
+		t := new(models.Tag)
+		if err := db.Get(t, value); err != nil {
 			fmt.Errorf(fmt.Sprintf("[REGISTRY API V1]  %s/%s Tags is not exist", namespace, repository))
 
 			result, _ := json.Marshal(map[string]string{"message": fmt.Sprintf("%s/%s Tags is not exist", namespace, repository)})
