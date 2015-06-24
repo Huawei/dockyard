@@ -9,8 +9,100 @@ import (
 	"time"
 )
 
+type Repository struct {
+	UUID          string    `json:"UUID"`          //
+	Repository    string    `json:"repository"`    //
+	Namespace     string    `json:"namespace"`     //
+	NamespaceType bool      `json:"namespacetype"` //
+	Organization  string    `json:"organization"`  //
+	Tags          []string  `json:"tags"`          //
+	Starts        []string  `json:"starts"`        //
+	Comments      []string  `json:"comments"`      //
+	Short         string    `json:"short"`         //
+	Description   string    `json:"description"`   //
+	JSON          string    `json:"json"`          //
+	Dockerfile    string    `json:"dockerfile"`    //
+	Agent         string    `json:"agent"`         //
+	Links         string    `json:"links"`         //
+	Size          int64     `json:"size"`          //
+	Download      int64     `json:"download"`      //
+	Uploaded      bool      `json:"uploaded"`      //
+	Checksum      string    `json:"checksum"`      //
+	Checksumed    bool      `json:"checksumed"`    //
+	Icon          string    `json:"icon"`          //
+	Sign          string    `json:"sign"`          //
+	Privated      bool      `json:"privated"`      //
+	Clear         string    `json:"clear"`         //
+	Cleared       bool      `json:"cleared"`       //
+	Encrypted     bool      `json:"encrypted"`     //
+	Created       int64     `json:"created"`       //
+	Updated       int64     `json:"updated"`       //
+	Memo          []string  `json:"memo"`          //
+	Version       int64     `json:"version"`       //
+	Privilege     Privilege `json:"privilege"`     //
+}
+
+type Privilege struct {
+	UUID       string   `json:"UUID"`       //
+	Privilege  bool     `json:"privilege"`  //
+	Team       string   `json:"team"`       //
+	Repository string   `json:"repository"` //
+	Memo       []string `json:"memo"`       //
+}
+
+type Tag struct {
+	UUID       string   `json:"uuid"`       //
+	Name       string   `json:"name"`       //
+	ImageId    string   `json:"imageid"`    //
+	Namespace  string   `json:"namespace"`  //
+	Repository string   `json:"repository"` //
+	Sign       string   `json:"sign"`       //
+	Manifest   string   `json:"manifest"`   //
+	Memo       []string `json:"memo"`       //
+}
+
+func (r *Repository) Has(namespace, repository string) (bool, string, error) {
+
+	UUID, err := db.GetUUID("repository", fmt.Sprintf("%s:%s", namespace, repository))
+
+	if err != nil {
+		return false, "", err
+	}
+
+	if len(UUID) <= 0 {
+		return false, "", nil
+	}
+	err = db.Get(r, UUID)
+
+	return true, UUID, err
+}
+
+func (r *Repository) Save() error {
+	if err := db.Save(r, r.UUID); err != nil {
+		return err
+	}
+
+	if _, err := db.Client.HSet(db.GLOBAL_REPOSITORY_INDEX, (fmt.Sprintf("%s:%s", r.Namespace, r.Repository)), r.UUID).Result(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *Tag) Save() error {
+	if err := db.Save(t, t.UUID); err != nil {
+		return err
+	}
+
+	if _, err := db.Client.HSet(db.GLOBAL_TAG_INDEX, (fmt.Sprintf("%s:%s:%s:%s", t.Namespace, t.Repository, t.ImageId, t.Name)), t.UUID).Result(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func Put(namespace, repository, json, agent string, version int64) error {
-	r := new(crew.Repository)
+	r := new(Repository)
 	if has, _, err := r.Has(namespace, repository); err != nil {
 		return err
 	} else if has == false {
@@ -34,7 +126,7 @@ func Put(namespace, repository, json, agent string, version int64) error {
 
 func PutImages(namespace, repository string, ctx *macaron.Context) error {
 
-	r := new(crew.Repository)
+	r := new(Repository)
 	if has, _, err := r.Has(namespace, repository); err != nil {
 		return err
 	} else if has == false {
@@ -77,21 +169,21 @@ func PutImages(namespace, repository string, ctx *macaron.Context) error {
 }
 
 func PutTag(imageId, namespace, repository, tag string) error {
-	r := new(crew.Repository)
+	r := new(Repository)
 	if has, _, err := r.Has(namespace, repository); err != nil {
 		return err
 	} else if has == false {
 		return fmt.Errorf("Repository not found")
 	}
 
-	i := new(crew.Image)
+	i := new(Image)
 	if has, _, err := i.Has(imageId); err != nil {
 		return err
 	} else if has == false {
 		return fmt.Errorf("Tag's image not found")
 	}
 
-	t := new(crew.Tag)
+	t := new(Tag)
 	t.UUID = string(fmt.Sprintf("%s:%s:%s", namespace, repository, tag))
 	t.Name, t.ImageId, t.Namespace, t.Repository = tag, imageId, namespace, repository
 
