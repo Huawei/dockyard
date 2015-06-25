@@ -1,9 +1,7 @@
 package middleware
 
 import (
-	"fmt"
 	"github.com/Unknwon/macaron"
-	"github.com/containerops/crew/setting"
 	_ "github.com/macaron-contrib/session/redis"
 )
 
@@ -19,16 +17,9 @@ func SetMiddlewares(m *macaron.Macaron) {
 	m.Use(logger())
 
 	//TBD:codes as below should be updated when user config management is ready
-	m.Use(func(ctx *macaron.Context) {
-		ctx.Resp.Header().Set("Content-Type", "application/json;charset=UTF-8")
-		ctx.Resp.Header().Set("X-Docker-Registry-Standalone", "True")                                         //Standalone
-		ctx.Resp.Header().Set("X-Docker-Registry-Version", setting.Version)                                   //Version
-		ctx.Resp.Header().Set("X-Docker-Registry-Config", "dev")                                              //Config
-		ctx.Resp.Header().Set("X-Docker-Encrypt", "false")                                                    //Encrypt
-		ctx.Resp.Header().Set("WWW-Authenticate", fmt.Sprintf("Basic realm=\"%s\",Token", "containerops.me")) //docker V2
-		ctx.Resp.Header().Set("Docker-Distribution-API-Version", "registry/2.0")                              //docker V2
-	})
+	//Set the response header info
+	m.Use(respHeaderSet())
 
-	//设置 panic 的 Recovery
+	//Set recovery handler to returns a middleware that recovers from any panics
 	m.Use(macaron.Recovery())
 }
