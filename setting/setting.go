@@ -21,6 +21,12 @@ var (
 	DBURI         string
 	DBPasswd      string
 	DBDB          int64
+	BasePath      string
+)
+
+const (
+	APIVERSION_V1 = iota
+	APIVERSION_V2
 )
 
 func init() {
@@ -28,7 +34,7 @@ func init() {
 
 	conf, err = config.NewConfig("ini", "conf/containerops.conf")
 	if err != nil {
-		fmt.Errorf("读取配置文件 conf/dockyard.conf 错误: %v", err)
+		fmt.Errorf("read conf/dockyard.conf failure: %v", err)
 	}
 
 	if appname := conf.String("appname"); appname != "" {
@@ -77,4 +83,8 @@ func init() {
 
 	DBPasswd = conf.String("db::passwd")
 	DBDB, _ = conf.Int64("db::db")
+
+	if DockerBasePath := conf.String("docker::BasePath"); err != nil {
+		BasePath = DockerBasePath
+	}
 }
