@@ -1,66 +1,34 @@
 package backend
 
 import (
-	"errors"
-	"fmt"
 	"net/http"
 	"os"
 	"testing"
 
-	"github.com/astaxie/beego/config"
+	"github.com/qiniu/api/conf"
 )
 
-func getqiniuconfile(file string) (err error) {
-	var tmperr error
-	var conf config.ConfigContainer
-
-	conf, tmperr = config.NewConfig("ini", file)
-	if tmperr != nil {
-		return tmperr
+/*
+func expect(t *testing.T, a interface{}, b interface{}) {
+	if a != b {
+		t.Errorf("Expected %v (type %v) - Got %v (type %v)", b, reflect.TypeOf(b), a, reflect.TypeOf(a))
 	}
-
-	DRIVER = "qiniu"
-	if DRIVER == "" {
-		return errors.New("read config file's backenddriver failed!")
-	}
-
-	ENDPOINT = conf.String(DRIVER + "::endpoint")
-	if ENDPOINT == "" {
-		return errors.New("read config file's endpoint failed!")
-	}
-
-	BUCKETNAME = conf.String(DRIVER + "::bucket")
-	if BUCKETNAME == "" {
-		return errors.New("read config file's bucket failed!")
-	}
-
-	AccessKeyID = conf.String(DRIVER + "::accessKeyID")
-	if AccessKeyID == "" {
-		return errors.New("read config file's accessKeyID failed!")
-	}
-
-	AccessKeySecret = conf.String(DRIVER + "::accessKeysecret")
-	if AccessKeySecret == "" {
-		return errors.New("read config file's accessKeysecret failed!")
-	}
-
-	return nil
 }
-
-func Test_qiniusave(t *testing.T) {
+*/
+func Test_qiniucloudsave(t *testing.T) {
 
 	var gopath string
 	gopath = os.Getenv("GOPATH")
-	conffile := gopath + "/src/github.com/containerops/dockyard/conf/runtime.conf"
-	var err error
-	err = getqiniuconfile(conffile)
-	if nil != err {
-		fmt.Printf("read conf/runtime.conf error: %v", err)
+	if gopath == "" {
+		t.Error("read env GOPATH fail")
+		return
 	}
 
+	conf.ACCESS_KEY = g_qiniuAccessKeyID
+	conf.SECRET_KEY = g_qiniuAccessKeySecret
+
 	file := gopath + "/src/github.com/containerops/dockyard/backend/qiniu.go"
-	var url string
-	url, err = qiniusave(file)
+	url, err := qiniucloudsave(file)
 	if err != nil {
 		t.Error(err)
 		return
@@ -69,5 +37,4 @@ func Test_qiniusave(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-
 }
