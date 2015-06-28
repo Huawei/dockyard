@@ -15,7 +15,7 @@ import (
 
 func PutTagV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
-	repository := ctx.Params(":repo_name")
+	repository := ctx.Params(":repository")
 	tag := ctx.Params(":tag")
 
 	bodystr, _ := ctx.Req.Body().String()
@@ -24,7 +24,8 @@ func PutTagV1Handler(ctx *macaron.Context) (int, []byte) {
 	r, _ := regexp.Compile(`"([[:alnum:]]+)"`)
 	imageIds := r.FindStringSubmatch(bodystr)
 
-	if err := models.PutTag(imageIds[1], namespace, repository, tag); err != nil {
+	repo := new(models.Repository)
+	if err := repo.PutTag(imageIds[1], namespace, repository, tag); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Put repository tag error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"Error": err.Error()})
@@ -49,9 +50,10 @@ func PutTagV1Handler(ctx *macaron.Context) (int, []byte) {
 
 func PutRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
-	repository := ctx.Params(":repo_name")
+	repository := ctx.Params(":repository")
 
-	if err := models.PutImages(namespace, repository, ctx); err != nil {
+	r := new(models.Repository)
+	if err := r.PutImages(namespace, repository, ctx); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Put images error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Put images error"})
@@ -76,7 +78,7 @@ func PutRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
 
 func GetRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
-	repository := ctx.Params(":repo_name")
+	repository := ctx.Params(":repository")
 
 	repo := new(models.Repository)
 	if has, _, err := repo.Has(namespace, repository); err != nil {
@@ -112,7 +114,7 @@ func GetRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
 
 func GetTagV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
-	repository := ctx.Params(":repo_name")
+	repository := ctx.Params(":repository")
 
 	repo := new(models.Repository)
 	if has, _, err := repo.Has(namespace, repository); err != nil {
@@ -164,7 +166,8 @@ func PutRepositoryV1Handler(ctx *macaron.Context) (int, []byte) {
 		return http.StatusForbidden, result
 	}
 
-	if err := models.Put(namespace, repository, requestbody, ctx.Req.Header.Get("User-Agent"), setting.APIVERSION_V1); err != nil {
+	r := new(models.Repository)
+	if err := r.Put(namespace, repository, requestbody, ctx.Req.Header.Get("User-Agent"), setting.APIVERSION_V1); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Put repository error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"Error": err.Error()})
