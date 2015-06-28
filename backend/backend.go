@@ -4,173 +4,157 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"reflect"
+	"sync"
 
 	"github.com/astaxie/beego/config"
 )
 
-var (
-	DRIVER          string
-	ENDPOINT        string
-	BUCKETNAME      string
-	AccessKeyID     string
-	AccessKeySecret string
-	//password for upyun
-	USER   string
-	PASSWD string
-)
-
-type InputObject struct {
+type In struct {
 	Key        string `json:"key"`
 	Uploadfile string `json:"uploadfile"`
 }
 
-type OutputObject struct {
+type OutSuccess struct {
 	Key         string `json:"key"`
 	Uploadfile  string `json:"uploadfile"`
 	Downloadurl string `json:"downloadurl"`
 }
 
 type ShareChannel struct {
-	in         chan string
-	outSuccess chan string
-	outFail    chan string
+	In         chan string
+	OutSuccess chan string
+	OutFailure chan string
+	ExitFlag   bool
+	waitGroup  *sync.WaitGroup
 }
+
+var channelSize = 200
+
+//reflect struct
+var g_injector = NewInjector(50)
+var g_driver string
 
 func init() {
-
-	err := getconfile("conf/runtime.conf")
+	gopath := os.Getenv("GOPATH")
+	if gopath == "" {
+		fmt.Println("read env GOPATH fail")
+		os.Exit(1)
+	}
+	conf, err := config.NewConfig("ini", gopath+"/src/github.com/containerops/dockyard/conf/runtime.conf")
 	if err != nil {
-		fmt.Errorf("read conf/runtime.conf fail: %v", err)
+		fmt.Println(fmt.Errorf("read conf/runtime.conf fail: %v", err).Error())
+		os.Exit(1)
+	}
+
+	g_driver = conf.String("backend::driver")
+	if g_driver == "" {
+		fmt.Println("read config file's dirver failed!")
+		os.Exit(1)
 	}
 }
 
-func getconfile(file string) (err error) {
-	var tmperr error
-	var conf config.ConfigContainer
-
-	conf, tmperr = config.NewConfig("ini", file)
-	if tmperr != nil {
-		return tmperr
-	}
-
-	DRIVER = conf.String("backenddriver")
-	if DRIVER == "" {
-		return errors.New("read config file's backenddriver failed!")
-	}
-
-	ENDPOINT = conf.String(DRIVER + "::endpoint")
-	if ENDPOINT == "" {
-		return errors.New("read config file's endpoint failed!")
-	}
-
-	BUCKETNAME = conf.String(DRIVER + "::bucket")
-	if BUCKETNAME == "" {
-		return errors.New("read config file's bucket failed!")
-	}
-
-	if DRIVER == "up" {
-		USER = conf.String(DRIVER + "::usr")
-		if USER == "" {
-			return errors.New("read config file's usr failed!")
-		}
-		PASSWD = conf.String(DRIVER + "::passwd")
-		if PASSWD == "" {
-			return errors.New("read config file's passwd failed!")
-		}
-
-	} else {
-
-		AccessKeyID = conf.String(DRIVER + "::accessKeyID")
-		if AccessKeyID == "" {
-			return errors.New("read config file's accessKeyID failed!")
-		}
-
-		AccessKeySecret = conf.String(DRIVER + "::accessKeysecret")
-		if AccessKeySecret == "" {
-			return errors.New("read config file's accessKeysecret failed!")
-		}
-
-	}
-	return nil
+func NewShareChannel() *ShareChannel {
+	return &ShareChannel{make(chan string, channelSize),
+		make(chan string, channelSize),
+		make(chan string, channelSize), false, new(sync.WaitGroup)}
 }
-
-func NewShareChannel(bufferSize int) *ShareChannel {
-
-	return &ShareChannel{make(chan string, bufferSize),
-		make(chan string, bufferSize),
-		make(chan string, bufferSize)}
-}
-
 func (sc *ShareChannel) PutIn(jsonObj string) {
-	sc.in <- jsonObj
+	sc.In <- jsonObj
 }
 
 func (sc *ShareChannel) getIn() (jsonObj string) {
-	return <-sc.in
+	return <-sc.In
 }
 
 func (sc *ShareChannel) putOutSuccess(jsonObj string) {
-	sc.outSuccess <- jsonObj
+	sc.OutSuccess <- jsonObj
 }
 
 func (sc *ShareChannel) GutOutSuccess() (jsonObj string) {
-	return <-sc.outSuccess
+	return <-sc.OutSuccess
 }
 
-func (sc *ShareChannel) putOutFail(jsonObj string) {
-	sc.outFail <- jsonObj
+func (sc *ShareChannel) putOutFailure(jsonObj string) {
+	sc.OutFailure <- jsonObj
 }
 
-func (sc *ShareChannel) GutOutFail() (jsonObj string) {
-	return <-sc.outFail
+func (sc *ShareChannel) GutOutFailure() (jsonObj string) {
+	return <-sc.OutFailure
 }
 
-func (sc *ShareChannel) StartRoutine() {
+func (sc *ShareChannel) Open() {
+	sc.waitGroup.Add(1)
 	go func() {
-		for {
+		for !sc.ExitFlag {
 			obj := sc.getIn()
 			outJson, err := Save(obj)
 			if nil != err {
-				sc.putOutFail(obj)
+				//fmt.Println(err)
+				sc.putOutFailure(obj)
 			} else {
 				sc.putOutSuccess(outJson)
 			}
 		}
+		sc.waitGroup.Done()
 	}()
 }
 
-func Save(inputJson string) (outJson string, err error) {
+func (sc *ShareChannel) Close() {
+	sc.ExitFlag = true
+	sc.waitGroup.Wait()
 
-	var tmpErr error
+	for f := true; f; {
+		select {
+		case obj := <-sc.In:
+			outJson, err := Save(obj)
+			if nil != err {
+				//fmt.Println(err)
+				sc.putOutFailure(obj)
+			} else {
+				sc.putOutSuccess(outJson)
+			}
+		default:
+			f = false
+		}
+	}
+
+	close(sc.In)
+	//close(sc.OutSuccess)
+	//close(sc.OutFail)
+}
+
+func Save(jsonIn string) (jsonOut string, err error) {
+
 	var url string
-	inputObj := InputObject{}
+	var rt []reflect.Value
+	in := In{}
+	var jsonTempOut []byte
 
-	tmpErr = json.Unmarshal([]byte(inputJson), &inputObj)
-	if nil != tmpErr {
-		return "", tmpErr
+	err = json.Unmarshal([]byte(jsonIn), &in)
+	if nil != err {
+		return "", err
 	}
 
-	switch DRIVER {
-	case "qiniu":
-		url, tmpErr = qiniusave(inputObj.Uploadfile)
-	case "up":
-		url, tmpErr = qiniusave(inputObj.Uploadfile)
-	case "ali":
-		url, tmpErr = alisave(inputObj.Uploadfile)
-	case "gcs":
-		url, tmpErr = Gcssave(inputObj.Uploadfile)
-	default:
-		return "", errors.New("no saving place is config")
+	rt, err = g_injector.Call(g_driver+"save", in.Uploadfile)
+	if nil != err {
+		return "", err
 	}
 
-	if nil != tmpErr {
-		return "", tmpErr
-	}
+	if !rt[1].IsNil() {
+		errstr := rt[1].MethodByName("Error").Call(nil)[0].String()
+		if errstr != "" {
+			return "", errors.New(errstr)
+		}
 
-	outputObj := &OutputObject{Key: inputObj.Key, Uploadfile: inputObj.Uploadfile, Downloadurl: url}
-	tempOutJson, tmpErr := json.Marshal(outputObj)
+	}
+	url = rt[0].String()
+
+	outSuccess := &OutSuccess{Key: in.Key, Uploadfile: in.Uploadfile, Downloadurl: url}
+	jsonTempOut, err = json.Marshal(outSuccess)
 	if err != nil {
-		return "", tmpErr
+		return "", err
 	}
-	return string(tempOutJson), nil
+	return string(jsonTempOut), nil
 }
