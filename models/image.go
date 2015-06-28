@@ -55,9 +55,8 @@ func (i *Image) Save() error {
 	return nil
 }
 
-func GetJSON(imageId string) (string, error) {
+func (i *Image) GetJSON(imageId string) (string, error) {
 
-	i := new(Image)
 	if has, _, err := i.Has(imageId); err != nil {
 		return "", err
 	} else if has == false {
@@ -69,9 +68,8 @@ func GetJSON(imageId string) (string, error) {
 	}
 }
 
-func GetChecksum(imageId string) (string, error) {
+func (i *Image) GetChecksum(imageId string) (string, error) {
 
-	i := new(Image)
 	if has, _, err := i.Has(imageId); err != nil {
 		return "", err
 	} else if has == false {
@@ -83,9 +81,8 @@ func GetChecksum(imageId string) (string, error) {
 	}
 }
 
-func PutJSON(imageId, json string, version int64) error {
+func (i *Image) PutJSON(imageId, json string, version int64) error {
 
-	i := new(Image)
 	if has, _, err := i.Has(imageId); err != nil {
 		return err
 	} else if has == false {
@@ -115,15 +112,14 @@ func PutJSON(imageId, json string, version int64) error {
 	return nil
 }
 
-func PutChecksum(imageId string, checksum string, checksumed bool, payload string) error {
+func (i *Image) PutChecksum(imageId string, checksum string, checksumed bool, payload string) error {
 
-	i := new(Image)
 	if has, _, err := i.Has(imageId); err != nil {
 		return err
 	} else if has == false {
 		return fmt.Errorf("Image not found")
 	} else {
-		if err := PutAncestry(imageId); err != nil {
+		if err := i.PutAncestry(imageId); err != nil {
 
 			return err
 		}
@@ -145,9 +141,8 @@ func PutChecksum(imageId string, checksum string, checksumed bool, payload strin
 	return nil
 }
 
-func PutAncestry(imageId string) error {
+func (i *Image) PutAncestry(imageId string) error {
 
-	i := new(Image)
 	if has, _, err := i.Has(imageId); err != nil {
 		return err
 	} else if has == false {
@@ -192,9 +187,8 @@ func PutAncestry(imageId string) error {
 	return nil
 }
 
-func PutLayer(imageId string, path string, uploaded bool, size int64) error {
+func (i *Image) PutLayer(imageId string, path string, uploaded bool, size int64) error {
 
-	i := new(Image)
 	if has, _, err := i.Has(imageId); err != nil {
 		return err
 	} else if has == false {
