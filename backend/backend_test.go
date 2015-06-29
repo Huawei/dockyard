@@ -1,33 +1,44 @@
 package backend
 
 import (
-	"fmt"
+	"encoding/json"
 	"os"
 	"testing"
 )
 
-func init() {
+func Test_backend_put(t *testing.T) {
 
-	var gopath string
-	gopath = os.Getenv("GOPATH")
-	conffile := gopath + "/src/github.com/containerops/dockyard/conf/runtime.conf"
-	var err error
-	err = getconfile(conffile)
-	if nil != err {
-		fmt.Printf("read conf/runtime.conf error: %v", err)
+	gopath := os.Getenv("GOPATH")
+	if gopath == "" {
+		t.Error("read env GOPATH fail")
+		return
+	}
+	file := gopath + "/src/github.com/containerops/dockyard/backend/backend_test.go"
+
+	in := &In{Key: "asdf8976485r32r613879rwegfuiwet739ruwef", Uploadfile: file}
+	jsonIn, err := json.Marshal(in)
+	if err != nil {
+		t.Error(err)
+		return
 	}
 
-}
+	sc := NewShareChannel()
+	sc.Open()
 
-func Test_backend_put(t *testing.T) {
-	const jsonInput = `{ 
-	"key" : "asdf8976485r32r613879rwegfuiwet739ruwef" ,
-	"uploadfile" : "/home/lgp/1.txt" }`
+	for i := 0; i < 2; i++ {
+		sc.PutIn(string(jsonIn))
+	}
+	sc.Close()
 
-	sc := NewShareChannel(5)
-	sc.StartRoutine()
-	for i := 0; i < 10; i++ {
-		sc.PutIn(jsonInput)
+	for f := true; f; {
+		select {
+		case obj := <-sc.OutSuccess:
+			t.Log(obj)
+		case obj := <-sc.OutFailure:
+			t.Error(obj)
+		default:
+			f = false
+		}
 	}
 
 }
