@@ -1,12 +1,8 @@
-package gcs
+package backend
 
 import (
-	//"dockyard/backend/gcs"
-	//"errors"
 	"io"
 	"io/ioutil"
-	//"log"
-	//"http"
 	"net/http"
 	"os"
 	"strings"
@@ -45,7 +41,7 @@ func TestGcssave(t *testing.T) {
 		t.Error(err)
 	}
 
-	retUrl, err := Gcssave(upFileName)
+	retUrl, err := googlecloudsave(upFileName)
 	if err != nil {
 		t.Error(err)
 	}
