@@ -15,7 +15,7 @@ import (
 
 func GetImageAncestryV1Handler(ctx *macaron.Context) (int, []byte) {
 
-	imageId := ctx.Params(":image_id")
+	imageId := ctx.Params(":imageId")
 
 	i := new(models.Image)
 	if has, _, err := i.Has(imageId); err != nil {
@@ -41,19 +41,20 @@ func GetImageAncestryV1Handler(ctx *macaron.Context) (int, []byte) {
 
 func GetImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 
-	imageId := ctx.Params(":image_id")
+	imageId := ctx.Params(":imageId")
 	var jsonInfo string
 	var checksum string
 	var err error
 
-	if jsonInfo, err = models.GetJSON(imageId); err != nil {
+	i := new(models.Image)
+	if jsonInfo, err = i.GetJSON(imageId); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Search Image JSON Error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"Error": "Search Image JSON Error"})
 		return http.StatusBadRequest, result
 	}
 
-	if checksum, err = models.GetChecksum(imageId); err != nil {
+	if checksum, err = i.GetChecksum(imageId); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Search Image Checksum Error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"Error": "Search Image Checksum Error"})
@@ -73,7 +74,7 @@ func GetImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 
 func GetImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
 
-	imageId := ctx.Params(":image_id")
+	imageId := ctx.Params(":imageId")
 
 	i := new(models.Image)
 	if has, _, err := i.Has(imageId); err != nil {
@@ -118,7 +119,7 @@ func GetImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
 
 func PutImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 
-	imageId := ctx.Params(":image_id")
+	imageId := ctx.Params(":imageId")
 
 	jsonInfo, err := ctx.Req.Body().String()
 	if err != nil {
@@ -127,7 +128,8 @@ func PutImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 		return http.StatusBadRequest, result
 	}
 
-	if err := models.PutJSON(imageId, jsonInfo, setting.APIVERSION_V1); err != nil {
+	i := new(models.Image)
+	if err := i.PutJSON(imageId, jsonInfo, setting.APIVERSION_V1); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Put Image JSON Error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"Error": "Put Image JSON Error"})
@@ -149,7 +151,7 @@ func PutImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 
 func PutImageLayerv1Handler(ctx *macaron.Context) (int, []byte) {
 
-	imageId := ctx.Params(":image_id")
+	imageId := ctx.Params(":imageId")
 	basePath := setting.BasePath
 	imagePath := fmt.Sprintf("%v/images/%v", basePath, imageId)
 	layerfile := fmt.Sprintf("%v/images/%v/layer", basePath, imageId)
@@ -170,7 +172,8 @@ func PutImageLayerv1Handler(ctx *macaron.Context) (int, []byte) {
 		return http.StatusBadRequest, result
 	}
 
-	if err := models.PutLayer(imageId, layerfile, true, int64(len(data))); err != nil {
+	i := new(models.Image)
+	if err := i.PutLayer(imageId, layerfile, true, int64(len(data))); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Put Image Layer File Data Error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"Error": "Put Image Layer File Data Error"})
@@ -192,7 +195,7 @@ func PutImageLayerv1Handler(ctx *macaron.Context) (int, []byte) {
 
 func PutImageChecksumV1Handler(ctx *macaron.Context) (int, []byte) {
 
-	imageId := ctx.Params(":image_id")
+	imageId := ctx.Params(":imageId")
 
 	checksum := strings.Split(ctx.Req.Header.Get("X-Docker-Checksum"), ":")[1]
 	payload := strings.Split(ctx.Req.Header.Get("X-Docker-Checksum-Payload"), ":")[1]
@@ -200,14 +203,15 @@ func PutImageChecksumV1Handler(ctx *macaron.Context) (int, []byte) {
 	fmt.Println("[REGISTRY API V1] Image Checksum : ", checksum)
 	fmt.Println("[REGISTRY API V1] Image Payload: ", payload)
 
-	if err := models.PutChecksum(imageId, checksum, true, payload); err != nil {
+	i := new(models.Image)
+	if err := i.PutChecksum(imageId, checksum, true, payload); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Put Image Checksum & Payload Error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"Error": "Put Image Checksum & Payload Error"})
 		return http.StatusBadRequest, result
 	}
 
-	if err := models.PutAncestry(imageId); err != nil {
+	if err := i.PutAncestry(imageId); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Put Image Ancestry Error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"Error": "Put Image Ancestry Error"})
