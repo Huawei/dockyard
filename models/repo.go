@@ -101,8 +101,8 @@ func (t *Tag) Save() error {
 	return nil
 }
 
-func Put(namespace, repository, json, agent string, version int64) error {
-	r := new(Repository)
+func (r *Repository) Put(namespace, repository, json, agent string, version int64) error {
+
 	if has, _, err := r.Has(namespace, repository); err != nil {
 		return err
 	} else if has == false {
@@ -124,9 +124,8 @@ func Put(namespace, repository, json, agent string, version int64) error {
 	return nil
 }
 
-func PutImages(namespace, repository string, ctx *macaron.Context) error {
+func (r *Repository) PutImages(namespace, repository string, ctx *macaron.Context) error {
 
-	r := new(Repository)
 	if has, _, err := r.Has(namespace, repository); err != nil {
 		return err
 	} else if has == false {
@@ -168,8 +167,8 @@ func PutImages(namespace, repository string, ctx *macaron.Context) error {
 	return nil
 }
 
-func PutTag(imageId, namespace, repository, tag string) error {
-	r := new(Repository)
+func (r *Repository) PutTag(imageId, namespace, repository, tag string) error {
+
 	if has, _, err := r.Has(namespace, repository); err != nil {
 		return err
 	} else if has == false {
