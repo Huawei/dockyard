@@ -15,40 +15,84 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/astaxie/beego/config"
 )
 
-func alisave(file string) (url string, err error) {
+var (
+	g_aliEndpoint        string
+	g_aliBucket          string
+	g_aliAccessKeyID     string
+	g_aliAccessKeySecret string
+)
 
-	//client := oss.NewClient(ENDPOINT, AccessKeyID, AccessKeySecret, 0)
+func init() {
 
-	client := NewClient(AccessKeyID, AccessKeySecret)
+	gopath := os.Getenv("GOPATH")
+	if gopath == "" {
+		fmt.Errorf("read env GOPATH fail")
+		os.Exit(1)
+	}
+	err := aligetconfig(gopath + "/src/github.com/containerops/dockyard/conf/runtime.conf")
+	if err != nil {
+		fmt.Errorf("read config file conf/runtime.conf fail:" + err.Error())
+		os.Exit(1)
+	}
+	g_injector.Bind("alicloudsave", alicloudsave)
+}
 
-	bucket := NewBucket(BUCKETNAME, ENDPOINT, client)
+func aligetconfig(conffile string) (err error) {
+	conf, err := config.NewConfig("ini", conffile)
+	if err != nil {
+		return err
+	}
 
-	var tempkey string
-	for _, tempkey = range strings.Split(file, "/") {
+	g_aliEndpoint = conf.String("alicloud::endpoint")
+	if g_aliEndpoint == "" {
+		return errors.New("read config file's endpoint failed!")
+	}
+
+	g_aliBucket = conf.String("alicloud::bucket")
+	if g_aliBucket == "" {
+		return errors.New("read config file's bucket failed!")
+	}
+
+	g_aliAccessKeyID = conf.String("alicloud::accessKeyID")
+	if g_aliAccessKeyID == "" {
+		return errors.New("read config file's accessKeyID failed!")
+	}
+
+	g_aliAccessKeySecret = conf.String("alicloud::accessKeysecret")
+	if g_aliAccessKeySecret == "" {
+		return errors.New("read config file's accessKeysecret failed!")
+	}
+	return nil
+}
+
+func alicloudsave(file string) (url string, err error) {
+
+	client := NewClient(g_aliAccessKeyID, g_aliAccessKeySecret)
+
+	bucket := NewBucket(g_aliBucket, g_aliEndpoint, client)
+
+	var key string
+	//get the filename from the file , eg,get "1.txt" from /home/liugenping/1.txt
+	for _, key = range strings.Split(file, "/") {
 
 	}
-	opath := "/" + BUCKETNAME + "/" + tempkey
-	tempUrl := "http://" + ENDPOINT + opath
+	opath := "/" + g_aliBucket + "/" + key
+	url = "http://" + g_aliEndpoint + opath
 
 	headers := map[string]string{}
 
-	temperr := bucket.PutFile(tempkey, file, headers)
+	err = bucket.PutFile(key, file, headers)
 
-	if nil != temperr {
-		return "", temperr
+	if nil != err {
+		return "", err
 	} else {
-		return tempUrl, nil
+		return url, nil
 	}
 }
-
-/**
- * Go wrapper for aliyun OSS(Open Storage Service) RESTful API.
- * https://github.com/heroicyang/ali-oss
- *
- * @Author Heroic Yang <me@heroicyang.com>
- */
 
 var resourceQSWhitelist []string = []string{
 	"acl",
