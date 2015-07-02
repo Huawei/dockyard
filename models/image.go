@@ -3,9 +3,11 @@ package models
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/containerops/wrench/db"
-	"github.com/satori/go.uuid"
 	"time"
+
+	"github.com/satori/go.uuid"
+
+	"github.com/containerops/wrench/db"
 )
 
 type Image struct {
@@ -32,7 +34,7 @@ type Image struct {
 func (i *Image) Has(image string) (bool, string, error) {
 	UUID, err := db.GetUUID("image", image)
 	if err != nil {
-		return false, "", err
+		return false, "", nil
 	}
 	if len(UUID) <= 0 {
 		return false, "", nil
