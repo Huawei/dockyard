@@ -2,11 +2,13 @@ package models
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/Unknwon/macaron"
+
 	crew "github.com/containerops/crew/models"
 	"github.com/containerops/wrench/db"
 	"github.com/containerops/wrench/utils"
-	"time"
 )
 
 type Repository struct {
@@ -66,12 +68,13 @@ func (r *Repository) Has(namespace, repository string) (bool, string, error) {
 	UUID, err := db.GetUUID("repository", fmt.Sprintf("%s:%s", namespace, repository))
 
 	if err != nil {
-		return false, "", err
+		return false, "", nil
 	}
 
 	if len(UUID) <= 0 {
 		return false, "", nil
 	}
+
 	err = db.Get(r, UUID)
 
 	return true, UUID, err
@@ -126,12 +129,15 @@ func (r *Repository) Put(namespace, repository, json, agent string, version int6
 
 func (r *Repository) PutImages(namespace, repository string, ctx *macaron.Context) error {
 
-	if has, _, err := r.Has(namespace, repository); err != nil {
+	if _, _, err := r.Has(namespace, repository); err != nil {
 		return err
-	} else if has == false {
-		return fmt.Errorf("[REGISTRY API V1] Repository not found")
 	}
 
+	/*
+		else if has == false {
+			return fmt.Errorf("[REGISTRY API V1] Repository not found")
+		}
+	*/
 	r.Checksumed, r.Uploaded, r.Updated = true, true, time.Now().Unix()
 
 	if err := r.Save(); err != nil {

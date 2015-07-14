@@ -3,14 +3,16 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"regexp"
+
 	"github.com/Unknwon/macaron"
+
 	crew "github.com/containerops/crew/models"
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/dockyard/setting"
 	"github.com/containerops/wrench/db"
 	"github.com/containerops/wrench/utils"
-	"net/http"
-	"regexp"
 )
 
 func PutTagV1Handler(ctx *macaron.Context) (int, []byte) {
@@ -29,23 +31,10 @@ func PutTagV1Handler(ctx *macaron.Context) (int, []byte) {
 		fmt.Errorf("[REGISTRY API V1] Put repository tag error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"Error": err.Error()})
-		return http.StatusForbidden, result
-	}
-	//TBD
-	/*
-		memo, _ := json.Marshal(this.Ctx.Input.Header)
-		if err := repo.Log(models.ACTION_PUT_TAG, models.LEVELINFORMATIONAL, models.TYPE_APIV1, repo.UUID, memo); err != nil {
-			beego.Error("[REGISTRY API V1] Log Erro:", err.Error())
-		}
-	*/
-	//this.Ctx.Output.Context.Output.SetStatus(http.StatusOK)
-	//this.Ctx.Output.Context.Output.Body([]byte(""))
-	if _, err := ctx.Resp.Write([]byte("")); err != nil {
-		fmt.Errorf("[REGISTRY API V1] PutTagV1Handler write response content Error")
+		return http.StatusBadRequest, result
 	}
 
-	result, _ := json.Marshal(map[string]string{"message": "Put repository tag success"})
-	return http.StatusOK, result
+	return http.StatusOK, []byte("true")
 }
 
 func PutRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
@@ -56,24 +45,23 @@ func PutRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
 	if err := r.PutImages(namespace, repository, ctx); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Put images error: %v", err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Put images error"})
+		result, _ := json.Marshal(map[string]string{"message": "Put V1 images error"})
 		return http.StatusBadRequest, result
 	}
-	//TBD
-	/*
-		memo, _ := json.Marshal(this.Ctx.Input.Header)
-		if err := repo.Log(models.ACTION_PUT_REPO_IMAGES, models.LEVELINFORMATIONAL, models.TYPE_APIV1, repo.UUID, memo); err != nil {
-			beego.Error("[REGISTRY API V1] Log Erro:", err.Error())
-		}
-	*/
 
-	//this.Ctx.Output.Context.Output.Body([]byte(""))
-	if _, err := ctx.Resp.Write([]byte("")); err != nil {
-		fmt.Errorf("[REGISTRY API V1] PutRepositoryImagesV1Handler write response content Error")
+	//TBD: set content like docker format?
+	if ctx.Req.Header.Get("X-Docker-Token") == "true" {
+		username, _, _ := utils.DecodeBasicAuth(ctx.Req.Header.Get("Authorization"))
+		token := fmt.Sprintf("Token signature=%v,repository=\"%v/%v\",access=%v",
+			db.GeneralDBKey(username),
+			namespace,
+			repository,
+			"write")
+		ctx.Resp.Header().Set("X-Docker-Token", token)
+		ctx.Resp.Header().Set("WWW-Authenticate", token)
 	}
 
-	result, _ := json.Marshal(map[string]string{"message": ""})
-	return http.StatusNoContent, result
+	return http.StatusNoContent, []byte("")
 }
 
 func GetRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
@@ -84,13 +72,13 @@ func GetRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
 	if has, _, err := repo.Has(namespace, repository); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Read repository json error: %v", err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Read repository json error"})
+		result, _ := json.Marshal(map[string]string{"message": "Get V1 repository images failure,wrong name or repository"})
 		return http.StatusBadRequest, result
 	} else if has == false {
 		fmt.Errorf("[REGISTRY API V1] Read repository no found, %v/%v", namespace, repository)
 
-		result, _ := json.Marshal(map[string]string{"message": "Read repository no found"})
-		return http.StatusBadRequest, result
+		result, _ := json.Marshal(map[string]string{"message": "Get V1 repository images failure,repository no found"})
+		return http.StatusNotFound, result
 	}
 
 	repo.Download += 1
@@ -98,18 +86,8 @@ func GetRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
 	if err := repo.Save(); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Update download count error: %v", err.Error())
 	}
-	/*
-		memo, _ := json.Marshal(this.Ctx.Input.Header)
-		if err := repo.Log(models.ACTION_GET_REPO, models.LEVELINFORMATIONAL, models.TYPE_APIV1, repo.UUID, memo); err != nil {
-			beego.Error("[REGISTRY API V1] Log Erro:", err.Error())
-		}
-	*/
-	if _, err := ctx.Resp.Write([]byte(repo.JSON)); err != nil {
-		fmt.Errorf("[REGISTRY API V1] GetRepositoryImagesV1Handler write response content Error")
-	}
 
-	result, _ := json.Marshal(map[string]string{"message": ""})
-	return http.StatusOK, result
+	return http.StatusOK, []byte(repo.JSON)
 }
 
 func GetTagV1Handler(ctx *macaron.Context) (int, []byte) {
@@ -120,13 +98,13 @@ func GetTagV1Handler(ctx *macaron.Context) (int, []byte) {
 	if has, _, err := repo.Has(namespace, repository); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Read repository json error: %v", err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Read repository json error"})
+		result, _ := json.Marshal(map[string]string{"message": "Get V1 tag failure,wrong name or repository"})
 		return http.StatusBadRequest, result
 	} else if has == false {
 		fmt.Errorf("[REGISTRY API V1] Read repository no found. %v/%v", namespace, repository)
 
-		result, _ := json.Marshal(map[string]string{"message": "Read repository no found"})
-		return http.StatusBadRequest, result
+		result, _ := json.Marshal(map[string]string{"message": "Get V1 tag failure,read repository no found"})
+		return http.StatusNotFound, result
 	}
 
 	tag := map[string]string{}
@@ -137,17 +115,13 @@ func GetTagV1Handler(ctx *macaron.Context) (int, []byte) {
 			fmt.Errorf(fmt.Sprintf("[REGISTRY API V1]  %s/%s Tags is not exist", namespace, repository))
 
 			result, _ := json.Marshal(map[string]string{"message": fmt.Sprintf("%s/%s Tags is not exist", namespace, repository)})
-			return http.StatusBadRequest, result
+			return http.StatusNotFound, result
 		}
 
 		tag[t.Name] = t.ImageId
 	}
 
-	//this.Data["json"] = tag
-	//this.Ctx.Output.Context.Output.SetStatus(http.StatusOK)
-	//this.ServeJson()
-
-	result, _ := json.Marshal(map[string]string{"message": ""})
+	result, _ := json.Marshal(tag)
 	return http.StatusOK, result
 }
 
@@ -161,9 +135,8 @@ func PutRepositoryV1Handler(ctx *macaron.Context) (int, []byte) {
 	requestbody, err := ctx.Req.Body().String()
 	if err != nil {
 		fmt.Errorf("[REGISTRY API V1] Get request body error: %v", err.Error())
-
-		result, _ := json.Marshal(map[string]string{"message": ""})
-		return http.StatusForbidden, result
+		result, _ := json.Marshal(map[string]string{"message": "Put V1 repository failure,request body is empty"})
+		return http.StatusBadRequest, result
 	}
 
 	r := new(models.Repository)
@@ -171,14 +144,16 @@ func PutRepositoryV1Handler(ctx *macaron.Context) (int, []byte) {
 		fmt.Errorf("[REGISTRY API V1] Put repository error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"Error": err.Error()})
-		//TBD : code as below just for testing,it will be updated later
-		//return http.StatusForbidden, result
-		return http.StatusOK, result
+		return http.StatusBadRequest, result
 	}
 
+	//TBD: return docker format?
 	if ctx.Req.Header.Get("X-Docker-Token") == "true" {
-		token := db.GeneralDBKey(username)
-		//this.SetSession("token", token)
+		token := fmt.Sprintf("Token signature=%v,repository=\"%v/%v\",access=%v",
+			db.GeneralDBKey(username),
+			namespace,
+			repository,
+			"write")
 		ctx.Resp.Header().Set("X-Docker-Token", token)
 		ctx.Resp.Header().Set("WWW-Authenticate", token)
 	}
@@ -188,27 +163,12 @@ func PutRepositoryV1Handler(ctx *macaron.Context) (int, []byte) {
 	user := new(crew.User)
 	if _, _, err := user.Has(username); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Get user error: %v", err.Error())
-
 		result, _ := json.Marshal(map[string]string{"Error": err.Error()})
-		return http.StatusForbidden, result
+		return http.StatusNotFound, result
 	}
-	//TBD
-	/*
-		if err := user.Log(models.ACTION_UPDATE_REPO, models.LEVELINFORMATIONAL, models.TYPE_APIV1, repo.UUID, memo); err != nil {
-			beego.Error("[REGISTRY API V1] Log Erro:", err.Error())
-		}
-		if err := repo.Log(models.ACTION_UPDATE_REPO, models.LEVELINFORMATIONAL, models.TYPE_APIV1, repo.UUID, memo); err != nil {
-			beego.Error("[REGISTRY API V1] Log Erro:", err.Error())
-		}
-	*/
 
 	//TBD:Endpoints should be read from APP configfile
-	ctx.Resp.Header().Set("X-Docker-Endpoints", "containerops.com")
+	ctx.Resp.Header().Set("X-Docker-Endpoints", "containerops.me")
 
-	if _, err := ctx.Resp.Write([]byte("")); err != nil {
-		fmt.Errorf("[REGISTRY API V1] PutRepositoryV1Handler write response content Error")
-	}
-
-	result, _ := json.Marshal(map[string]string{"message": ""})
-	return http.StatusOK, result
+	return http.StatusOK, []byte("\"\"")
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/Unknwon/macaron"
-
 	"github.com/astaxie/beego/logs"
 
 	"github.com/containerops/dockyard/setting"
