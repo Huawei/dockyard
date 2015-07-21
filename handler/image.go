@@ -32,7 +32,6 @@ func GetImageAncestryV1Handler(ctx *macaron.Context) (int, []byte) {
 		return http.StatusNotFound, result
 	}
 
-	//result, _ := json.Marshal(map[string]string{"message": "Get V1 image ancestry success"})
 	return http.StatusOK, []byte(i.Ancestry)
 }
 
@@ -40,7 +39,7 @@ func GetImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 
 	imageId := ctx.Params(":imageId")
 	var jsonInfo string
-	var checksum string
+	var payload string
 	var err error
 
 	i := new(models.Image)
@@ -51,14 +50,15 @@ func GetImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 		return http.StatusNotFound, result
 	}
 
-	if checksum, err = i.GetChecksum(imageId); err != nil {
+	if payload, err = i.GetChecksumPayload(imageId); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Search Image Checksum Error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"Error": "Search Image Checksum Error"})
 		return http.StatusNotFound, result
-	} else {
-		ctx.Resp.Header().Set("X-Docker-Checksum", checksum)
 	}
+
+	ctx.Resp.Header().Set("X-Docker-Checksum-Payload", fmt.Sprintf("sha256:%v", payload))
+	ctx.Resp.Header().Set("X-Docker-Size", fmt.Sprintf("%v", i.Size))
 
 	return http.StatusOK, []byte(jsonInfo)
 }
@@ -97,10 +97,7 @@ func GetImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
 	}
 
 	ctx.Resp.Header().Set("Content-Type", "application/octet-stream")
-	ctx.Resp.Header().Set("Content-Transfer-Encoding", "binary")
-	//ctx.Resp.Header().Set("Content-Length", string(int64(len(file))))
 
-	//result, _ := json.Marshal(map[string]string{"message": "Get V1 image layer success"})
 	return http.StatusOK, file
 }
 
@@ -122,12 +119,6 @@ func PutImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 		result, _ := json.Marshal(map[string]string{"Error": "Put Image JSON Error"})
 		return http.StatusBadRequest, result
 	}
-	/*
-		memo, _ := json.Marshal(this.Ctx.Input.Header)
-		if err := image.Log(models.ACTION_PUT_IMAGES_JSON, models.LEVELINFORMATIONAL, models.TYPE_APIV1, image.UUID, memo); err != nil {
-			beego.Error("[REGISTRY API V1] Log Error:", err.Error())
-		}
-	*/
 
 	return http.StatusOK, []byte("true")
 }
@@ -162,12 +153,6 @@ func PutImageLayerv1Handler(ctx *macaron.Context) (int, []byte) {
 		result, _ := json.Marshal(map[string]string{"Error": "Put Image Layer File Data Error"})
 		return http.StatusBadRequest, result
 	}
-	/*
-		memo, _ := json.Marshal(this.Ctx.Input.Header)
-		if err := image.Log(models.ACTION_PUT_IMAGES_LAYER, models.LEVELINFORMATIONAL, models.TYPE_APIV1, image.UUID, memo); err != nil {
-			beego.Error("[REGISTRY API V1] Log Error:", err.Error())
-		}
-	*/
 
 	return http.StatusOK, []byte("true")
 }
@@ -189,20 +174,13 @@ func PutImageChecksumV1Handler(ctx *macaron.Context) (int, []byte) {
 		result, _ := json.Marshal(map[string]string{"Error": "Put Image Checksum & Payload Error"})
 		return http.StatusBadRequest, result
 	}
-	/*
-		if err := i.PutAncestry(imageId); err != nil {
-			fmt.Errorf("[REGISTRY API V1] Put Image Ancestry Error: %v", err.Error())
 
-			result, _ := json.Marshal(map[string]string{"Error": "Put Image Ancestry Error"})
-			return http.StatusBadRequest, result
-		}
-	*/
-	/*
-		memo, _ := json.Marshal(this.Ctx.Input.Header)
-		if err := image.Log(models.ACTION_PUT_IMAGES_CHECKSUM, models.LEVELINFORMATIONAL, models.TYPE_APIV1, image.UUID, memo); err != nil {
-			beego.Error("[REGISTRY API V1] Log Error:", err.Error())
-		}
-	*/
+	if err := i.PutAncestry(imageId); err != nil {
+		fmt.Errorf("[REGISTRY API V1] Put Image Ancestry Error: %v", err.Error())
+
+		result, _ := json.Marshal(map[string]string{"Error": "Put Image Ancestry Error"})
+		return http.StatusBadRequest, result
+	}
 
 	return http.StatusOK, []byte("true")
 }
