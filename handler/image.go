@@ -32,6 +32,7 @@ func GetImageAncestryV1Handler(ctx *macaron.Context) (int, []byte) {
 		return http.StatusNotFound, result
 	}
 
+	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(i.Ancestry)))
 	return http.StatusOK, []byte(i.Ancestry)
 }
 
@@ -58,7 +59,8 @@ func GetImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 	}
 
 	ctx.Resp.Header().Set("X-Docker-Checksum-Payload", fmt.Sprintf("sha256:%v", payload))
-	ctx.Resp.Header().Set("X-Docker-Size", fmt.Sprintf("%v", i.Size))
+	ctx.Resp.Header().Set("X-Docker-Size", fmt.Sprint(i.Size))
+	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(jsonInfo)))
 
 	return http.StatusOK, []byte(jsonInfo)
 }
@@ -97,6 +99,7 @@ func GetImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
 	}
 
 	ctx.Resp.Header().Set("Content-Type", "application/octet-stream")
+	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(file)))
 
 	return http.StatusOK, file
 }
