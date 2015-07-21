@@ -74,7 +74,7 @@ func PostBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 
 	ctx.Resp.Header().Set("Docker-Upload-Uuid", uuid)
 	ctx.Resp.Header().Set("Location", random)
-	ctx.Resp.Header().Set("Range", "0-0")
+	//ctx.Resp.Header().Set("Range", "0-0")
 
 	return http.StatusAccepted, []byte("")
 }
@@ -143,7 +143,7 @@ func GetBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 
 	ctx.Resp.Header().Set("Content-Type", "application/x-gzip")
 	ctx.Resp.Header().Set("Docker-Content-Digest", digest)
-	//ctx.Resp.Header().Set("Content-Length", string(int64(len(file))))
+	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(file)))
 
 	return http.StatusOK, file
 }

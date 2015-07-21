@@ -144,6 +144,7 @@ func GetManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
 	}
 
 	ctx.Resp.Header().Set("Docker-Content-Digest", digest)
+	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(t.Manifest)))
 
 	return http.StatusOK, []byte(t.Manifest)
 }
