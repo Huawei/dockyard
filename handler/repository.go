@@ -61,6 +61,9 @@ func PutRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
 		ctx.Resp.Header().Set("WWW-Authenticate", token)
 	}
 
+	//TBD: the head value will be got from config
+	ctx.Resp.Header().Set("X-Docker-Endpoints", "containerops.me")
+
 	return http.StatusNoContent, []byte("")
 }
 
@@ -86,6 +89,16 @@ func GetRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
 	if err := repo.Save(); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Update download count error: %v", err.Error())
 	}
+
+	username, _, _ := utils.DecodeBasicAuth(ctx.Req.Header.Get("Authorization"))
+	token := fmt.Sprintf("Token signature=%v,repository=\"%v/%v\",access=%v",
+		db.GeneralDBKey(username),
+		namespace,
+		repository,
+		"read")
+	ctx.Resp.Header().Set("X-Docker-Token", token)
+	ctx.Resp.Header().Set("WWW-Authenticate", token)
+	ctx.Resp.Header().Set("X-Docker-Endpoints", "containerops.me")
 
 	return http.StatusOK, []byte(repo.JSON)
 }
