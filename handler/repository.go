@@ -99,6 +99,7 @@ func GetRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
 	ctx.Resp.Header().Set("X-Docker-Token", token)
 	ctx.Resp.Header().Set("WWW-Authenticate", token)
 	ctx.Resp.Header().Set("X-Docker-Endpoints", "containerops.me")
+	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(repo.JSON)))
 
 	return http.StatusOK, []byte(repo.JSON)
 }
