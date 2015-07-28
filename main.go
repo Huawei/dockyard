@@ -252,6 +252,8 @@ func writeAmzHeaders(w io.Writer, r *http.Request) {
 	}
 }
 
+//please remove draft code
+
 /*
 package main
 
