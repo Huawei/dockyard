@@ -94,7 +94,7 @@ func PutManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
 
 	repo := new(models.Repository)
 	if err := repo.Put(namespace, repository, "", agent, setting.APIVERSION_V2); err != nil {
-		result, _ := json.Marshal(map[string]string{"Error": err.Error()})
+		result, _ := json.Marshal(map[string]string{"message": err.Error()})
 		return http.StatusBadRequest, result
 	}
 
@@ -105,7 +105,7 @@ func PutManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
 
 	digest, err := DigestManifest(manifest)
 	if err != nil {
-		result, _ := json.Marshal(map[string]string{"Error": "Get manifest digest failure"})
+		result, _ := json.Marshal(map[string]string{"message": "Get manifest digest failure"})
 		return http.StatusBadRequest, result
 	}
 
@@ -131,7 +131,7 @@ func GetManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
 	t := new(models.Tag)
 	if err := t.Get(ctx.Params(":namespace"), ctx.Params(":repository"), ctx.Params(":tag")); err != nil {
 
-		result, _ := json.Marshal(map[string]string{"Error": "Manifest not found"})
+		result, _ := json.Marshal(map[string]string{"message": "Manifest not found"})
 		return http.StatusBadRequest, result
 	}
 
@@ -139,7 +139,7 @@ func GetManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
 
 	digest, err := DigestManifest([]byte(t.Manifest))
 	if err != nil {
-		result, _ := json.Marshal(map[string]string{"Error": "Get manifest digest failure"})
+		result, _ := json.Marshal(map[string]string{"message": "Get manifest digest failure"})
 		return http.StatusBadRequest, result
 	}
 

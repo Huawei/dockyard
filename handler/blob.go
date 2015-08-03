@@ -23,7 +23,7 @@ func authorizationVerify(ctx *macaron.Context) error {
 func HeadBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 
 	if err := authorizationVerify(ctx); err != nil {
-		result, _ := json.Marshal(map[string]string{"Error": "Invalid authorization"})
+		result, _ := json.Marshal(map[string]string{"message": "Invalid authorization"})
 		return http.StatusUnauthorized, result
 	}
 
@@ -31,7 +31,7 @@ func HeadBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 	tarsum := strings.Split(digest, ":")[1]
 	i := new(models.Image)
 	if has, _, _ := i.HasTarsum(tarsum); has == false {
-		result, _ := json.Marshal(map[string]string{"Error": "Digest not found"})
+		result, _ := json.Marshal(map[string]string{"message": "Digest not found"})
 		return http.StatusNotFound, result
 	}
 
@@ -70,7 +70,7 @@ func PutBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 
 	i := new(models.Image)
 	if err := i.PutTarsum(tarsum); err != nil {
-		result, _ := json.Marshal(map[string]string{"Error": "Save tarsum failure"})
+		result, _ := json.Marshal(map[string]string{"message": "Save tarsum failure"})
 		return http.StatusBadRequest, result
 	}
 
@@ -84,7 +84,7 @@ func PutBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 
 	data, _ := ioutil.ReadAll(ctx.Req.Request.Body)
 	if err := ioutil.WriteFile(layerfile, data, 0777); err != nil {
-		result, _ := json.Marshal(map[string]string{"Error": "Save layerfile failure"})
+		result, _ := json.Marshal(map[string]string{"message": "Save layerfile failure"})
 		return http.StatusBadRequest, result
 	}
 
