@@ -1,12 +1,16 @@
 package models
 
 import (
+	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/Unknwon/macaron"
+
 	crew "github.com/containerops/crew/models"
+	"github.com/containerops/dockyard/setting"
 	"github.com/containerops/wrench/db"
 	"github.com/containerops/wrench/utils"
-	"time"
 )
 
 type Repository struct {
@@ -66,12 +70,13 @@ func (r *Repository) Has(namespace, repository string) (bool, string, error) {
 	UUID, err := db.GetUUID("repository", fmt.Sprintf("%s:%s", namespace, repository))
 
 	if err != nil {
-		return false, "", err
+		return false, "", nil
 	}
 
 	if len(UUID) <= 0 {
 		return false, "", nil
 	}
+
 	err = db.Get(r, UUID)
 
 	return true, UUID, err
@@ -95,6 +100,17 @@ func (t *Tag) Save() error {
 	}
 
 	if _, err := db.Client.HSet(db.GLOBAL_TAG_INDEX, (fmt.Sprintf("%s:%s:%s:%s", t.Namespace, t.Repository, t.ImageId, t.Name)), t.UUID).Result(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *Tag) Get(namespace, repository, tag string) error {
+
+	uuid := fmt.Sprintf("%s:%s:%s", namespace, repository, tag)
+
+	if err := db.Get(t, uuid); err != nil {
 		return err
 	}
 
@@ -126,12 +142,15 @@ func (r *Repository) Put(namespace, repository, json, agent string, version int6
 
 func (r *Repository) PutImages(namespace, repository string, ctx *macaron.Context) error {
 
-	if has, _, err := r.Has(namespace, repository); err != nil {
+	if _, _, err := r.Has(namespace, repository); err != nil {
 		return err
-	} else if has == false {
-		return fmt.Errorf("[REGISTRY API V1] Repository not found")
 	}
 
+	/*
+		else if has == false {
+			return fmt.Errorf("[REGISTRY API V1] Repository not found")
+		}
+	*/
 	r.Checksumed, r.Uploaded, r.Updated = true, true, time.Now().Unix()
 
 	if err := r.Save(); err != nil {
@@ -202,6 +221,98 @@ func (r *Repository) PutTag(imageId, namespace, repository, tag string) error {
 	if err := r.Save(); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func (r *Repository) PutJSONFromManifests(image map[string]string, namespace, repository string) error {
+	if has, _, err := r.Has(namespace, repository); err != nil {
+		return err
+	} else if has == false {
+		r.UUID = string(db.GeneralDBKey(fmt.Sprintf("%s:%s", namespace, repository)))
+		r.Created = time.Now().UnixNano() / int64(time.Millisecond)
+		r.JSON = ""
+	}
+
+	r.Namespace, r.Repository, r.Version = namespace, repository, setting.APIVERSION_V2
+
+	r.Updated = time.Now().UnixNano() / int64(time.Millisecond)
+	r.Checksumed, r.Uploaded, r.Cleared, r.Encrypted = true, true, true, false
+	r.Size, r.Download = 0, 0
+
+	if len(r.JSON) == 0 {
+		if data, err := json.Marshal([]map[string]string{image}); err != nil {
+			return err
+		} else {
+			r.JSON = string(data)
+		}
+
+	} else {
+		var ids []map[string]string
+
+		if err := json.Unmarshal([]byte(r.JSON), &ids); err != nil {
+			return err
+		}
+
+		has := false
+		for _, v := range ids {
+			if v["id"] == image["id"] {
+				has = true
+			}
+		}
+
+		if has == false {
+			ids = append(ids, image)
+		}
+
+		if data, err := json.Marshal(ids); err != nil {
+			return err
+		} else {
+			r.JSON = string(data)
+		}
+	}
+
+	if err := r.Save(); err != nil {
+		return err
+	}
+
+	fmt.Println("[REGISTRY API V2] Convert Manifests To JSON: ", r.JSON)
+
+	return nil
+}
+
+func (r *Repository) PutTagFromManifests(image, namespace, repository, tag, manifests string) error {
+	if has, _, err := r.Has(namespace, repository); err != nil {
+		return err
+	} else if has == false {
+		return fmt.Errorf("Repository not found")
+	}
+
+	t := new(Tag)
+	t.UUID = string(fmt.Sprintf("%s:%s:%s", namespace, repository, tag))
+	t.Name, t.ImageId, t.Namespace, t.Repository, t.Manifest = tag, image, namespace, repository, manifests
+
+	if err := t.Save(); err != nil {
+		return err
+	}
+
+	has := false
+	for _, v := range r.Tags {
+		if v == t.UUID {
+			has = true
+		}
+	}
+
+	if has == false {
+		r.Tags = append(r.Tags, t.UUID)
+	}
+
+	if err := r.Save(); err != nil {
+		return err
+	}
+
+	fmt.Println("[REGISTRY API V2] Tag: ", t)
+	fmt.Println("[REGISTRY API V2] Repository Tags: ", r.Tags)
 
 	return nil
 }

@@ -3,14 +3,16 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Unknwon/macaron"
-	"github.com/containerops/dockyard/models"
-	"github.com/containerops/dockyard/setting"
-	"github.com/containerops/wrench/utils"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/Unknwon/macaron"
+
+	"github.com/containerops/dockyard/models"
+	"github.com/containerops/dockyard/setting"
+	"github.com/containerops/wrench/utils"
 )
 
 func GetImageAncestryV1Handler(ctx *macaron.Context) (int, []byte) {
@@ -27,23 +29,18 @@ func GetImageAncestryV1Handler(ctx *macaron.Context) (int, []byte) {
 		fmt.Errorf("[REGISTRY API V1] Read Image None: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"Error": "Read Image None"})
-		return http.StatusBadRequest, result
+		return http.StatusNotFound, result
 	}
 
-	//TBC
-	if _, err := ctx.Resp.Write([]byte(i.Ancestry)); err != nil {
-		fmt.Errorf("[REGISTRY API V1] GetImageAncestryV1Handler write response content Error")
-	}
-
-	result, _ := json.Marshal(map[string]string{"message": ""})
-	return http.StatusOK, result
+	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(i.Ancestry)))
+	return http.StatusOK, []byte(i.Ancestry)
 }
 
 func GetImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 
 	imageId := ctx.Params(":imageId")
 	var jsonInfo string
-	var checksum string
+	var payload string
 	var err error
 
 	i := new(models.Image)
@@ -51,25 +48,21 @@ func GetImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 		fmt.Errorf("[REGISTRY API V1] Search Image JSON Error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"Error": "Search Image JSON Error"})
-		return http.StatusBadRequest, result
+		return http.StatusNotFound, result
 	}
 
-	if checksum, err = i.GetChecksum(imageId); err != nil {
+	if payload, err = i.GetChecksumPayload(imageId); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Search Image Checksum Error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"Error": "Search Image Checksum Error"})
-		return http.StatusBadRequest, result
-	} else {
-		ctx.Resp.Header().Set("X-Docker-Checksum", checksum)
+		return http.StatusNotFound, result
 	}
 
-	//TBC
-	if _, err := ctx.Resp.Write([]byte(jsonInfo)); err != nil {
-		fmt.Errorf("[REGISTRY API V1] GetImageJSONV1Handler write response content Error")
-	}
+	ctx.Resp.Header().Set("X-Docker-Checksum-Payload", fmt.Sprintf("sha256:%v", payload))
+	ctx.Resp.Header().Set("X-Docker-Size", fmt.Sprint(i.Size))
+	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(jsonInfo)))
 
-	result, _ := json.Marshal(map[string]string{"message": ""})
-	return http.StatusOK, result
+	return http.StatusOK, []byte(jsonInfo)
 }
 
 func GetImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
@@ -86,7 +79,7 @@ func GetImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
 		fmt.Errorf("[REGISTRY API V1] Read Image None Error")
 
 		result, _ := json.Marshal(map[string]string{"Error": "Read Image None"})
-		return http.StatusBadRequest, result
+		return http.StatusNotFound, result
 	}
 
 	layerfile := i.Path
@@ -106,15 +99,9 @@ func GetImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
 	}
 
 	ctx.Resp.Header().Set("Content-Type", "application/octet-stream")
-	ctx.Resp.Header().Set("Content-Transfer-Encoding", "binary")
-	ctx.Resp.Header().Set("Content-Length", string(int64(len(file))))
+	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(file)))
 
-	if _, err := ctx.Resp.Write(file); err != nil {
-		fmt.Errorf("[REGISTRY API V1] GetImageLayerV1Handler write response content Error")
-	}
-
-	result, _ := json.Marshal(map[string]string{"message": ""})
-	return http.StatusOK, result
+	return http.StatusOK, file
 }
 
 func PutImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
@@ -124,7 +111,7 @@ func PutImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 	jsonInfo, err := ctx.Req.Body().String()
 	if err != nil {
 		fmt.Errorf("[REGISTRY API V1] Get request body error: %v", err.Error())
-		result, _ := json.Marshal(map[string]string{"message": ""})
+		result, _ := json.Marshal(map[string]string{"message": "Put V1 image JSON failure,request body is empty"})
 		return http.StatusBadRequest, result
 	}
 
@@ -135,18 +122,8 @@ func PutImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 		result, _ := json.Marshal(map[string]string{"Error": "Put Image JSON Error"})
 		return http.StatusBadRequest, result
 	}
-	/*
-		memo, _ := json.Marshal(this.Ctx.Input.Header)
-		if err := image.Log(models.ACTION_PUT_IMAGES_JSON, models.LEVELINFORMATIONAL, models.TYPE_APIV1, image.UUID, memo); err != nil {
-			beego.Error("[REGISTRY API V1] Log Error:", err.Error())
-		}
-	*/
-	if _, err := ctx.Resp.Write([]byte("")); err != nil {
-		fmt.Errorf("[REGISTRY API V1] PutImageJSONV1Handler write response content Error")
-	}
 
-	result, _ := json.Marshal(map[string]string{"message": ""})
-	return http.StatusOK, result
+	return http.StatusOK, []byte("true")
 }
 
 func PutImageLayerv1Handler(ctx *macaron.Context) (int, []byte) {
@@ -179,18 +156,8 @@ func PutImageLayerv1Handler(ctx *macaron.Context) (int, []byte) {
 		result, _ := json.Marshal(map[string]string{"Error": "Put Image Layer File Data Error"})
 		return http.StatusBadRequest, result
 	}
-	/*
-		memo, _ := json.Marshal(this.Ctx.Input.Header)
-		if err := image.Log(models.ACTION_PUT_IMAGES_LAYER, models.LEVELINFORMATIONAL, models.TYPE_APIV1, image.UUID, memo); err != nil {
-			beego.Error("[REGISTRY API V1] Log Error:", err.Error())
-		}
-	*/
-	if _, err := ctx.Resp.Write([]byte("")); err != nil {
-		fmt.Errorf("[REGISTRY API V1] PutImageLayerv1Handler write response content Error")
-	}
 
-	result, _ := json.Marshal(map[string]string{"message": ""})
-	return http.StatusOK, result
+	return http.StatusOK, []byte("true")
 }
 
 func PutImageChecksumV1Handler(ctx *macaron.Context) (int, []byte) {
@@ -217,17 +184,6 @@ func PutImageChecksumV1Handler(ctx *macaron.Context) (int, []byte) {
 		result, _ := json.Marshal(map[string]string{"Error": "Put Image Ancestry Error"})
 		return http.StatusBadRequest, result
 	}
-	/*
-		memo, _ := json.Marshal(this.Ctx.Input.Header)
-		if err := image.Log(models.ACTION_PUT_IMAGES_CHECKSUM, models.LEVELINFORMATIONAL, models.TYPE_APIV1, image.UUID, memo); err != nil {
-			beego.Error("[REGISTRY API V1] Log Error:", err.Error())
-		}
-	*/
 
-	if _, err := ctx.Resp.Write([]byte("")); err != nil {
-		fmt.Errorf("[REGISTRY API V1] PutImageChecksumV1Handler write response content Error")
-	}
-
-	result, _ := json.Marshal(map[string]string{"message": ""})
-	return http.StatusOK, result
+	return http.StatusOK, []byte("true")
 }

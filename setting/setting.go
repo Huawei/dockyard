@@ -84,7 +84,7 @@ func init() {
 	DBPasswd = conf.String("db::passwd")
 	DBDB, _ = conf.Int64("db::db")
 
-	if DockerBasePath := conf.String("docker::BasePath"); err != nil {
+	if DockerBasePath := conf.String("docker::BasePath"); DockerBasePath != "" {
 		BasePath = DockerBasePath
 	}
 }

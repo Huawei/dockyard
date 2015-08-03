@@ -33,6 +33,6 @@ func GetUsersV1Handler(ctx *macaron.Context) (int, []byte) {
 }
 
 func PostUsersV1Handler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{"message": ""})
+	result, _ := json.Marshal(map[string]string{"message": "Post V1 users,unauthorization"})
 	return http.StatusUnauthorized, result
 }
