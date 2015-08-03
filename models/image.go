@@ -3,9 +3,11 @@ package models
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/containerops/wrench/db"
-	"github.com/satori/go.uuid"
 	"time"
+
+	"github.com/satori/go.uuid"
+
+	"github.com/containerops/wrench/db"
 )
 
 type Image struct {
@@ -14,7 +16,7 @@ type Image struct {
 	JSON       string   `json:"json"`       //
 	Ancestry   string   `json:"ancestry"`   //
 	Checksum   string   `json:"checksum"`   // tarsum+sha256
-	Payload    string   `json:"payload"`    //
+	Payload    string   `json:"payload"`    // sha256
 	URL        string   `json:"url"`        //
 	Backend    string   `json:"backend"`    //
 	Path       string   `json:"path"`       //
@@ -32,7 +34,7 @@ type Image struct {
 func (i *Image) Has(image string) (bool, string, error) {
 	UUID, err := db.GetUUID("image", image)
 	if err != nil {
-		return false, "", err
+		return false, "", nil
 	}
 	if len(UUID) <= 0 {
 		return false, "", nil
@@ -68,7 +70,7 @@ func (i *Image) GetJSON(imageId string) (string, error) {
 	}
 }
 
-func (i *Image) GetChecksum(imageId string) (string, error) {
+func (i *Image) GetChecksumPayload(imageId string) (string, error) {
 
 	if has, _, err := i.Has(imageId); err != nil {
 		return "", err
@@ -77,7 +79,7 @@ func (i *Image) GetChecksum(imageId string) (string, error) {
 	} else if !i.Checksumed || !i.Uploaded {
 		return "", fmt.Errorf("Image JSON not found")
 	} else {
-		return i.Checksum, nil
+		return i.Payload, nil
 	}
 }
 
@@ -202,6 +204,29 @@ func (i *Image) PutLayer(imageId string, path string, uploaded bool, size int64)
 
 		fmt.Println("[REGISTRY API V1&V2]", i.ImageId, "path:", path)
 		fmt.Println("[REGISTRY API V1&V2]", i.ImageId, "size:", size)
+	}
+
+	return nil
+}
+
+func (i *Image) HasTarsum(tarsum string) (bool, string, error) {
+	UUID, err := db.GetUUID("tarsum", tarsum)
+	if err != nil {
+		return false, "", nil
+	}
+	if len(UUID) <= 0 {
+		return false, "", nil
+	}
+
+	err = db.Get(i, UUID)
+
+	return true, UUID, err
+}
+
+func (i *Image) PutTarsum(tarsum string) error {
+
+	if _, err := db.Client.HSet(db.GLOBAL_TARSUM_INDEX, tarsum, string(db.GeneralDBKey(uuid.NewV4().String()))).Result(); err != nil {
+		return err
 	}
 
 	return nil
