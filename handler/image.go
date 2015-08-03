@@ -11,7 +11,7 @@ import (
 	"github.com/Unknwon/macaron"
 
 	"github.com/containerops/dockyard/models"
-	"github.com/containerops/dockyard/setting"
+	"github.com/containerops/wrench/setting"
 	"github.com/containerops/wrench/utils"
 )
 
@@ -129,7 +129,7 @@ func PutImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 func PutImageLayerv1Handler(ctx *macaron.Context) (int, []byte) {
 
 	imageId := ctx.Params(":imageId")
-	basePath := setting.BasePath
+	basePath := setting.ImagePath
 	imagePath := fmt.Sprintf("%v/images/%v", basePath, imageId)
 	layerfile := fmt.Sprintf("%v/images/%v/layer", basePath, imageId)
 

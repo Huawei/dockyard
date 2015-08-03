@@ -20,8 +20,9 @@ uri = localhost:6379
 passwd = containerops
 db = 8
 
-[backend]
+[dockyard]
 driver = amazons3cloud
+path = data
 ```
 
 ### Qiniu Object Storage Configuration Example
