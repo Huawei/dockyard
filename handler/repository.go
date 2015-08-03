@@ -29,7 +29,7 @@ func PutTagV1Handler(ctx *macaron.Context) (int, []byte) {
 	if err := repo.PutTag(imageIds[1], namespace, repository, tag); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Put repository tag error: %v", err.Error())
 
-		result, _ := json.Marshal(map[string]string{"Error": err.Error()})
+		result, _ := json.Marshal(map[string]string{"message": err.Error()})
 		return http.StatusBadRequest, result
 	}
 
@@ -156,7 +156,7 @@ func PutRepositoryV1Handler(ctx *macaron.Context) (int, []byte) {
 	if err := r.Put(namespace, repository, requestbody, ctx.Req.Header.Get("User-Agent"), setting.APIVERSION_V1); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Put repository error: %v", err.Error())
 
-		result, _ := json.Marshal(map[string]string{"Error": err.Error()})
+		result, _ := json.Marshal(map[string]string{"message": err.Error()})
 		return http.StatusBadRequest, result
 	}
 
