@@ -7,14 +7,11 @@ import (
 
 	"github.com/Unknwon/macaron"
 
-	crew "github.com/containerops/crew/models"
 	"github.com/containerops/dockyard/setting"
 	"github.com/containerops/wrench/db"
-	"github.com/containerops/wrench/utils"
 )
 
 type Repository struct {
-	UUID          string    `json:"UUID"`          //
 	Repository    string    `json:"repository"`    //
 	Namespace     string    `json:"namespace"`     //
 	NamespaceType bool      `json:"namespacetype"` //
@@ -47,7 +44,6 @@ type Repository struct {
 }
 
 type Privilege struct {
-	UUID       string   `json:"UUID"`       //
 	Privilege  bool     `json:"privilege"`  //
 	Team       string   `json:"team"`       //
 	Repository string   `json:"repository"` //
@@ -55,7 +51,6 @@ type Privilege struct {
 }
 
 type Tag struct {
-	UUID       string   `json:"uuid"`       //
 	Name       string   `json:"name"`       //
 	ImageId    string   `json:"imageid"`    //
 	Namespace  string   `json:"namespace"`  //
@@ -66,28 +61,26 @@ type Tag struct {
 }
 
 func (r *Repository) Has(namespace, repository string) (bool, string, error) {
+	if key := db.Key("repository", namespace, repository); len(key) <= 0 {
+		return false, "", fmt.Errorf("Invalid repository key")
+	} else {
 
-	UUID, err := db.GetUUID("repository", fmt.Sprintf("%s:%s", namespace, repository))
+		if err := db.Get(r, key); err != nil {
+			return false, "", err
+		}
 
-	if err != nil {
-		return false, "", nil
+		return true, key, nil
 	}
-
-	if len(UUID) <= 0 {
-		return false, "", nil
-	}
-
-	err = db.Get(r, UUID)
-
-	return true, UUID, err
 }
 
 func (r *Repository) Save() error {
-	if err := db.Save(r, r.UUID); err != nil {
+	key := db.Key("repository", r.Namespace, r.Repository)
+
+	if err := db.Save(r, key); err != nil {
 		return err
 	}
 
-	if _, err := db.Client.HSet(db.GLOBAL_REPOSITORY_INDEX, (fmt.Sprintf("%s:%s", r.Namespace, r.Repository)), r.UUID).Result(); err != nil {
+	if _, err := db.Client.HSet(db.GLOBAL_REPOSITORY_INDEX, (fmt.Sprintf("%s/%s", r.Namespace, r.Repository)), key).Result(); err != nil {
 		return err
 	}
 
@@ -95,11 +88,13 @@ func (r *Repository) Save() error {
 }
 
 func (t *Tag) Save() error {
-	if err := db.Save(t, t.UUID); err != nil {
+	key := db.Key("tag", t.Namespace, t.Repository, t.Name)
+
+	if err := db.Save(t, key); err != nil {
 		return err
 	}
 
-	if _, err := db.Client.HSet(db.GLOBAL_TAG_INDEX, (fmt.Sprintf("%s:%s:%s:%s", t.Namespace, t.Repository, t.ImageId, t.Name)), t.UUID).Result(); err != nil {
+	if _, err := db.Client.HSet(db.GLOBAL_TAG_INDEX, (fmt.Sprintf("%s/%s/%s:%s", t.Namespace, t.Repository, t.Name, t.ImageId)), key).Result(); err != nil {
 		return err
 	}
 
@@ -107,10 +102,9 @@ func (t *Tag) Save() error {
 }
 
 func (t *Tag) Get(namespace, repository, tag string) error {
+	key := db.Key("tag", namespace, repository, tag)
 
-	uuid := fmt.Sprintf("%s:%s:%s", namespace, repository, tag)
-
-	if err := db.Get(t, uuid); err != nil {
+	if err := db.Get(t, key); err != nil {
 		return err
 	}
 
@@ -122,7 +116,6 @@ func (r *Repository) Put(namespace, repository, json, agent string, version int6
 	if has, _, err := r.Has(namespace, repository); err != nil {
 		return err
 	} else if has == false {
-		r.UUID = db.GeneralDBKey(fmt.Sprintf("%s:%s", namespace, repository))
 		r.Created = time.Now().UnixNano() / int64(time.Millisecond)
 	}
 
@@ -141,53 +134,20 @@ func (r *Repository) Put(namespace, repository, json, agent string, version int6
 }
 
 func (r *Repository) PutImages(namespace, repository string, ctx *macaron.Context) error {
-
 	if _, _, err := r.Has(namespace, repository); err != nil {
 		return err
 	}
 
-	/*
-		else if has == false {
-			return fmt.Errorf("[REGISTRY API V1] Repository not found")
-		}
-	*/
 	r.Checksumed, r.Uploaded, r.Updated = true, true, time.Now().Unix()
 
 	if err := r.Save(); err != nil {
 		return fmt.Errorf("[REGISTRY API V1] Update Uploaded flag error")
 	}
 
-	org := new(crew.Organization)
-	isOrg, _, err := org.Has(namespace)
-	if err != nil {
-		return fmt.Errorf("[REGISTRY API V1] Search Organization Error")
-	}
-
-	user := new(crew.User)
-	authUsername, _, _ := utils.DecodeBasicAuth(ctx.Req.Header.Get("Authorization"))
-	isUser, _, err := user.Has(authUsername)
-	if err != nil {
-		return fmt.Errorf("[REGISTRY API V1] Search User Error")
-	}
-
-	if !isUser && !isOrg {
-		return fmt.Errorf("[REGISTRY API V1] Search Namespace Error")
-	}
-
-	if isUser {
-		user.Repositories = append(user.Repositories, r.UUID)
-		user.Save()
-	}
-	if isOrg {
-		org.Repositories = append(org.Repositories, r.UUID)
-		org.Save()
-	}
-
 	return nil
 }
 
 func (r *Repository) PutTag(imageId, namespace, repository, tag string) error {
-
 	if has, _, err := r.Has(namespace, repository); err != nil {
 		return err
 	} else if has == false {
@@ -202,7 +162,6 @@ func (r *Repository) PutTag(imageId, namespace, repository, tag string) error {
 	}
 
 	t := new(Tag)
-	t.UUID = string(fmt.Sprintf("%s:%s:%s", namespace, repository, tag))
 	t.Name, t.ImageId, t.Namespace, t.Repository = tag, imageId, namespace, repository
 
 	if err := t.Save(); err != nil {
@@ -211,12 +170,12 @@ func (r *Repository) PutTag(imageId, namespace, repository, tag string) error {
 
 	has := false
 	for _, value := range r.Tags {
-		if value == t.UUID {
+		if value == db.Key("tag", t.Namespace, t.Repository, t.Name) {
 			has = true
 		}
 	}
 	if !has {
-		r.Tags = append(r.Tags, t.UUID)
+		r.Tags = append(r.Tags, db.Key("tag", t.Namespace, t.Repository, t.Name))
 	}
 	if err := r.Save(); err != nil {
 		return err
@@ -229,7 +188,6 @@ func (r *Repository) PutJSONFromManifests(image map[string]string, namespace, re
 	if has, _, err := r.Has(namespace, repository); err != nil {
 		return err
 	} else if has == false {
-		r.UUID = string(db.GeneralDBKey(fmt.Sprintf("%s:%s", namespace, repository)))
 		r.Created = time.Now().UnixNano() / int64(time.Millisecond)
 		r.JSON = ""
 	}
@@ -289,7 +247,6 @@ func (r *Repository) PutTagFromManifests(image, namespace, repository, tag, mani
 	}
 
 	t := new(Tag)
-	t.UUID = string(fmt.Sprintf("%s:%s:%s", namespace, repository, tag))
 	t.Name, t.ImageId, t.Namespace, t.Repository, t.Manifest = tag, image, namespace, repository, manifests
 
 	if err := t.Save(); err != nil {
@@ -298,13 +255,13 @@ func (r *Repository) PutTagFromManifests(image, namespace, repository, tag, mani
 
 	has := false
 	for _, v := range r.Tags {
-		if v == t.UUID {
+		if v == db.Key("tag", t.Namespace, t.Repository, t.Name) {
 			has = true
 		}
 	}
 
 	if has == false {
-		r.Tags = append(r.Tags, t.UUID)
+		r.Tags = append(r.Tags, db.Key("tag", t.Namespace, t.Repository, t.Name))
 	}
 
 	if err := r.Save(); err != nil {

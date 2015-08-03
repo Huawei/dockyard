@@ -5,13 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/satori/go.uuid"
-
 	"github.com/containerops/wrench/db"
 )
 
 type Image struct {
-	UUID       string   `json:"UUID"`       //
 	ImageId    string   `json:"imageid"`    //
 	JSON       string   `json:"json"`       //
 	Ancestry   string   `json:"ancestry"`   //
@@ -32,25 +29,26 @@ type Image struct {
 }
 
 func (i *Image) Has(image string) (bool, string, error) {
-	UUID, err := db.GetUUID("image", image)
-	if err != nil {
-		return false, "", nil
-	}
-	if len(UUID) <= 0 {
-		return false, "", nil
-	}
+	if key := db.Key("image", image); len(key) <= 0 {
+		return false, "", fmt.Errorf("Invalid image key")
+	} else {
 
-	err = db.Get(i, UUID)
+		if err := db.Get(i, key); err != nil {
+			return false, "", err
+		}
 
-	return true, UUID, err
+		return true, key, nil
+	}
 }
 
 func (i *Image) Save() error {
-	if err := db.Save(i, i.UUID); err != nil {
+	key := db.Key("image", i.ImageId)
+
+	if err := db.Save(i, key); err != nil {
 		return err
 	}
 
-	if _, err := db.Client.HSet(db.GLOBAL_IMAGE_INDEX, i.ImageId, i.UUID).Result(); err != nil {
+	if _, err := db.Client.HSet(db.GLOBAL_IMAGE_INDEX, i.ImageId, key).Result(); err != nil {
 		return err
 	}
 
@@ -58,7 +56,6 @@ func (i *Image) Save() error {
 }
 
 func (i *Image) GetJSON(imageId string) (string, error) {
-
 	if has, _, err := i.Has(imageId); err != nil {
 		return "", err
 	} else if has == false {
@@ -89,7 +86,6 @@ func (i *Image) PutJSON(imageId, json string, version int64) error {
 		return err
 	} else if has == false {
 		i.ImageId = imageId
-		i.UUID = string(db.GeneralDBKey(uuid.NewV4().String()))
 		i.JSON = json
 		i.Created = time.Now().UnixNano() / int64(time.Millisecond)
 		i.Version = version
@@ -132,7 +128,7 @@ func (i *Image) PutChecksum(imageId string, checksum string, checksumed bool, pa
 			return err
 		}
 
-		if _, err := db.Client.HSet(db.GLOBAL_TARSUM_INDEX, checksum, i.UUID).Result(); err != nil {
+		if _, err := db.Client.HSet(db.GLOBAL_TARSUM_INDEX, checksum, db.Key("image", i.ImageId)).Result(); err != nil {
 			return err
 		}
 
@@ -210,22 +206,20 @@ func (i *Image) PutLayer(imageId string, path string, uploaded bool, size int64)
 }
 
 func (i *Image) HasTarsum(tarsum string) (bool, string, error) {
-	UUID, err := db.GetUUID("tarsum", tarsum)
-	if err != nil {
-		return false, "", nil
-	}
-	if len(UUID) <= 0 {
-		return false, "", nil
-	}
+	if key := db.Key("tarsum", tarsum); len(key) <= 0 {
+		return false, "", fmt.Errorf("Invalid tarsum key")
+	} else {
 
-	err = db.Get(i, UUID)
+		if err := db.Get(i, key); err != nil {
+			return false, "", err
+		}
 
-	return true, UUID, err
+		return true, key, nil
+	}
 }
 
 func (i *Image) PutTarsum(tarsum string) error {
-
-	if _, err := db.Client.HSet(db.GLOBAL_TARSUM_INDEX, tarsum, string(db.GeneralDBKey(uuid.NewV4().String()))).Result(); err != nil {
+	if _, err := db.Client.HSet(db.GLOBAL_TARSUM_INDEX, tarsum, db.Key("tarsum", tarsum)).Result(); err != nil {
 		return err
 	}
 

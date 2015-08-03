@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"github.com/Unknwon/macaron"
+
 	_ "github.com/macaron-contrib/session/redis"
 )
 
@@ -18,7 +19,7 @@ func SetMiddlewares(m *macaron.Macaron) {
 
 	//TBD:codes as below should be updated when user config management is ready
 	//Set the response header info
-	m.Use(respHeaderSet())
+	m.Use(setRespHeaders())
 
 	//Set recovery handler to returns a middleware that recovers from any panics
 	m.Use(macaron.Recovery())

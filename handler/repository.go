@@ -8,7 +8,6 @@ import (
 
 	"github.com/Unknwon/macaron"
 
-	crew "github.com/containerops/crew/models"
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/dockyard/setting"
 	"github.com/containerops/wrench/db"
@@ -53,7 +52,7 @@ func PutRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
 	if ctx.Req.Header.Get("X-Docker-Token") == "true" {
 		username, _, _ := utils.DecodeBasicAuth(ctx.Req.Header.Get("Authorization"))
 		token := fmt.Sprintf("Token signature=%v,repository=\"%v/%v\",access=%v",
-			db.GeneralDBKey(username),
+			utils.MD5(username),
 			namespace,
 			repository,
 			"write")
@@ -92,7 +91,7 @@ func GetRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
 
 	username, _, _ := utils.DecodeBasicAuth(ctx.Req.Header.Get("Authorization"))
 	token := fmt.Sprintf("Token signature=%v,repository=\"%v/%v\",access=%v",
-		db.GeneralDBKey(username),
+		utils.MD5(username),
 		namespace,
 		repository,
 		"read")
@@ -164,7 +163,7 @@ func PutRepositoryV1Handler(ctx *macaron.Context) (int, []byte) {
 	//TBD: return docker format?
 	if ctx.Req.Header.Get("X-Docker-Token") == "true" {
 		token := fmt.Sprintf("Token signature=%v,repository=\"%v/%v\",access=%v",
-			db.GeneralDBKey(username),
+			utils.MD5(username),
 			namespace,
 			repository,
 			"write")
@@ -173,13 +172,6 @@ func PutRepositoryV1Handler(ctx *macaron.Context) (int, []byte) {
 	}
 
 	//memo, _ := json.Marshal(this.Ctx.Input.Header)
-
-	user := new(crew.User)
-	if _, _, err := user.Has(username); err != nil {
-		fmt.Errorf("[REGISTRY API V1] Get user error: %v", err.Error())
-		result, _ := json.Marshal(map[string]string{"Error": err.Error()})
-		return http.StatusNotFound, result
-	}
 
 	//TBD:Endpoints should be read from APP configfile
 	ctx.Resp.Header().Set("X-Docker-Endpoints", "containerops.me")
