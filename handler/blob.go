@@ -11,8 +11,8 @@ import (
 	"github.com/Unknwon/macaron"
 
 	"github.com/containerops/dockyard/models"
-	"github.com/containerops/dockyard/setting"
 	"github.com/containerops/wrench/db"
+	"github.com/containerops/wrench/setting"
 	"github.com/containerops/wrench/utils"
 )
 
@@ -65,8 +65,8 @@ func PutBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 
 	digest := ctx.Query("digest")
 	tarsum := strings.Split(digest, ":")[1]
-	imagePath := fmt.Sprintf("%v/uuid/%v", setting.BasePath, tarsum)
-	layerfile := fmt.Sprintf("%v/uuid/%v/layer", setting.BasePath, tarsum)
+	imagePath := fmt.Sprintf("%v/uuid/%v", setting.ImagePath, tarsum)
+	layerfile := fmt.Sprintf("%v/uuid/%v/layer", setting.ImagePath, tarsum)
 
 	i := new(models.Image)
 	if err := i.PutTarsum(tarsum); err != nil {
