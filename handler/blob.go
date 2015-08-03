@@ -10,7 +10,6 @@ import (
 
 	"github.com/Unknwon/macaron"
 
-	"github.com/containerops/crew/modules"
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/dockyard/setting"
 	"github.com/containerops/wrench/db"
@@ -18,22 +17,6 @@ import (
 )
 
 func authorizationVerify(ctx *macaron.Context) error {
-	authinfo := ctx.Req.Header.Get("Authorization")
-	if len(authinfo) == 0 {
-		return fmt.Errorf("Invalid authorization")
-	}
-
-	username, passwd, err := utils.DecodeBasicAuth(authinfo)
-	if err != nil {
-		return err
-	}
-
-	if _, err := modules.GetUser(username, passwd); err != nil {
-		return err
-	}
-
-	//TBD: verify the digest
-
 	return nil
 }
 
@@ -63,18 +46,17 @@ func PostBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
-	uuid := db.GeneralDBKey(fmt.Sprintf("%s/%s", namespace, repository))
-	state := db.GeneralDBKey(fmt.Sprintf("%s/%s/%s", namespace, repository, uuid))
+	key := db.Key("repository", namespace, repository)
+	state := utils.MD5(fmt.Sprintf("%s/%s/%s", namespace, repository, key))
 	random := fmt.Sprintf("http://%s/v2/%s/%s/blobs/uploads/%s?_state=%s",
 		"containerops.me", //TBD: code like this just for test,it will be update after config is ready
 		namespace,
 		repository,
-		uuid,
+		key,
 		state)
 
-	ctx.Resp.Header().Set("Docker-Upload-Uuid", uuid)
+	ctx.Resp.Header().Set("Docker-Upload-Uuid", key)
 	ctx.Resp.Header().Set("Location", random)
-	//ctx.Resp.Header().Set("Range", "0-0")
 
 	return http.StatusAccepted, []byte("")
 }
