@@ -3,7 +3,7 @@ package middleware
 import (
 	"github.com/Unknwon/macaron"
 
-	_ "github.com/macaron-contrib/session/redis"
+	"github.com/containerops/wrench/setting"
 )
 
 func SetMiddlewares(m *macaron.Macaron) {
@@ -12,10 +12,12 @@ func SetMiddlewares(m *macaron.Macaron) {
 		Expires: func() string { return "max-age=0" },
 	}))
 
+	InitLog(setting.RunMode, setting.LogPath)
+
 	//Set global Logger
 	m.Map(Log)
 	//Set logger handler function, deal with all the Request log output
-	m.Use(logger())
+	m.Use(logger(setting.RunMode))
 
 	//TBD:codes as below should be updated when user config management is ready
 	//Set the response header info
