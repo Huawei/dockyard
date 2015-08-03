@@ -11,9 +11,8 @@ import (
 
 	"github.com/Unknwon/macaron"
 
-	"github.com/containerops/dockyard/setting"
 	"github.com/containerops/dockyard/web"
-	"github.com/containerops/wrench/db"
+	"github.com/containerops/wrench/setting"
 	"github.com/containerops/wrench/utils"
 )
 
@@ -33,15 +32,21 @@ var CmdWeb = cli.Command{
 			Value: 80,
 			Usage: "web service listen at port 80; if run with https will be 443.",
 		},
+		cli.StringFlag{
+			Name:  "backend",
+			Value: "",
+			Usage: "Start object storage service in the backend of service.",
+		},
+		cli.StringFlag{
+			Name:  "driver",
+			Value: "",
+			Usage: "Backend object storage driver, like s3, qiniu...",
+		},
 	},
 }
 
 func runWeb(c *cli.Context) {
 	m := macaron.New()
-
-	if err := db.InitDB(setting.DBURI, setting.DBPasswd, setting.DBDB); err != nil {
-		fmt.Printf("Connect Database Error %s", err.Error())
-	}
 
 	//Set Macaron Web Middleware And Routers
 	web.SetDockyardMacaron(m)

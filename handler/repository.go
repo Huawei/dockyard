@@ -9,8 +9,8 @@ import (
 	"github.com/Unknwon/macaron"
 
 	"github.com/containerops/dockyard/models"
-	"github.com/containerops/dockyard/setting"
 	"github.com/containerops/wrench/db"
+	"github.com/containerops/wrench/setting"
 	"github.com/containerops/wrench/utils"
 )
 

@@ -10,7 +10,7 @@ import (
 	"github.com/Unknwon/macaron"
 
 	"github.com/containerops/dockyard/models"
-	"github.com/containerops/dockyard/setting"
+	"github.com/containerops/wrench/setting"
 )
 
 func manifestsConvertV1(data []byte) error {
@@ -65,7 +65,7 @@ func manifestsConvertV1(data []byte) error {
 		}
 
 		//Put Image Layer
-		basePath := setting.BasePath
+		basePath := setting.ImagePath
 		layerfile := fmt.Sprintf("%v/uuid/%v/layer", basePath, tarsum)
 
 		if err := img.PutLayer(image["id"].(string), layerfile, true, int64(image["Size"].(float64))); err != nil {
