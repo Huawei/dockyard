@@ -17,6 +17,7 @@ func setRespHeaders() macaron.Handler {
 			ctx.Resp.Header().Set("X-Docker-Registry-Standalone", setting.Standalone)   //Standalone
 			ctx.Resp.Header().Set("X-Docker-Registry-Version", setting.RegistryVersion) //Version
 			ctx.Resp.Header().Set("X-Docker-Registry-Config", setting.RunMode)          //Config
+			ctx.Resp.Header().Set("X-Docker-Endpoints", setting.Domains)
 		} else {
 			ctx.Resp.Header().Set("Content-Type", "application/json")
 			ctx.Resp.Header().Set("WWW-Authenticate", fmt.Sprintf("Basic realm=\"\"", setting.Domains))
