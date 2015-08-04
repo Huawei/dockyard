@@ -171,7 +171,7 @@ func PutRepositoryV1Handler(ctx *macaron.Context) (int, []byte) {
 	}
 
 	//TBD:Endpoints should be read from APP configfile
-	ctx.Resp.Header().Set("X-Docker-Endpoints", "containerops.me")
+	ctx.Resp.Header().Set("X-Docker-Endpoints", setting.Domains)
 
 	return http.StatusOK, []byte("\"\"")
 }
