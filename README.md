@@ -24,6 +24,9 @@ db = 8
 driver = amazons3cloud
 path = data
 domains = https://containerops.me
+registry = 0.9
+distribution = registry/2.0
+standalone = true
 ```
 
 ### Qiniu Object Storage Configuration Example
