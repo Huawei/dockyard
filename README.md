@@ -23,6 +23,7 @@ db = 8
 [dockyard]
 driver = amazons3cloud
 path = data
+domain = https://containerops.me
 ```
 
 ### Qiniu Object Storage Configuration Example
