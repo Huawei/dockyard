@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Unknwon/macaron"
+	"gopkg.in/redis.v3"
 
 	"github.com/containerops/wrench/db"
 	"github.com/containerops/wrench/setting"
@@ -64,9 +64,12 @@ func (r *Repository) Has(namespace, repository string) (bool, string, error) {
 	if key := db.Key("repository", namespace, repository); len(key) <= 0 {
 		return false, "", fmt.Errorf("Invalid repository key")
 	} else {
-
 		if err := db.Get(r, key); err != nil {
-			return false, "", err
+			if err == redis.Nil {
+				return false, "", nil
+			} else {
+				return false, "", err
+			}
 		}
 
 		return true, key, nil
@@ -112,7 +115,6 @@ func (t *Tag) Get(namespace, repository, tag string) error {
 }
 
 func (r *Repository) Put(namespace, repository, json, agent string, version int64) error {
-
 	if has, _, err := r.Has(namespace, repository); err != nil {
 		return err
 	} else if has == false {
@@ -133,7 +135,7 @@ func (r *Repository) Put(namespace, repository, json, agent string, version int6
 	return nil
 }
 
-func (r *Repository) PutImages(namespace, repository string, ctx *macaron.Context) error {
+func (r *Repository) PutImages(namespace, repository string) error {
 	if _, _, err := r.Has(namespace, repository); err != nil {
 		return err
 	}

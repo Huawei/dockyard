@@ -41,7 +41,7 @@ func PutRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
 	repository := ctx.Params(":repository")
 
 	r := new(models.Repository)
-	if err := r.PutImages(namespace, repository, ctx); err != nil {
+	if err := r.PutImages(namespace, repository); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Put images error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Put V1 images error"})
@@ -139,13 +139,12 @@ func GetTagV1Handler(ctx *macaron.Context) (int, []byte) {
 }
 
 func PutRepositoryV1Handler(ctx *macaron.Context) (int, []byte) {
-
 	username, _, _ := utils.DecodeBasicAuth(ctx.Req.Header.Get("Authorization"))
 
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
-	requestbody, err := ctx.Req.Body().String()
+	body, err := ctx.Req.Body().String()
 	if err != nil {
 		fmt.Errorf("[REGISTRY API V1] Get request body error: %v", err.Error())
 		result, _ := json.Marshal(map[string]string{"message": "Put V1 repository failure,request body is empty"})
@@ -153,7 +152,7 @@ func PutRepositoryV1Handler(ctx *macaron.Context) (int, []byte) {
 	}
 
 	r := new(models.Repository)
-	if err := r.Put(namespace, repository, requestbody, ctx.Req.Header.Get("User-Agent"), setting.APIVERSION_V1); err != nil {
+	if err := r.Put(namespace, repository, body, ctx.Req.Header.Get("User-Agent"), setting.APIVERSION_V1); err != nil {
 		fmt.Errorf("[REGISTRY API V1] Put repository error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": err.Error()})
@@ -170,8 +169,6 @@ func PutRepositoryV1Handler(ctx *macaron.Context) (int, []byte) {
 		ctx.Resp.Header().Set("X-Docker-Token", token)
 		ctx.Resp.Header().Set("WWW-Authenticate", token)
 	}
-
-	//memo, _ := json.Marshal(this.Ctx.Input.Header)
 
 	//TBD:Endpoints should be read from APP configfile
 	ctx.Resp.Header().Set("X-Docker-Endpoints", "containerops.me")
