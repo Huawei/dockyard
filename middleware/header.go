@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/Unknwon/macaron"
@@ -17,7 +18,8 @@ func setRespHeaders() macaron.Handler {
 			ctx.Resp.Header().Set("X-Docker-Registry-Version", setting.RegistryVersion) //Version
 			ctx.Resp.Header().Set("X-Docker-Registry-Config", setting.RunMode)          //Config
 		} else {
-			ctx.Resp.Header().Set("Content-Type", "text/plain; charset=utf-8")
+			ctx.Resp.Header().Set("Content-Type", "application/json")
+			ctx.Resp.Header().Set("WWW-Authenticate", fmt.Sprintf("Basic realm=\"\"", setting.Domains))
 			ctx.Resp.Header().Set("Docker-Distribution-Api-Version", setting.DistributionVersion)
 		}
 	}
