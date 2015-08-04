@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"gopkg.in/redis.v3"
+
 	"github.com/containerops/wrench/db"
 )
 
@@ -32,9 +34,12 @@ func (i *Image) Has(image string) (bool, string, error) {
 	if key := db.Key("image", image); len(key) <= 0 {
 		return false, "", fmt.Errorf("Invalid image key")
 	} else {
-
 		if err := db.Get(i, key); err != nil {
-			return false, "", err
+			if err == redis.Nil {
+				return false, "", nil
+			} else {
+				return false, "", err
+			}
 		}
 
 		return true, key, nil
