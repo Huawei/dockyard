@@ -8,18 +8,14 @@ import (
 )
 
 func GetPingV1Handler(ctx *macaron.Context) (int, []byte) {
-
-	//TBD: the head value will be got from config
-	ctx.Resp.Header().Set("X-Docker-Registry-Config", "dev")
-	ctx.Resp.Header().Set("X-Docker-Registry-Standalone", "True")
-
 	result, _ := json.Marshal(map[string]string{"message": "Get V1 ping success"})
 	return http.StatusOK, result
 }
 
 func GetPingV2Handler(ctx *macaron.Context) (int, []byte) {
+	if ctx.Req.Header.Get("Authorization") == "" {
+		return http.StatusUnauthorized, []byte("")
+	}
 
-	ctx.Resp.Header().Set("Content-Type", "application/json; charset=utf-8")
-
-	return http.StatusOK, []byte("{}")
+	return http.StatusOK, []byte("")
 }
