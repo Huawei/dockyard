@@ -53,6 +53,10 @@ func (i *Image) Save() error {
 		return err
 	}
 
+	if err := db.Save(i, db.Key("tarsum", i.Checksum)); err != nil {
+		return err
+	}
+
 	if _, err := db.Client.HSet(db.GLOBAL_IMAGE_INDEX, i.ImageId, key).Result(); err != nil {
 		return err
 	}
@@ -133,7 +137,7 @@ func (i *Image) PutChecksum(imageId string, checksum string, checksumed bool, pa
 			return err
 		}
 
-		if _, err := db.Client.HSet(db.GLOBAL_TARSUM_INDEX, checksum, db.Key("image", i.ImageId)).Result(); err != nil {
+		if _, err := db.Client.HSet(db.GLOBAL_TARSUM_INDEX, checksum, db.Key("tarsum", checksum)).Result(); err != nil {
 			return err
 		}
 
@@ -214,7 +218,6 @@ func (i *Image) HasTarsum(tarsum string) (bool, string, error) {
 	if key := db.Key("tarsum", tarsum); len(key) <= 0 {
 		return false, "", fmt.Errorf("Invalid tarsum key")
 	} else {
-
 		if err := db.Get(i, key); err != nil {
 			return false, "", err
 		}
@@ -225,6 +228,10 @@ func (i *Image) HasTarsum(tarsum string) (bool, string, error) {
 
 func (i *Image) PutTarsum(tarsum string) error {
 	if _, err := db.Client.HSet(db.GLOBAL_TARSUM_INDEX, tarsum, db.Key("tarsum", tarsum)).Result(); err != nil {
+		return err
+	}
+
+	if err := db.Save(i, db.Key("tarsum", tarsum)); err != nil {
 		return err
 	}
 
