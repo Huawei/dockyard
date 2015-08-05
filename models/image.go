@@ -99,8 +99,6 @@ func (i *Image) PutJSON(imageId, json string, version int64) error {
 		i.Created = time.Now().UnixNano() / int64(time.Millisecond)
 		i.Version = version
 
-		fmt.Println("[REGISTRY API V1&V2]", i.ImageId, "json:", json)
-
 		if err = i.Save(); err != nil {
 			return err
 		}
@@ -108,8 +106,6 @@ func (i *Image) PutJSON(imageId, json string, version int64) error {
 		i.ImageId, i.JSON = imageId, json
 		i.Uploaded, i.Checksumed, i.Encrypted, i.Size, i.Updated, i.Version =
 			false, false, false, 0, time.Now().UnixNano()/int64(time.Millisecond), version
-
-		fmt.Println("[REGISTRY API V1&V2]", i.ImageId, "json:", json)
 
 		if err := i.Save(); err != nil {
 			return err
@@ -140,9 +136,6 @@ func (i *Image) PutChecksum(imageId string, checksum string, checksumed bool, pa
 		if _, err := db.Client.HSet(db.GLOBAL_TARSUM_INDEX, checksum, db.Key("tarsum", checksum)).Result(); err != nil {
 			return err
 		}
-
-		fmt.Println("[REGISTRY API V1&V2]", i.ImageId, "checksum:", i.Checksum)
-
 	}
 
 	return nil
@@ -189,8 +182,6 @@ func (i *Image) PutAncestry(imageId string) error {
 		return err
 	}
 
-	fmt.Println("[REGISTRY API V1&V2]", i.ImageId, "ancestry:", i.Ancestry)
-
 	return nil
 }
 
@@ -206,9 +197,6 @@ func (i *Image) PutLayer(imageId string, path string, uploaded bool, size int64)
 		if err := i.Save(); err != nil {
 			return err
 		}
-
-		fmt.Println("[REGISTRY API V1&V2]", i.ImageId, "path:", path)
-		fmt.Println("[REGISTRY API V1&V2]", i.ImageId, "size:", size)
 	}
 
 	return nil

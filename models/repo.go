@@ -236,8 +236,6 @@ func (r *Repository) PutJSONFromManifests(image map[string]string, namespace, re
 		return err
 	}
 
-	fmt.Println("[REGISTRY API V2] Convert Manifests To JSON: ", r.JSON)
-
 	return nil
 }
 
@@ -269,9 +267,6 @@ func (r *Repository) PutTagFromManifests(image, namespace, repository, tag, mani
 	if err := r.Save(); err != nil {
 		return err
 	}
-
-	fmt.Println("[REGISTRY API V2] Tag: ", t)
-	fmt.Println("[REGISTRY API V2] Repository Tags: ", r.Tags)
 
 	return nil
 }
