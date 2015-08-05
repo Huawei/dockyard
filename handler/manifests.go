@@ -122,8 +122,32 @@ func PutManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 }
 
 func GetTagsListV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{"message": ""})
+	namespace := ctx.Params(":namespace")
+	repository := ctx.Params(":repository")
 
+	r := new(models.Repository)
+	if has, _, err := r.Has(namespace, repository); err != nil || has == false {
+		result, _ := json.Marshal(map[string]string{"message": "Repository not found"})
+		return http.StatusNotFound, result
+	}
+
+	data := map[string]interface{}{}
+	tags := []string{}
+	data["name"] = fmt.Sprintf("%s/%s", namespace, repository)
+
+	for _, value := range r.Tags {
+		t := new(models.Tag)
+		if err := t.GetByKey(value); err != nil {
+			result, _ := json.Marshal(map[string]string{"message": "Tag not found"})
+			return http.StatusNotFound, result
+		}
+
+		tags = append(tags, t.Name)
+	}
+
+	data["tags"] = tags
+
+	result, _ := json.Marshal(data)
 	return http.StatusOK, result
 }
 

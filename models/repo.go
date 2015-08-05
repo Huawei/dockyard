@@ -114,6 +114,14 @@ func (t *Tag) Get(namespace, repository, tag string) error {
 	return nil
 }
 
+func (t *Tag) GetByKey(key string) error {
+	if err := db.Get(t, key); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (r *Repository) Put(namespace, repository, json, agent string, version int64) error {
 	if has, _, err := r.Has(namespace, repository); err != nil {
 		return err
