@@ -7,6 +7,7 @@ import (
 	"regexp"
 
 	"github.com/Unknwon/macaron"
+	"github.com/astaxie/beego/logs"
 
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/wrench/db"
@@ -14,7 +15,7 @@ import (
 	"github.com/containerops/wrench/utils"
 )
 
-func PutTagV1Handler(ctx *macaron.Context) (int, []byte) {
+func PutTagV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 	tag := ctx.Params(":tag")
@@ -36,7 +37,7 @@ func PutTagV1Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusOK, []byte("true")
 }
 
-func PutRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
+func PutRepositoryImagesV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
@@ -66,7 +67,7 @@ func PutRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusNoContent, []byte("")
 }
 
-func GetRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
+func GetRepositoryImagesV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
@@ -103,7 +104,7 @@ func GetRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusOK, []byte(repo.JSON)
 }
 
-func GetTagV1Handler(ctx *macaron.Context) (int, []byte) {
+func GetTagV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
@@ -138,7 +139,7 @@ func GetTagV1Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusOK, result
 }
 
-func PutRepositoryV1Handler(ctx *macaron.Context) (int, []byte) {
+func PutRepositoryV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	username, _, _ := utils.DecodeBasicAuth(ctx.Req.Header.Get("Authorization"))
 
 	namespace := ctx.Params(":namespace")
