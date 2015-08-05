@@ -9,13 +9,14 @@ import (
 	"strings"
 
 	"github.com/Unknwon/macaron"
+	"github.com/astaxie/beego/logs"
 
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/wrench/setting"
 	"github.com/containerops/wrench/utils"
 )
 
-func GetImageAncestryV1Handler(ctx *macaron.Context) (int, []byte) {
+func GetImageAncestryV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 	imageId := ctx.Params(":imageId")
 
@@ -36,7 +37,7 @@ func GetImageAncestryV1Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusOK, []byte(i.Ancestry)
 }
 
-func GetImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
+func GetImageJSONV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 	imageId := ctx.Params(":imageId")
 	var jsonInfo string
@@ -65,7 +66,7 @@ func GetImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusOK, []byte(jsonInfo)
 }
 
-func GetImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
+func GetImageLayerV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 	imageId := ctx.Params(":imageId")
 
@@ -104,7 +105,7 @@ func GetImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusOK, file
 }
 
-func PutImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
+func PutImageJSONV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 	imageId := ctx.Params(":imageId")
 
@@ -126,7 +127,7 @@ func PutImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusOK, []byte("true")
 }
 
-func PutImageLayerv1Handler(ctx *macaron.Context) (int, []byte) {
+func PutImageLayerv1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 	imageId := ctx.Params(":imageId")
 	basePath := setting.ImagePath
@@ -160,7 +161,7 @@ func PutImageLayerv1Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusOK, []byte("true")
 }
 
-func PutImageChecksumV1Handler(ctx *macaron.Context) (int, []byte) {
+func PutImageChecksumV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 	imageId := ctx.Params(":imageId")
 
