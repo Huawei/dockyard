@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/Unknwon/macaron"
+	"github.com/astaxie/beego/logs"
 
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/wrench/setting"
@@ -86,7 +87,7 @@ func manifestsConvertV1(data []byte) error {
 	return nil
 }
 
-func PutManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
+func PutManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
@@ -120,13 +121,13 @@ func PutManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusAccepted, []byte("")
 }
 
-func GetTagsListV2Handler(ctx *macaron.Context) (int, []byte) {
+func GetTagsListV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{"message": ""})
 
 	return http.StatusOK, result
 }
 
-func GetManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
+func GetManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 	t := new(models.Tag)
 	if err := t.Get(ctx.Params(":namespace"), ctx.Params(":repository"), ctx.Params(":tag")); err != nil {
