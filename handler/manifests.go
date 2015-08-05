@@ -58,7 +58,7 @@ func manifestsConvertV1(data []byte) error {
 		blobSum := manifest["fsLayers"].([]interface{})[k].(map[string]interface{})["blobSum"].(string)
 		tarsum := strings.Split(blobSum, ":")[1]
 
-		fmt.Println("[Registry API V2] Image %s sha256: %s", image["id"].(string), v.(map[string]interface{})["v1Compatibility"].(string))
+		//log.Debug("[Registry API V2] Image %s sha256: %s", image["id"].(string), v.(map[string]interface{})["v1Compatibility"].(string))
 
 		//Put Image Json
 		if err := img.PutJSON(image["id"].(string), v.(map[string]interface{})["v1Compatibility"].(string), setting.APIVERSION_V2); err != nil {
@@ -101,7 +101,7 @@ func PutManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 
 	manifest, _ := ioutil.ReadAll(ctx.Req.Request.Body)
 	if err := manifestsConvertV1(manifest); err != nil {
-		fmt.Errorf("[REGISTRY API V2] Decode Manifest Error: ", err.Error())
+		log.Error("[REGISTRY API V2] Decode Manifest Error: ", err.Error())
 	}
 
 	digest, err := DigestManifest(manifest)
