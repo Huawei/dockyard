@@ -5,9 +5,10 @@ import (
 	"net/http"
 
 	"github.com/Unknwon/macaron"
+	"github.com/astaxie/beego/logs"
 )
 
-func GetPingV1Handler(ctx *macaron.Context) (int, []byte) {
+func GetPingV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{"message": "Get V1 ping success"})
 	return http.StatusOK, result
 }

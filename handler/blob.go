@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/Unknwon/macaron"
+	"github.com/astaxie/beego/logs"
 
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/wrench/db"
@@ -20,7 +21,7 @@ func authorizationVerify(ctx *macaron.Context) error {
 	return nil
 }
 
-func HeadBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
+func HeadBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 	if err := authorizationVerify(ctx); err != nil {
 		result, _ := json.Marshal(map[string]string{"message": "Invalid authorization"})
@@ -41,7 +42,7 @@ func HeadBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusOK, []byte("")
 }
 
-func PostBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
+func PostBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
@@ -61,7 +62,7 @@ func PostBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusAccepted, []byte("")
 }
 
-func PutBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
+func PutBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 	digest := ctx.Query("digest")
 	tarsum := strings.Split(digest, ":")[1]
@@ -100,7 +101,7 @@ func PutBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusCreated, []byte("")
 }
 
-func GetBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
+func GetBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 	digest := ctx.Params(":digest")
 	tarsum := strings.Split(digest, ":")[1]
