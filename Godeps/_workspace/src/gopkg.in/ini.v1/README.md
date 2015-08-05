@@ -144,7 +144,7 @@ v = cfg.Section("").Key("TIME").MustTime() // RFC3339
 // when key not found or fail to parse value to given type.
 // Except method MustString, which you have to pass a default value.
 
-v = cfg.Seciont("").Key("String").MustString("default")
+v = cfg.Section("").Key("String").MustString("default")
 v = cfg.Section("").Key("BOOL").MustBool(true)
 v = cfg.Section("").Key("FLOAT64").MustFloat64(1.25)
 v = cfg.Section("").Key("INT").MustInt(10)
@@ -172,6 +172,32 @@ cfg.Section("advance").Key("ADDRESS").String()
 NotFound, State, 5000
 Earth
 ------  end  --- */
+```
+
+That's cool, how about continuation lines?
+
+```ini
+[advance]
+two_lines = how about \
+	continuation lines?
+lots_of_lines = 1 \
+	2 \
+	3 \
+	4
+```
+
+Piece of cake!
+
+```go
+cfg.Section("advance").Key("two_lines").String() // how about continuation lines?
+cfg.Section("advance").Key("lots_of_lines").String() // 1 2 3 4 
+```
+
+Note that single quotes around values will be stripped:
+
+```ini
+foo = "some value" // foo: some value
+bar = 'some value' // bar: some value
 ```
 
 That's all? Hmm, no.
@@ -329,7 +355,7 @@ p := &Person{
 
 #### Name Mapper
 
-To save your time and make your code cleaner, this library supports [`NameMapper`](https://gowalker.org/gopkg.in/ini.v1#NameMapper) between struct field and actual secion and key name.
+To save your time and make your code cleaner, this library supports [`NameMapper`](https://gowalker.org/gopkg.in/ini.v1#NameMapper) between struct field and actual section and key name.
 
 There are 2 built-in name mappers:
 
@@ -347,7 +373,7 @@ func main() {
 	err = ini.MapToWithMapper(&Info{}, ini.TitleUnderscore, []byte("packag_name=ini"))
 	// ...
 
-	cfg, err := ini.Load("PACKAGE_NAME=ini")
+	cfg, err := ini.Load([]byte("PACKAGE_NAME=ini"))
 	// ...
 	info := new(Info)
 	cfg.NameMapper = ini.AllCapsUnderscore
