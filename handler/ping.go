@@ -13,9 +13,10 @@ func GetPingV1Handler(ctx *macaron.Context) (int, []byte) {
 }
 
 func GetPingV2Handler(ctx *macaron.Context) (int, []byte) {
-	if ctx.Req.Header.Get("Authorization") == "" {
-		return http.StatusUnauthorized, []byte("")
-	}
-
+	/*
+		if ctx.Req.Header.Get("Authorization") == "" {
+			return http.StatusUnauthorized, []byte("")
+		}
+	*/
 	return http.StatusOK, []byte("")
 }
