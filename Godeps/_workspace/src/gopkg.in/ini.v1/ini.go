@@ -35,7 +35,7 @@ const (
 	// Maximum allowed depth when recursively substituing variable names.
 	_DEPTH_VALUES = 99
 
-	_VERSION = "1.2.6"
+	_VERSION = "1.3.4"
 )
 
 func Version() string {
@@ -179,6 +179,11 @@ func (k *Key) Int64() (int64, error) {
 	return strconv.ParseInt(k.String(), 10, 64)
 }
 
+// Duration returns time.Duration type value.
+func (k *Key) Duration() (time.Duration, error) {
+	return time.ParseDuration(k.String())
+}
+
 // TimeFormat parses with given format and returns time.Time type value.
 func (k *Key) TimeFormat(format string) (time.Time, error) {
 	return time.Parse(format, k.String())
@@ -232,6 +237,16 @@ func (k *Key) MustInt(defaultVal ...int) int {
 // it returns 0 if error occurs.
 func (k *Key) MustInt64(defaultVal ...int64) int64 {
 	val, err := k.Int64()
+	if len(defaultVal) > 0 && err != nil {
+		return defaultVal[0]
+	}
+	return val
+}
+
+// MustDuration always returns value without error,
+// it returns zero value if error occurs.
+func (k *Key) MustDuration(defaultVal ...time.Duration) time.Duration {
+	val, err := k.Duration()
 	if len(defaultVal) > 0 && err != nil {
 		return defaultVal[0]
 	}
@@ -483,10 +498,12 @@ func (s *Section) GetKey(name string) (*Key, error) {
 	// FIXME: change to section level lock?
 	if s.f.BlockMode {
 		s.f.lock.RLock()
-		defer s.f.lock.RUnlock()
+	}
+	key := s.keys[name]
+	if s.f.BlockMode {
+		s.f.lock.RUnlock()
 	}
 
-	key := s.keys[name]
 	if key == nil {
 		// Check if it is a child-section.
 		if i := strings.LastIndex(s.name, "."); i > -1 {
@@ -730,6 +747,55 @@ func cutComment(str string) string {
 	return str[:i]
 }
 
+func checkMultipleLines(buf *bufio.Reader, line, val, valQuote string) (string, error) {
+	isEnd := false
+	for {
+		next, err := buf.ReadString('\n')
+		if err != nil {
+			if err != io.EOF {
+				return "", err
+			}
+			isEnd = true
+		}
+		pos := strings.LastIndex(next, valQuote)
+		if pos > -1 {
+			val += next[:pos]
+			break
+		}
+		val += next
+		if isEnd {
+			return "", fmt.Errorf("error parsing line: missing closing key quote from '%s' to '%s'", line, next)
+		}
+	}
+	return val, nil
+}
+
+func checkContinuationLines(buf *bufio.Reader, val string) (string, bool, error) {
+	isEnd := false
+	for {
+		valLen := len(val)
+		if valLen == 0 || val[valLen-1] != '\\' {
+			break
+		}
+		val = val[:valLen-1]
+
+		next, err := buf.ReadString('\n')
+		if err != nil {
+			if err != io.EOF {
+				return "", isEnd, err
+			}
+			isEnd = true
+		}
+
+		next = strings.TrimSpace(next)
+		if len(next) == 0 {
+			break
+		}
+		val += next
+	}
+	return val, isEnd, nil
+}
+
 // parse parses data through an io.Reader.
 func (f *File) parse(reader io.Reader) error {
 	buf := bufio.NewReader(reader)
@@ -781,8 +847,7 @@ func (f *File) parse(reader io.Reader) error {
 			}
 			continue
 		case line[0] == '[' && line[length-1] == ']': // New sction.
-			name := strings.TrimSpace(line[1 : length-1])
-			section, err = f.NewSection(name)
+			section, err = f.NewSection(strings.TrimSpace(line[1 : length-1]))
 			if err != nil {
 				return err
 			}
@@ -856,39 +921,39 @@ func (f *File) parse(reader io.Reader) error {
 		}
 		if firstChar == "`" {
 			valQuote = "`"
-		} else if lineRightLength >= 6 && lineRight[0:3] == `"""` {
-			valQuote = `"""`
+		} else if firstChar == `"` {
+			if lineRightLength >= 3 && lineRight[0:3] == `"""` {
+				valQuote = `"""`
+			} else {
+				valQuote = `"`
+			}
+		} else if firstChar == `'` {
+			valQuote = `'`
 		}
+
 		if len(valQuote) > 0 {
 			qLen := len(valQuote)
 			pos := strings.LastIndex(lineRight[qLen:], valQuote)
-			// For multiple lines value.
+			// For multiple-line value check.
 			if pos == -1 {
-				isEnd := false
+				if valQuote == `"` || valQuote == `'` {
+					return fmt.Errorf("error parsing line: single quote does not allow multiple-line value: %s", line)
+				}
+
 				val = lineRight[qLen:] + "\n"
-				for {
-					next, err := buf.ReadString('\n')
-					if err != nil {
-						if err != io.EOF {
-							return err
-						}
-						isEnd = true
-					}
-					pos = strings.LastIndex(next, valQuote)
-					if pos > -1 {
-						val += next[:pos]
-						break
-					}
-					val += next
-					if isEnd {
-						return fmt.Errorf("error parsing line: missing closing key quote from '%s' to '%s'", line, next)
-					}
+				val, err = checkMultipleLines(buf, line, val, valQuote)
+				if err != nil {
+					return err
 				}
 			} else {
 				val = lineRight[qLen : pos+qLen]
 			}
 		} else {
 			val = strings.TrimSpace(cutComment(lineRight[0:]))
+			val, isEnd, err = checkContinuationLines(buf, val)
+			if err != nil {
+				return err
+			}
 		}
 
 		k, err := section.NewKey(kname, val)
@@ -939,8 +1004,8 @@ func (f *File) Append(source interface{}, others ...interface{}) error {
 	return f.Reload()
 }
 
-// SaveTo writes content to filesystem.
-func (f *File) SaveTo(filename string) (err error) {
+// WriteTo writes file content into io.Writer.
+func (f *File) WriteTo(w io.Writer) (n int64, err error) {
 	equalSign := "="
 	if PrettyFormat {
 		equalSign = " = "
@@ -955,13 +1020,13 @@ func (f *File) SaveTo(filename string) (err error) {
 				sec.Comment = "; " + sec.Comment
 			}
 			if _, err = buf.WriteString(sec.Comment + LineBreak); err != nil {
-				return err
+				return 0, err
 			}
 		}
 
 		if i > 0 {
 			if _, err = buf.WriteString("[" + sname + "]" + LineBreak); err != nil {
-				return err
+				return 0, err
 			}
 		} else {
 			// Write nothing if default section is empty.
@@ -977,7 +1042,7 @@ func (f *File) SaveTo(filename string) (err error) {
 					key.Comment = "; " + key.Comment
 				}
 				if _, err = buf.WriteString(key.Comment + LineBreak); err != nil {
-					return err
+					return 0, err
 				}
 			}
 
@@ -992,26 +1057,32 @@ func (f *File) SaveTo(filename string) (err error) {
 
 			val := key.value
 			// In case key value contains "\n", "`" or "\"".
-			if strings.Contains(val, "\n") || strings.Contains(val, "`") || strings.Contains(val, `"`) {
+			if strings.Contains(val, "\n") || strings.Contains(val, "`") || strings.Contains(val, `"`) ||
+				strings.Contains(val, "#") {
 				val = `"""` + val + `"""`
 			}
 			if _, err = buf.WriteString(kname + equalSign + val + LineBreak); err != nil {
-				return err
+				return 0, err
 			}
 		}
 
 		// Put a line between sections.
 		if _, err = buf.WriteString(LineBreak); err != nil {
-			return err
+			return 0, err
 		}
 	}
 
+	return buf.WriteTo(w)
+}
+
+// SaveTo writes content to file system.
+func (f *File) SaveTo(filename string) error {
 	fw, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
-	if _, err = buf.WriteTo(fw); err != nil {
-		return err
-	}
-	return fw.Close()
+	defer fw.Close()
+
+	_, err = f.WriteTo(fw)
+	return err
 }
