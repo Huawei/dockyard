@@ -49,7 +49,6 @@ func PutRepositoryImagesV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (in
 		return http.StatusBadRequest, result
 	}
 
-	//TBD: set content like docker format?
 	if ctx.Req.Header.Get("X-Docker-Token") == "true" {
 		username, _, _ := utils.DecodeBasicAuth(ctx.Req.Header.Get("Authorization"))
 		token := fmt.Sprintf("Token signature=%v,repository=\"%v/%v\",access=%v",
@@ -61,8 +60,7 @@ func PutRepositoryImagesV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (in
 		ctx.Resp.Header().Set("WWW-Authenticate", token)
 	}
 
-	//TBD: the head value will be got from config
-	ctx.Resp.Header().Set("X-Docker-Endpoints", "containerops.me")
+	//ctx.Resp.Header().Set("X-Docker-Endpoints", setting.Domains)
 
 	return http.StatusNoContent, []byte("")
 }
@@ -98,7 +96,7 @@ func GetRepositoryImagesV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (in
 		"read")
 	ctx.Resp.Header().Set("X-Docker-Token", token)
 	ctx.Resp.Header().Set("WWW-Authenticate", token)
-	ctx.Resp.Header().Set("X-Docker-Endpoints", "containerops.me")
+	//	ctx.Resp.Header().Set("X-Docker-Endpoints", setting.Domains)
 	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(repo.JSON)))
 
 	return http.StatusOK, []byte(repo.JSON)
@@ -160,7 +158,6 @@ func PutRepositoryV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []b
 		return http.StatusBadRequest, result
 	}
 
-	//TBD: return docker format?
 	if ctx.Req.Header.Get("X-Docker-Token") == "true" {
 		token := fmt.Sprintf("Token signature=%v,repository=\"%v/%v\",access=%v",
 			utils.MD5(username),
@@ -171,8 +168,7 @@ func PutRepositoryV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []b
 		ctx.Resp.Header().Set("WWW-Authenticate", token)
 	}
 
-	//TBD:Endpoints should be read from APP configfile
-	ctx.Resp.Header().Set("X-Docker-Endpoints", setting.Domains)
+	//	ctx.Resp.Header().Set("X-Docker-Endpoints", setting.Domains)
 
 	return http.StatusOK, []byte("\"\"")
 }
