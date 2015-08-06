@@ -50,7 +50,7 @@ func PostBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte)
 	key := db.Key("repository", namespace, repository)
 	state := utils.MD5(fmt.Sprintf("%s/%s/%s", namespace, repository, key))
 	random := fmt.Sprintf("https://%s/v2/%s/%s/blobs/uploads/%s?_state=%s",
-		"containerops.me", //TBD: code like this just for test,it will be update after config is ready
+		setting.Domains,
 		namespace,
 		repository,
 		key,
@@ -90,7 +90,7 @@ func PutBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 	}
 
 	random := fmt.Sprintf("https://%s/v2/%s/%s/blobs/%s",
-		"containerops.me", //TBD: code like this just for test,it will be update after config is ready
+		setting.Domains,
 		ctx.Params(":namespace"),
 		ctx.Params(":repository"),
 		digest)
