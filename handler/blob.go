@@ -66,8 +66,8 @@ func PutBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 
 	digest := ctx.Query("digest")
 	tarsum := strings.Split(digest, ":")[1]
-	imagePath := fmt.Sprintf("%v/uuid/%v", setting.ImagePath, tarsum)
-	layerfile := fmt.Sprintf("%v/uuid/%v/layer", setting.ImagePath, tarsum)
+	imagePathTmp := fmt.Sprintf("%v/temp/%v", setting.ImagePath, tarsum)
+	layerfileTmp := fmt.Sprintf("%v/temp/%v/layer", setting.ImagePath, tarsum)
 
 	i := new(models.Image)
 	if err := i.PutTarsum(tarsum); err != nil {
@@ -75,16 +75,16 @@ func PutBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 		return http.StatusBadRequest, result
 	}
 
-	if !utils.IsDirExists(imagePath) {
-		os.MkdirAll(imagePath, os.ModePerm)
+	if !utils.IsDirExists(imagePathTmp) {
+		os.MkdirAll(imagePathTmp, os.ModePerm)
 	}
 
-	if _, err := os.Stat(layerfile); err == nil {
-		os.Remove(layerfile)
+	if _, err := os.Stat(layerfileTmp); err == nil {
+		os.Remove(layerfileTmp)
 	}
 
 	data, _ := ioutil.ReadAll(ctx.Req.Request.Body)
-	if err := ioutil.WriteFile(layerfile, data, 0777); err != nil {
+	if err := ioutil.WriteFile(layerfileTmp, data, 0777); err != nil {
 		result, _ := json.Marshal(map[string]string{"message": "Save layerfile failure"})
 		return http.StatusBadRequest, result
 	}
