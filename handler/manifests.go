@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/Unknwon/macaron"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/wrench/setting"
+	"github.com/containerops/wrench/utils"
 )
 
 func manifestsConvertV1(data []byte) error {
@@ -65,9 +67,21 @@ func manifestsConvertV1(data []byte) error {
 			return err
 		}
 
-		//Put Image Layer
+		//Put Image Layer,Compatible with V1,save the layerfile by imageId as the same with V1,and remove the temporary one
 		basePath := setting.ImagePath
-		layerfile := fmt.Sprintf("%v/uuid/%v/layer", basePath, tarsum)
+		layerfileTmp := fmt.Sprintf("%v/temp/%v/layer", basePath, tarsum)
+		if _, err := os.Stat(layerfileTmp); err != nil {
+			return err
+		}
+		imagePath := fmt.Sprintf("%v/images/%v", setting.ImagePath, image["id"].(string))
+		if !utils.IsDirExists(imagePath) {
+			os.MkdirAll(imagePath, os.ModePerm)
+		}
+		layerfile := fmt.Sprintf("%v/images/%v/layer", basePath, image["id"].(string))
+		data, _ := ioutil.ReadFile(layerfileTmp)
+		if err := ioutil.WriteFile(layerfile, data, 0777); err != nil {
+			return err
+		}
 
 		if err := img.PutLayer(image["id"].(string), layerfile, true, int64(image["Size"].(float64))); err != nil {
 			return err
@@ -84,6 +98,7 @@ func manifestsConvertV1(data []byte) error {
 		}
 	}
 
+	os.RemoveAll(fmt.Sprintf("%v/temp", setting.ImagePath))
 	return nil
 }
 
@@ -152,12 +167,11 @@ func GetTagsListV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byt
 }
 
 func GetManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-
 	t := new(models.Tag)
 	if err := t.Get(ctx.Params(":namespace"), ctx.Params(":repository"), ctx.Params(":tag")); err != nil {
 
 		result, _ := json.Marshal(map[string]string{"message": "Manifest not found"})
-		return http.StatusBadRequest, result
+		return http.StatusNotFound, result
 	}
 
 	ctx.Resp.Header().Set("Content-Type", "application/json; charset=utf-8")
