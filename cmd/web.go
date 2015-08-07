@@ -67,7 +67,7 @@ func runWeb(c *cli.Context) {
 		break
 	case "unix":
 		listenaddr := fmt.Sprintf("%s", c.String("address"))
-		if utils.Exist(listenaddr) {
+		if utils.IsFileExist(listenaddr) {
 			os.Remove(listenaddr)
 		}
 
