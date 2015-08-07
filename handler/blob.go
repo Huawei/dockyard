@@ -69,8 +69,9 @@ func PutBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 	imagePathTmp := fmt.Sprintf("%v/temp/%v", setting.ImagePath, tarsum)
 	layerfileTmp := fmt.Sprintf("%v/temp/%v/layer", setting.ImagePath, tarsum)
 
+	//saving specific tarsum every times is in order to split the same tarsum in HEAD handler
 	i := new(models.Image)
-	if err := i.PutTarsum(tarsum); err != nil {
+	if err := i.PutTarsum("", tarsum); err != nil {
 		result, _ := json.Marshal(map[string]string{"message": "Save tarsum failure"})
 		return http.StatusBadRequest, result
 	}
@@ -107,8 +108,17 @@ func GetBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 	tarsum := strings.Split(digest, ":")[1]
 
 	i := new(models.Image)
-	if has, _, _ := i.HasTarsum(tarsum); has == false {
+	has, imagegrp, _ := i.HasTarsum(tarsum)
+	if has == false {
 		result, _ := json.Marshal(map[string]string{"message": "Digest not found"})
+		return http.StatusNotFound, result
+	}
+
+	if has, _, err := i.Has(imagegrp[1]); err != nil {
+		result, _ := json.Marshal(map[string]string{"message": "Read Image Ancestry Error"})
+		return http.StatusBadRequest, result
+	} else if has == false {
+		result, _ := json.Marshal(map[string]string{"message": "Read Image None"})
 		return http.StatusNotFound, result
 	}
 
