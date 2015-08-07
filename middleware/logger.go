@@ -26,6 +26,7 @@ func logger(runmode string) macaron.Handler {
 			Log.Trace("")
 			Log.Trace("----------------------------------------------------------------------------------")
 		}
+
 		Log.Trace("[%s] [%s]", ctx.Req.Method, ctx.Req.RequestURI)
 		Log.Trace("[Header] %v", ctx.Req.Header)
 	}

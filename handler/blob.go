@@ -75,7 +75,7 @@ func PutBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 		return http.StatusBadRequest, result
 	}
 
-	if !utils.IsDirExists(imagePathTmp) {
+	if !utils.IsDirExist(imagePathTmp) {
 		os.MkdirAll(imagePathTmp, os.ModePerm)
 	}
 
