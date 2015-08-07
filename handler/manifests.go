@@ -92,6 +92,11 @@ func manifestsConvertV1(data []byte) error {
 			return err
 		}
 
+		//Put V2 tarsum
+		if err := img.PutTarsum(image["id"].(string), tarsum); err != nil {
+			return err
+		}
+
 		//Put Ancestry
 		if err := img.PutAncestry(image["id"].(string)); err != nil {
 			return err
