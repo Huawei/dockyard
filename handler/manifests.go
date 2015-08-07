@@ -126,7 +126,7 @@ func PutManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 	}
 
 	random := fmt.Sprintf("https://%v/v2/%v/%v/manifests/%v",
-		"containerops.me",
+		setting.Domains,
 		namespace,
 		repository,
 		digest)

@@ -23,7 +23,7 @@ db = 8
 [dockyard]
 driver = amazons3cloud
 path = data
-domains = https://containerops.me
+domains = containerops.me
 registry = 0.9
 distribution = registry/2.0
 standalone = true

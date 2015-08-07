@@ -19,7 +19,6 @@ func SetMiddlewares(m *macaron.Macaron) {
 	//Set logger handler function, deal with all the Request log output
 	m.Use(logger(setting.RunMode))
 
-	//TBD:codes as below should be updated when user config management is ready
 	//Set the response header info
 	m.Use(setRespHeaders())
 
