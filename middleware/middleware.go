@@ -19,6 +19,8 @@ func SetMiddlewares(m *macaron.Macaron) {
 	//Set logger handler function, deal with all the Request log output
 	m.Use(logger(setting.RunMode))
 
+	m.Use(getRespHeader())
+
 	//Set the response header info
 	m.Use(setRespHeaders())
 

@@ -74,7 +74,7 @@ func manifestsConvertV1(data []byte) error {
 			return err
 		}
 		imagePath := fmt.Sprintf("%v/images/%v", setting.ImagePath, image["id"].(string))
-		if !utils.IsDirExists(imagePath) {
+		if !utils.IsDirExist(imagePath) {
 			os.MkdirAll(imagePath, os.ModePerm)
 		}
 		layerfile := fmt.Sprintf("%v/images/%v/layer", basePath, image["id"].(string))

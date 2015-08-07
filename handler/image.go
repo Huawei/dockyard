@@ -134,7 +134,7 @@ func PutImageLayerv1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []b
 	imagePath := fmt.Sprintf("%v/images/%v", basePath, imageId)
 	layerfile := fmt.Sprintf("%v/images/%v/layer", basePath, imageId)
 
-	if !utils.IsDirExists(imagePath) {
+	if !utils.IsDirExist(imagePath) {
 		os.MkdirAll(imagePath, os.ModePerm)
 	}
 
