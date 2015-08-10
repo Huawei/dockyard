@@ -73,12 +73,12 @@ func GetRepositoryImagesV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (in
 	if has, _, err := repo.Has(namespace, repository); err != nil {
 		log.Error("[REGISTRY API V1] Read repository json error: %v", err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Get V1 repository images failure,wrong name or repository"})
+		result, _ := json.Marshal(map[string]string{"message": "Get V1 repository images failed,wrong name or repository"})
 		return http.StatusBadRequest, result
 	} else if has == false {
 		log.Error("[REGISTRY API V1] Read repository no found, %v/%v", namespace, repository)
 
-		result, _ := json.Marshal(map[string]string{"message": "Get V1 repository images failure,repository no found"})
+		result, _ := json.Marshal(map[string]string{"message": "Get V1 repository images failed,repository no found"})
 		return http.StatusNotFound, result
 	}
 
@@ -86,6 +86,8 @@ func GetRepositoryImagesV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (in
 
 	if err := repo.Save(); err != nil {
 		log.Error("[REGISTRY API V1] Update download count error: %v", err.Error())
+		result, _ := json.Marshal(map[string]string{"message": "Save V1 repository failed"})
+		return http.StatusBadRequest, result
 	}
 
 	username, _, _ := utils.DecodeBasicAuth(ctx.Req.Header.Get("Authorization"))
@@ -110,12 +112,12 @@ func GetTagV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	if has, _, err := repo.Has(namespace, repository); err != nil {
 		log.Error("[REGISTRY API V1] Read repository json error: %v", err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Get V1 tag failure,wrong name or repository"})
+		result, _ := json.Marshal(map[string]string{"message": "Get V1 tag failed,wrong name or repository"})
 		return http.StatusBadRequest, result
 	} else if has == false {
 		log.Error("[REGISTRY API V1] Read repository no found. %v/%v", namespace, repository)
 
-		result, _ := json.Marshal(map[string]string{"message": "Get V1 tag failure,read repository no found"})
+		result, _ := json.Marshal(map[string]string{"message": "Get V1 tag failed,read repository no found"})
 		return http.StatusNotFound, result
 	}
 
@@ -146,7 +148,7 @@ func PutRepositoryV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []b
 	body, err := ctx.Req.Body().String()
 	if err != nil {
 		log.Error("[REGISTRY API V1] Get request body error: %v", err.Error())
-		result, _ := json.Marshal(map[string]string{"message": "Put V1 repository failure,request body is empty"})
+		result, _ := json.Marshal(map[string]string{"message": "Put V1 repository failed,request body is empty"})
 		return http.StatusBadRequest, result
 	}
 
