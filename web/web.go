@@ -12,8 +12,6 @@ import (
 )
 
 func SetDockyardMacaron(m *macaron.Macaron) {
-	//Setting
-	setting.SetConfig("conf/containerops.conf")
 	//Setting Database
 	if err := db.InitDB(setting.DBURI, setting.DBPasswd, setting.DBDB); err != nil {
 		fmt.Printf("Connect Database Error %s", err.Error())
