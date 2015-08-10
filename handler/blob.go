@@ -24,6 +24,8 @@ func authorizationVerify(ctx *macaron.Context) error {
 func HeadBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 	if err := authorizationVerify(ctx); err != nil {
+		log.Error("[REGISTRY API V2] Authorized failed: %v", err.Error())
+
 		result, _ := json.Marshal(map[string]string{"message": "Invalid authorization"})
 		return http.StatusUnauthorized, result
 	}
@@ -32,7 +34,9 @@ func HeadBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte)
 	tarsum := strings.Split(digest, ":")[1]
 	i := new(models.Image)
 	if has, _, _ := i.HasTarsum(tarsum); has == false {
-		result, _ := json.Marshal(map[string]string{"message": "Digest not found"})
+		log.Info("[REGISTRY API V2] Tarsum not found: %v", tarsum)
+
+		result, _ := json.Marshal(map[string]string{"message": "Tarsum not found"})
 		return http.StatusNotFound, result
 	}
 
@@ -72,7 +76,9 @@ func PutBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 	//saving specific tarsum every times is in order to split the same tarsum in HEAD handler
 	i := new(models.Image)
 	if err := i.PutTarsum("", tarsum); err != nil {
-		result, _ := json.Marshal(map[string]string{"message": "Save tarsum failure"})
+		log.Error("[REGISTRY API V2] Save tarsum failed: %v", err.Error())
+
+		result, _ := json.Marshal(map[string]string{"message": "Save tarsum failed"})
 		return http.StatusBadRequest, result
 	}
 
@@ -86,7 +92,9 @@ func PutBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 
 	data, _ := ioutil.ReadAll(ctx.Req.Request.Body)
 	if err := ioutil.WriteFile(layerfileTmp, data, 0777); err != nil {
-		result, _ := json.Marshal(map[string]string{"message": "Save layerfile failure"})
+		log.Error("[REGISTRY API V2] Save layerfile failed: %v", err.Error())
+
+		result, _ := json.Marshal(map[string]string{"message": "Save layerfile failed"})
 		return http.StatusBadRequest, result
 	}
 
@@ -110,27 +118,37 @@ func GetBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 	i := new(models.Image)
 	has, imagegrp, _ := i.HasTarsum(tarsum)
 	if has == false {
+		log.Error("[REGISTRY API V2] Digest not found: %v", tarsum)
+
 		result, _ := json.Marshal(map[string]string{"message": "Digest not found"})
 		return http.StatusNotFound, result
 	}
 
 	if has, _, err := i.Has(imagegrp[1]); err != nil {
+		log.Error("[REGISTRY API V2] Read Image Ancestry Error: %v", err.Error())
+
 		result, _ := json.Marshal(map[string]string{"message": "Read Image Ancestry Error"})
 		return http.StatusBadRequest, result
 	} else if has == false {
+		log.Error("[REGISTRY API V2] Read Image None: %v", imagegrp[1])
+
 		result, _ := json.Marshal(map[string]string{"message": "Read Image None"})
 		return http.StatusNotFound, result
 	}
 
 	layerfile := i.Path
 	if _, err := os.Stat(layerfile); err != nil {
+		log.Error("[REGISTRY API V2] File path is invalid: %v", err.Error())
+
 		result, _ := json.Marshal(map[string]string{"message": "File path is invalid"})
 		return http.StatusBadRequest, result
 	}
 
 	file, err := ioutil.ReadFile(layerfile)
 	if err != nil {
-		result, _ := json.Marshal(map[string]string{"message": "Read file failure"})
+		log.Error("[REGISTRY API V2] Read file failed: %v", err.Error())
+
+		result, _ := json.Marshal(map[string]string{"message": "Read file failed"})
 		return http.StatusBadRequest, result
 	}
 

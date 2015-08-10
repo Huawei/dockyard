@@ -112,7 +112,8 @@ func PutImageJSONV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 	jsonInfo, err := ctx.Req.Body().String()
 	if err != nil {
 		log.Error("[REGISTRY API V1] Get request body error: %v", err.Error())
-		result, _ := json.Marshal(map[string]string{"message": "Put V1 image JSON failure,request body is empty"})
+
+		result, _ := json.Marshal(map[string]string{"message": "Put V1 image JSON failed,request body is empty"})
 		return http.StatusBadRequest, result
 	}
 
