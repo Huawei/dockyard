@@ -3,6 +3,7 @@ package middleware
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/Unknwon/macaron"
 
@@ -16,7 +17,7 @@ var (
 
 func getRespHeader() macaron.Handler {
 	return func(ctx *macaron.Context) {
-		if flag, err := utils.Contain(ctx.Req.RequestURI, ping); err != nil {
+		if flag, err := utils.Contain(ping, strings.Split(ctx.Req.RequestURI, "/")); err != nil {
 			ctx.JSON(http.StatusBadRequest, "Docker registry or distribution's URL is invalid")
 		} else if flag == true {
 
@@ -26,7 +27,7 @@ func getRespHeader() macaron.Handler {
 
 func setRespHeaders() macaron.Handler {
 	return func(ctx *macaron.Context) {
-		if flag, err := utils.Contain("v1", ctx.Req.RequestURI); err != nil {
+		if flag, err := utils.Contain("v1", strings.Split(ctx.Req.RequestURI, "/")); err != nil {
 			ctx.JSON(http.StatusBadRequest, "Docker registry or distribution's URL is invalid")
 		} else if flag == true {
 			ctx.Resp.Header().Set("Content-Type", "application/json")
