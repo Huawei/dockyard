@@ -15,6 +15,9 @@ func init() {
 }
 
 func main() {
+	//Setting
+	setting.SetConfig("conf/containerops.conf")
+
 	app := cli.NewApp()
 
 	app.Name = setting.AppName
