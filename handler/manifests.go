@@ -11,6 +11,7 @@ import (
 
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/wrench/setting"
+	"github.com/containerops/wrench/utils"
 )
 
 func PutManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
@@ -28,8 +29,11 @@ func PutManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 	}
 
 	manifest, _ := ioutil.ReadAll(ctx.Req.Request.Body)
+	if err := models.ManifestconvertV1(manifest); err != nil {
+		log.Error("[REGISTRY API V2] Decode Manifest Error: %v", err.Error())
+	}
 
-	digest, err := DigestManifest(manifest)
+	digest, err := utils.DigestManifest(manifest)
 	if err != nil {
 		log.Error("[REGISTRY API V2] Get manifest digest failed: %v", err.Error())
 
@@ -94,7 +98,7 @@ func GetManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 		return http.StatusNotFound, result
 	}
 
-	digest, err := DigestManifest([]byte(t.Manifest))
+	digest, err := utils.DigestManifest([]byte(t.Manifest))
 	if err != nil {
 		log.Error("[REGISTRY API V2] Get manifest digest failed: %v", err.Error())
 
