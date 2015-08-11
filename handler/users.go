@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/Unknwon/macaron"
@@ -9,11 +8,9 @@ import (
 )
 
 func GetUsersV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{"message": "Get V1 users,successfully"})
-	return http.StatusOK, result
+	return http.StatusOK, []byte("")
 }
 
 func PostUsersV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{"message": "Post V1 users,unauthorization"})
-	return http.StatusUnauthorized, result
+	return http.StatusUnauthorized, []byte("")
 }

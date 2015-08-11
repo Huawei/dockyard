@@ -15,7 +15,6 @@ func init() {
 }
 
 func main() {
-	//Setting
 	setting.SetConfig("conf/containerops.conf")
 
 	app := cli.NewApp()
@@ -32,5 +31,4 @@ func main() {
 
 	app.Flags = append(app.Flags, []cli.Flag{}...)
 	app.Run(os.Args)
-
 }

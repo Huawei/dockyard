@@ -17,21 +17,10 @@ import (
 	"github.com/containerops/wrench/utils"
 )
 
-func authorizationVerify(ctx *macaron.Context) error {
-	return nil
-}
-
 func HeadBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-
-	if err := authorizationVerify(ctx); err != nil {
-		log.Error("[REGISTRY API V2] Authorized failed: %v", err.Error())
-
-		result, _ := json.Marshal(map[string]string{"message": "Invalid authorization"})
-		return http.StatusUnauthorized, result
-	}
-
 	digest := ctx.Params(":digest")
 	tarsum := strings.Split(digest, ":")[1]
+
 	i := new(models.Image)
 	if has, _, _ := i.HasTarsum(tarsum); has == false {
 		log.Info("[REGISTRY API V2] Tarsum not found: %v", tarsum)
@@ -47,7 +36,6 @@ func HeadBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte)
 }
 
 func PostBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
@@ -67,9 +55,10 @@ func PostBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte)
 }
 
 func PutBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-
 	digest := ctx.Query("digest")
+
 	tarsum := strings.Split(digest, ":")[1]
+
 	imagePathTmp := fmt.Sprintf("%v/temp/%v", setting.ImagePath, tarsum)
 	layerfileTmp := fmt.Sprintf("%v/temp/%v/layer", setting.ImagePath, tarsum)
 
@@ -111,8 +100,8 @@ func PutBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 }
 
 func GetBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-
 	digest := ctx.Params(":digest")
+
 	tarsum := strings.Split(digest, ":")[1]
 
 	i := new(models.Image)

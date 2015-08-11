@@ -8,7 +8,7 @@ import (
 
 func SetMiddlewares(m *macaron.Macaron) {
 	//Set static file directory,static file access without log output
-	m.Use(macaron.Static("static", macaron.StaticOptions{
+	m.Use(macaron.Static("external", macaron.StaticOptions{
 		Expires: func() string { return "max-age=0" },
 	}))
 
@@ -18,8 +18,6 @@ func SetMiddlewares(m *macaron.Macaron) {
 	m.Map(Log)
 	//Set logger handler function, deal with all the Request log output
 	m.Use(logger(setting.RunMode))
-
-	//m.Use(getRespHeader())
 
 	//Set the response header info
 	m.Use(setRespHeaders())
