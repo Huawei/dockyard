@@ -27,9 +27,7 @@ func getRespHeader() macaron.Handler {
 
 func setRespHeaders() macaron.Handler {
 	return func(ctx *macaron.Context) {
-		if flag, err := utils.Contain("v1", strings.Split(ctx.Req.RequestURI, "/")); err != nil {
-			ctx.JSON(http.StatusBadRequest, "Docker registry or distribution's URL is invalid")
-		} else if flag == true {
+		if flag := strings.Contains(ctx.Req.RequestURI, "v1"); flag == true {
 			ctx.Resp.Header().Set("Content-Type", "application/json")
 			ctx.Resp.Header().Set("X-Docker-Registry-Standalone", setting.Standalone)
 			ctx.Resp.Header().Set("X-Docker-Registry-Version", setting.RegistryVersion)
