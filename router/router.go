@@ -43,6 +43,4 @@ func SetRouters(m *macaron.Macaron) {
 		m.Get("/:namespace/:repository/tags/list", handler.GetTagsListV2Handler)
 		m.Get("/:namespace/:repository/manifests/:tag", handler.GetManifestsV2Handler)
 	})
-
-	//Rocket Image Discovery
 }

@@ -34,7 +34,7 @@ func PutTagV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 		return http.StatusBadRequest, result
 	}
 
-	return http.StatusOK, []byte("true")
+	return http.StatusOK, []byte("")
 }
 
 func PutRepositoryImagesV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
@@ -56,11 +56,10 @@ func PutRepositoryImagesV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (in
 			namespace,
 			repository,
 			"write")
+
 		ctx.Resp.Header().Set("X-Docker-Token", token)
 		ctx.Resp.Header().Set("WWW-Authenticate", token)
 	}
-
-	//ctx.Resp.Header().Set("X-Docker-Endpoints", setting.Domains)
 
 	return http.StatusNoContent, []byte("")
 }
@@ -96,9 +95,9 @@ func GetRepositoryImagesV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (in
 		namespace,
 		repository,
 		"read")
+
 	ctx.Resp.Header().Set("X-Docker-Token", token)
 	ctx.Resp.Header().Set("WWW-Authenticate", token)
-	//	ctx.Resp.Header().Set("X-Docker-Endpoints", setting.Domains)
 	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(repo.JSON)))
 
 	return http.StatusOK, []byte(repo.JSON)
@@ -166,11 +165,10 @@ func PutRepositoryV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []b
 			namespace,
 			repository,
 			"write")
+
 		ctx.Resp.Header().Set("X-Docker-Token", token)
 		ctx.Resp.Header().Set("WWW-Authenticate", token)
 	}
 
-	//	ctx.Resp.Header().Set("X-Docker-Endpoints", setting.Domains)
-
-	return http.StatusOK, []byte("\"\"")
+	return http.StatusOK, []byte("")
 }

@@ -12,42 +12,34 @@ import (
 )
 
 type Repository struct {
-	Repository    string    `json:"repository"`    //
-	Namespace     string    `json:"namespace"`     //
-	NamespaceType bool      `json:"namespacetype"` //
-	Organization  string    `json:"organization"`  //
-	Tags          []string  `json:"tags"`          //
-	Starts        []string  `json:"starts"`        //
-	Comments      []string  `json:"comments"`      //
-	Short         string    `json:"short"`         //
-	Description   string    `json:"description"`   //
-	JSON          string    `json:"json"`          //
-	Dockerfile    string    `json:"dockerfile"`    //
-	Agent         string    `json:"agent"`         //
-	Links         string    `json:"links"`         //
-	Size          int64     `json:"size"`          //
-	Download      int64     `json:"download"`      //
-	Uploaded      bool      `json:"uploaded"`      //
-	Checksum      string    `json:"checksum"`      //
-	Checksumed    bool      `json:"checksumed"`    //
-	Icon          string    `json:"icon"`          //
-	Sign          string    `json:"sign"`          //
-	Privated      bool      `json:"privated"`      //
-	Clear         string    `json:"clear"`         //
-	Cleared       bool      `json:"cleared"`       //
-	Encrypted     bool      `json:"encrypted"`     //
-	Created       int64     `json:"created"`       //
-	Updated       int64     `json:"updated"`       //
-	Memo          []string  `json:"memo"`          //
-	Version       int64     `json:"version"`       //
-	Privilege     Privilege `json:"privilege"`     //
-}
-
-type Privilege struct {
-	Privilege  bool     `json:"privilege"`  //
-	Team       string   `json:"team"`       //
-	Repository string   `json:"repository"` //
-	Memo       []string `json:"memo"`       //
+	Repository    string   `json:"repository"`    //
+	Namespace     string   `json:"namespace"`     //
+	NamespaceType bool     `json:"namespacetype"` //
+	Organization  string   `json:"organization"`  //
+	Tags          []string `json:"tags"`          //
+	Starts        []string `json:"starts"`        //
+	Comments      []string `json:"comments"`      //
+	Short         string   `json:"short"`         //
+	Description   string   `json:"description"`   //
+	JSON          string   `json:"json"`          //
+	Dockerfile    string   `json:"dockerfile"`    //
+	Agent         string   `json:"agent"`         //
+	Links         string   `json:"links"`         //
+	Size          int64    `json:"size"`          //
+	Download      int64    `json:"download"`      //
+	Uploaded      bool     `json:"uploaded"`      //
+	Checksum      string   `json:"checksum"`      //
+	Checksumed    bool     `json:"checksumed"`    //
+	Icon          string   `json:"icon"`          //
+	Sign          string   `json:"sign"`          //
+	Privated      bool     `json:"privated"`      //
+	Clear         string   `json:"clear"`         //
+	Cleared       bool     `json:"cleared"`       //
+	Encrypted     bool     `json:"encrypted"`     //
+	Created       int64    `json:"created"`       //
+	Updated       int64    `json:"updated"`       //
+	Version       int64    `json:"version"`       //
+	Memo          []string `json:"memo"`          //
 }
 
 type Tag struct {
@@ -184,9 +176,11 @@ func (r *Repository) PutTag(imageId, namespace, repository, tag string) error {
 			has = true
 		}
 	}
+
 	if !has {
 		r.Tags = append(r.Tags, db.Key("tag", t.Namespace, t.Repository, t.Name))
 	}
+
 	if err := r.Save(); err != nil {
 		return err
 	}

@@ -73,7 +73,6 @@ func (i *Image) GetJSON(imageId string) (string, error) {
 }
 
 func (i *Image) GetChecksumPayload(imageId string) (string, error) {
-
 	if has, _, err := i.Has(imageId); err != nil {
 		return "", err
 	} else if has == false {
@@ -86,7 +85,6 @@ func (i *Image) GetChecksumPayload(imageId string) (string, error) {
 }
 
 func (i *Image) PutJSON(imageId, json string, version int64) error {
-
 	if has, _, err := i.Has(imageId); err != nil {
 		return err
 	} else if has == false {
@@ -112,7 +110,6 @@ func (i *Image) PutJSON(imageId, json string, version int64) error {
 }
 
 func (i *Image) PutChecksum(imageId string, checksum string, checksumed bool, payload string) error {
-
 	if has, _, err := i.Has(imageId); err != nil {
 		return err
 	} else if has == false {
@@ -134,7 +131,6 @@ func (i *Image) PutChecksum(imageId string, checksum string, checksumed bool, pa
 }
 
 func (i *Image) PutAncestry(imageId string) error {
-
 	if has, _, err := i.Has(imageId); err != nil {
 		return err
 	} else if has == false {
@@ -178,7 +174,6 @@ func (i *Image) PutAncestry(imageId string) error {
 }
 
 func (i *Image) PutLayer(imageId string, path string, uploaded bool, size int64) error {
-
 	if has, _, err := i.Has(imageId); err != nil {
 		return err
 	} else if has == false {
