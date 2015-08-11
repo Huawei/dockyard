@@ -4,16 +4,49 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"regexp"
 	"strings"
 	"time"
 )
 
-func Exist(filename string) bool {
+func IsDirExist(path string) bool {
+	fi, err := os.Stat(path)
+
+	if err != nil {
+		return os.IsExist(err)
+	} else {
+		return fi.IsDir()
+	}
+
+	panic("not reached")
+}
+
+func IsFileExist(filename string) bool {
 	_, err := os.Stat(filename)
 	return err == nil || os.IsExist(err)
+}
+
+func Contain(obj interface{}, target interface{}) (bool, error) {
+	targetValue := reflect.ValueOf(target)
+
+	switch reflect.TypeOf(target).Kind() {
+	case reflect.Slice, reflect.Array:
+		for i := 0; i < targetValue.Len(); i++ {
+			if targetValue.Index(i).Interface() == obj {
+				return true, nil
+			}
+		}
+	case reflect.Map:
+		if targetValue.MapIndex(reflect.ValueOf(obj)).IsValid() {
+			return true, nil
+		}
+	}
+
+	return false, errors.New("not in array")
 }
 
 func EncodeBasicAuth(username string, password string) string {
@@ -51,18 +84,6 @@ func DecodeBasicAuth(authorization string) (username string, password string, er
 	password = strings.Trim(arr[1], "\x00")
 
 	return username, password, nil
-}
-
-func IsDirExists(path string) bool {
-	fi, err := os.Stat(path)
-
-	if err != nil {
-		return os.IsExist(err)
-	} else {
-		return fi.IsDir()
-	}
-
-	panic("not reached")
 }
 
 func ValidatePassword(password string) error {
