@@ -70,17 +70,21 @@ func manifestsConvertV1(data []byte) error {
 		//Put Image Layer,Compatible with V1,save the layerfile by imageId as the same with V1,and remove the temporary one
 		basePath := setting.ImagePath
 		layerfileTmp := fmt.Sprintf("%v/temp/%v/layer", basePath, tarsum)
-		if _, err := os.Stat(layerfileTmp); err != nil {
-			return err
-		}
-		imagePath := fmt.Sprintf("%v/images/%v", setting.ImagePath, image["id"].(string))
-		if !utils.IsDirExist(imagePath) {
-			os.MkdirAll(imagePath, os.ModePerm)
-		}
 		layerfile := fmt.Sprintf("%v/images/%v/layer", basePath, image["id"].(string))
-		data, _ := ioutil.ReadFile(layerfileTmp)
-		if err := ioutil.WriteFile(layerfile, data, 0777); err != nil {
-			return err
+		if _, err := os.Stat(layerfileTmp); err != nil {
+			if !utils.IsFileExist(layerfile) {
+				return err
+			}
+		} else {
+			imagePath := fmt.Sprintf("%v/images/%v", setting.ImagePath, image["id"].(string))
+			if !utils.IsDirExist(imagePath) {
+				os.MkdirAll(imagePath, os.ModePerm)
+			}
+
+			data, _ := ioutil.ReadFile(layerfileTmp)
+			if err := ioutil.WriteFile(layerfile, data, 0777); err != nil {
+				return err
+			}
 		}
 
 		if err := img.PutLayer(image["id"].(string), layerfile, true, int64(image["Size"].(float64))); err != nil {
@@ -115,18 +119,25 @@ func PutManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 
 	repo := new(models.Repository)
 	if err := repo.Put(namespace, repository, "", agent, setting.APIVERSION_V2); err != nil {
+		log.Error("[REGISTRY API V2] Save repository failed: %v", err.Error())
+
 		result, _ := json.Marshal(map[string]string{"message": err.Error()})
 		return http.StatusBadRequest, result
 	}
 
 	manifest, _ := ioutil.ReadAll(ctx.Req.Request.Body)
 	if err := manifestsConvertV1(manifest); err != nil {
-		log.Error("[REGISTRY API V2] Decode Manifest Error: ", err.Error())
+		log.Error("[REGISTRY API V2] Convert V2 manifests to V1 format failed: %v", err.Error())
+
+		result, _ := json.Marshal(map[string]string{"message": "Convert V2 manifests to V1 format failed"})
+		return http.StatusBadRequest, result
 	}
 
 	digest, err := DigestManifest(manifest)
 	if err != nil {
-		result, _ := json.Marshal(map[string]string{"message": "Get manifest digest failure"})
+		log.Error("[REGISTRY API V2] Get manifest digest failed: %v", err.Error())
+
+		result, _ := json.Marshal(map[string]string{"message": "Get manifest digest failed"})
 		return http.StatusBadRequest, result
 	}
 
@@ -147,6 +158,8 @@ func GetTagsListV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byt
 
 	r := new(models.Repository)
 	if has, _, err := r.Has(namespace, repository); err != nil || has == false {
+		log.Error("[REGISTRY API V2] Repository not found: %v", repository)
+
 		result, _ := json.Marshal(map[string]string{"message": "Repository not found"})
 		return http.StatusNotFound, result
 	}
@@ -158,6 +171,8 @@ func GetTagsListV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byt
 	for _, value := range r.Tags {
 		t := new(models.Tag)
 		if err := t.GetByKey(value); err != nil {
+			log.Error("[REGISTRY API V2] Tag not found: %v", err.Error())
+
 			result, _ := json.Marshal(map[string]string{"message": "Tag not found"})
 			return http.StatusNotFound, result
 		}
@@ -174,6 +189,7 @@ func GetTagsListV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byt
 func GetManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	t := new(models.Tag)
 	if err := t.Get(ctx.Params(":namespace"), ctx.Params(":repository"), ctx.Params(":tag")); err != nil {
+		log.Error("[REGISTRY API V2] Manifest not found: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Manifest not found"})
 		return http.StatusNotFound, result
@@ -183,7 +199,9 @@ func GetManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 
 	digest, err := DigestManifest([]byte(t.Manifest))
 	if err != nil {
-		result, _ := json.Marshal(map[string]string{"message": "Get manifest digest failure"})
+		log.Error("[REGISTRY API V2] Get manifest digest failed: %v", err.Error())
+
+		result, _ := json.Marshal(map[string]string{"message": "Get manifest digest failed"})
 		return http.StatusBadRequest, result
 	}
 
