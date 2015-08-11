@@ -16,8 +16,10 @@ func SetDockyardMacaron(m *macaron.Macaron) {
 	if err := db.InitDB(setting.DBURI, setting.DBPasswd, setting.DBDB); err != nil {
 		fmt.Printf("Connect Database Error %s", err.Error())
 	}
+
 	//Setting Middleware
 	middleware.SetMiddlewares(m)
+
 	//Setting Router
 	router.SetRouters(m)
 }

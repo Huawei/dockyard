@@ -7,9 +7,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/codegangsta/cli"
-
 	"github.com/Unknwon/macaron"
+	"github.com/codegangsta/cli"
 
 	"github.com/containerops/dockyard/web"
 	"github.com/containerops/wrench/setting"
@@ -19,7 +18,7 @@ import (
 var CmdWeb = cli.Command{
 	Name:        "web",
 	Usage:       "start dockyard web service",
-	Description: "dockyard is the module of handler docker repository and rkt image.",
+	Description: "dockyard is the module of handler docker and rkt image.",
 	Action:      runWeb,
 	Flags: []cli.Flag{
 		cli.StringFlag{

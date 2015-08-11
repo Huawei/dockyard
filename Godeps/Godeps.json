@@ -27,15 +27,15 @@
 		},
 		{
 			"ImportPath": "github.com/containerops/wrench/db",
-			"Rev": "307a0cd32e40ff426ebeedd45759b72456c5c227"
+			"Rev": "4663f11c7fcc03a9c467f3f5fa640b31b06105f3"
 		},
 		{
 			"ImportPath": "github.com/containerops/wrench/setting",
-			"Rev": "307a0cd32e40ff426ebeedd45759b72456c5c227"
+			"Rev": "4663f11c7fcc03a9c467f3f5fa640b31b06105f3"
 		},
 		{
 			"ImportPath": "github.com/containerops/wrench/utils",
-			"Rev": "307a0cd32e40ff426ebeedd45759b72456c5c227"
+			"Rev": "4663f11c7fcc03a9c467f3f5fa640b31b06105f3"
 		},
 		{
 			"ImportPath": "github.com/docker/libtrust",

@@ -17,7 +17,6 @@ import (
 )
 
 func GetImageAncestryV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-
 	imageId := ctx.Params(":imageId")
 
 	i := new(models.Image)
@@ -34,15 +33,16 @@ func GetImageAncestryV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, 
 	}
 
 	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(i.Ancestry)))
+
 	return http.StatusOK, []byte(i.Ancestry)
 }
 
 func GetImageJSONV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-
-	imageId := ctx.Params(":imageId")
 	var jsonInfo string
 	var payload string
 	var err error
+
+	imageId := ctx.Params(":imageId")
 
 	i := new(models.Image)
 	if jsonInfo, err = i.GetJSON(imageId); err != nil {
@@ -67,7 +67,6 @@ func GetImageJSONV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 }
 
 func GetImageLayerV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-
 	imageId := ctx.Params(":imageId")
 
 	i := new(models.Image)
@@ -106,10 +105,9 @@ func GetImageLayerV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []b
 }
 
 func PutImageJSONV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-
 	imageId := ctx.Params(":imageId")
 
-	jsonInfo, err := ctx.Req.Body().String()
+	info, err := ctx.Req.Body().String()
 	if err != nil {
 		log.Error("[REGISTRY API V1] Get request body error: %v", err.Error())
 
@@ -118,19 +116,19 @@ func PutImageJSONV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 	}
 
 	i := new(models.Image)
-	if err := i.PutJSON(imageId, jsonInfo, setting.APIVERSION_V1); err != nil {
+	if err := i.PutJSON(imageId, info, setting.APIVERSION_V1); err != nil {
 		log.Error("[REGISTRY API V1] Put Image JSON Error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Put Image JSON Error"})
 		return http.StatusBadRequest, result
 	}
 
-	return http.StatusOK, []byte("true")
+	return http.StatusOK, []byte("")
 }
 
 func PutImageLayerv1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-
 	imageId := ctx.Params(":imageId")
+
 	basePath := setting.ImagePath
 	imagePath := fmt.Sprintf("%v/images/%v", basePath, imageId)
 	layerfile := fmt.Sprintf("%v/images/%v/layer", basePath, imageId)
@@ -159,11 +157,10 @@ func PutImageLayerv1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []b
 		return http.StatusBadRequest, result
 	}
 
-	return http.StatusOK, []byte("true")
+	return http.StatusOK, []byte("")
 }
 
 func PutImageChecksumV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-
 	imageId := ctx.Params(":imageId")
 
 	checksum := strings.Split(ctx.Req.Header.Get("X-Docker-Checksum"), ":")[1]
@@ -187,5 +184,5 @@ func PutImageChecksumV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, 
 		return http.StatusBadRequest, result
 	}
 
-	return http.StatusOK, []byte("true")
+	return http.StatusOK, []byte("")
 }

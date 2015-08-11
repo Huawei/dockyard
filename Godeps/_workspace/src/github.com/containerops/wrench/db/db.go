@@ -61,6 +61,9 @@ func Key(object string, keys ...string) (result string) {
 	case "IMAGE":
 	case "image":
 		result = fmt.Sprintf("IMAGE-%s", keys[0])
+	case "TARSUM":
+	case "tarsum":
+		result = fmt.Sprintf("TARSUM-%s", keys[0])
 	case "TAG":
 	case "tag":
 		result = fmt.Sprintf("TAG-%s-%s-%s", keys[0], keys[1], keys[2])
