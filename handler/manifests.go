@@ -31,6 +31,9 @@ func PutManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 	manifest, _ := ioutil.ReadAll(ctx.Req.Request.Body)
 	if err := models.ManifestconvertV1(manifest); err != nil {
 		log.Error("[REGISTRY API V2] Decode Manifest Error: %v", err.Error())
+
+		result, _ := json.Marshal(map[string]string{"message": "Manifest converted failed"})
+		return http.StatusBadRequest, result
 	}
 
 	digest, err := utils.DigestManifest(manifest)
