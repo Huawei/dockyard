@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/Unknwon/macaron"
@@ -8,9 +9,13 @@ import (
 )
 
 func GetPingV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	return http.StatusOK, []byte("")
+	result, _ := json.Marshal(map[string]string{})
+
+	return http.StatusOK, result
 }
 
 func GetPingV2Handler(ctx *macaron.Context) (int, []byte) {
-	return http.StatusOK, []byte("")
+	result, _ := json.Marshal(map[string]string{})
+
+	return http.StatusOK, result
 }
