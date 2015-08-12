@@ -282,7 +282,7 @@ func ManifestconvertV1(manifest []byte) error {
 	//manifest convert to V1 format
 	m := new(convert.ManifestDesc)
 	if err := m.Manifest2JSON(manifest); err != nil {
-		fmt.Println("[REGISTRY API V2] Decode Manifest Error: ", err.Error())
+		return err
 	}
 
 	for k := 0; k < len(m.ImgJSON); k++ {
@@ -351,8 +351,9 @@ func ManifestconvertV1(manifest []byte) error {
 		if err := img.PutAncestry(m.ImgId[k]); err != nil {
 			return err
 		}
+
+		os.RemoveAll(fmt.Sprintf("%v/temp/%v", setting.ImagePath, m.ImgTarsum[k]))
 	}
-	os.RemoveAll(fmt.Sprintf("%v/temp", setting.ImagePath))
 
 	return nil
 }
