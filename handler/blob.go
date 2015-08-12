@@ -32,7 +32,8 @@ func HeadBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte)
 	ctx.Resp.Header().Set("Docker-Content-Digest", digest)
 	ctx.Resp.Header().Set("Content-Type", "application/x-gzip")
 
-	return http.StatusOK, []byte("")
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
 }
 
 func PostBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
@@ -51,7 +52,8 @@ func PostBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte)
 	ctx.Resp.Header().Set("Docker-Upload-Uuid", key)
 	ctx.Resp.Header().Set("Location", random)
 
-	return http.StatusAccepted, []byte("")
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusAccepted, result
 }
 
 func PutBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
@@ -96,7 +98,8 @@ func PutBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 	ctx.Resp.Header().Set("Docker-Content-Digest", digest)
 	ctx.Resp.Header().Set("Location", random)
 
-	return http.StatusCreated, []byte("")
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusCreated, result
 }
 
 func GetBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
