@@ -123,7 +123,8 @@ func PutImageJSONV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 		return http.StatusBadRequest, result
 	}
 
-	return http.StatusOK, []byte("")
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
 }
 
 func PutImageLayerv1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
@@ -157,7 +158,8 @@ func PutImageLayerv1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []b
 		return http.StatusBadRequest, result
 	}
 
-	return http.StatusOK, []byte("")
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
 }
 
 func PutImageChecksumV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
@@ -184,5 +186,6 @@ func PutImageChecksumV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, 
 		return http.StatusBadRequest, result
 	}
 
-	return http.StatusOK, []byte("")
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
 }
