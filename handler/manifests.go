@@ -53,7 +53,8 @@ func PutManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 	ctx.Resp.Header().Set("Docker-Content-Digest", digest)
 	ctx.Resp.Header().Set("Location", random)
 
-	return http.StatusAccepted, []byte("")
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusAccepted, result
 }
 
 func GetTagsListV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {

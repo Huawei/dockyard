@@ -34,7 +34,8 @@ func PutTagV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 		return http.StatusBadRequest, result
 	}
 
-	return http.StatusOK, []byte("")
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
 }
 
 func PutRepositoryImagesV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
@@ -61,7 +62,8 @@ func PutRepositoryImagesV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (in
 		ctx.Resp.Header().Set("WWW-Authenticate", token)
 	}
 
-	return http.StatusNoContent, []byte("")
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusNoContent, result
 }
 
 func GetRepositoryImagesV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
@@ -170,5 +172,6 @@ func PutRepositoryV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []b
 		ctx.Resp.Header().Set("WWW-Authenticate", token)
 	}
 
-	return http.StatusOK, []byte("")
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
 }
