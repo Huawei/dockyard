@@ -321,7 +321,7 @@ func ManifestconvertV1(manifest []byte) error {
 		layerfile := fmt.Sprintf("%v/images/%v/layer", basePath, m.ImgId[k])
 		if _, err := os.Stat(layerfileTmp); err != nil {
 			if !utils.IsFileExist(layerfile) {
-				return err
+				return fmt.Errorf("Image layer not found")
 			}
 		} else {
 			imagePath := fmt.Sprintf("%v/images/%v", setting.ImagePath, m.ImgId[k])
@@ -351,8 +351,6 @@ func ManifestconvertV1(manifest []byte) error {
 		if err := img.PutAncestry(m.ImgId[k]); err != nil {
 			return err
 		}
-
-		os.RemoveAll(fmt.Sprintf("%v/temp/%v", setting.ImagePath, m.ImgTarsum[k]))
 	}
 
 	return nil
