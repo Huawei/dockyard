@@ -3,16 +3,12 @@ package models
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"time"
 
 	"gopkg.in/redis.v3"
 
-	"github.com/containerops/ameba/convert"
 	"github.com/containerops/wrench/db"
 	"github.com/containerops/wrench/setting"
-	"github.com/containerops/wrench/utils"
 )
 
 type Repository struct {
@@ -272,85 +268,6 @@ func (r *Repository) PutTagFromManifests(image, namespace, repository, tag, mani
 
 	if err := r.Save(); err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func ManifestconvertV1(manifest []byte) error {
-
-	//manifest convert to V1 format
-	m := new(convert.ManifestDesc)
-	if err := m.Manifest2JSON(manifest); err != nil {
-		return err
-	}
-
-	for k := 0; k < len(m.ImgJSON); k++ {
-
-		r := new(Repository)
-
-		var imgjson map[string]interface{}
-		if err := json.Unmarshal([]byte(m.ImgJSON[k]), &imgjson); err != nil {
-			return err
-		}
-
-		i := map[string]string{}
-		i["id"] = m.ImgId[k]
-		if k == (len(m.ImgJSON) - 1) {
-			i["Tag"] = m.Tag
-		}
-
-		if err := r.PutJSONFromManifests(i, m.Name, m.Repository); err != nil {
-			return err
-		}
-
-		if k == (len(m.ImgJSON) - 1) {
-			if err := r.PutTagFromManifests(m.ImgId[k], m.Name, m.Repository, m.Tag, string(manifest)); err != nil {
-				return err
-			}
-		}
-
-		img := new(Image)
-		if err := img.PutJSON(m.ImgId[k], m.ImgJSON[k], setting.APIVERSION_V2); err != nil {
-			return err
-		}
-
-		//Put Image Layer,Compatible with V1,save the layerfile by imageId as the same with V1,and remove the temporary one
-		basePath := setting.ImagePath
-		layerfileTmp := fmt.Sprintf("%v/temp/%v/layer", basePath, m.ImgTarsum[k])
-		layerfile := fmt.Sprintf("%v/images/%v/layer", basePath, m.ImgId[k])
-		if _, err := os.Stat(layerfileTmp); err != nil {
-			if !utils.IsFileExist(layerfile) {
-				return fmt.Errorf("Image layer not found")
-			}
-		} else {
-			imagePath := fmt.Sprintf("%v/images/%v", setting.ImagePath, m.ImgId[k])
-			if !utils.IsDirExist(imagePath) {
-				os.MkdirAll(imagePath, os.ModePerm)
-			}
-
-			data, _ := ioutil.ReadFile(layerfileTmp)
-			if err := ioutil.WriteFile(layerfile, data, 0777); err != nil {
-				return err
-			}
-		}
-
-		if err := img.PutLayer(m.ImgId[k], layerfile, true, int64(imgjson["Size"].(float64))); err != nil {
-			return err
-		}
-
-		if err := img.PutChecksum(m.ImgId[k], m.ImgTarsum[k], true, ""); err != nil {
-			return err
-		}
-
-		//Put V2 tarsum,filter the same imageids of one tarsum and save them as a db value
-		if err := img.PutTarsum(m.ImgId[k], m.ImgTarsum[k]); err != nil {
-			return err
-		}
-
-		if err := img.PutAncestry(m.ImgId[k]); err != nil {
-			return err
-		}
 	}
 
 	return nil

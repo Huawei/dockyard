@@ -189,41 +189,16 @@ func (i *Image) PutLayer(imageId string, path string, uploaded bool, size int64)
 	return nil
 }
 
-func (i *Image) HasTarsum(tarsum string) (bool, []string, error) {
-	if value, err := db.Client.HGet(db.GLOBAL_TARSUM_INDEX, tarsum).Result(); err != nil {
-		return false, []string{}, err
-	} else {
-		var imggrp = []string{}
-		if err := json.Unmarshal([]byte(value), &imggrp); err != nil {
-			return false, []string{}, err
-		}
-
-		return true, imggrp, nil
+func (i *Image) HasTarsum(tarsum string) (bool, error) {
+	if err := db.Get(i, db.Key("tarsum", tarsum)); err != nil {
+		return false, err
 	}
+
+	return true, nil
 }
 
-func (i *Image) PutTarsum(imageId, tarsum string) error {
-	var imggrp = []string{}
-
-	if value, err := db.Client.HGet(db.GLOBAL_TARSUM_INDEX, tarsum).Result(); err != nil {
-		imggrp = append(imggrp, imageId)
-	} else {
-		if err := json.Unmarshal([]byte(value), &imggrp); err != nil {
-			return err
-		}
-
-		for _, v := range imggrp {
-			if v == imageId {
-				return nil
-			}
-		}
-
-		imggrp = append(imggrp, imageId)
-	}
-
-	result, _ := json.Marshal(imggrp)
-
-	if _, err := db.Client.HSet(db.GLOBAL_TARSUM_INDEX, tarsum, string(result)).Result(); err != nil {
+func (i *Image) PutTarsum(tarsum string) error {
+	if err := db.Save(i, db.Key("tarsum", tarsum)); err != nil {
 		return err
 	}
 
