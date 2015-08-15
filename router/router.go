@@ -37,6 +37,7 @@ func SetRouters(m *macaron.Macaron) {
 		m.Get("/", handler.GetPingV2Handler)
 		m.Head("/:namespace/:repository/blobs/:digest", handler.HeadBlobsV2Handler)
 		m.Post("/:namespace/:repository/blobs/uploads", handler.PostBlobsV2Handler)
+		m.Patch("/:namespace/:repository/blobs/uploads/:uuid", handler.PatchBlobsV2Handler)
 		m.Put("/:namespace/:repository/blobs/uploads/:uuid", handler.PutBlobsV2Handler)
 		m.Get("/:namespace/:repository/blobs/:digest", handler.GetBlobsV2Handler)
 		m.Put("/:namespace/:repository/manifests/:tag", handler.PutManifestsV2Handler)
