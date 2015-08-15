@@ -22,7 +22,7 @@ func HeadBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte)
 	tarsum := strings.Split(digest, ":")[1]
 
 	i := new(models.Image)
-	if has, _, _ := i.HasTarsum(tarsum); has == false {
+	if has, _ := i.HasTarsum(tarsum); has == false {
 		log.Info("[REGISTRY API V2] Tarsum not found: %v", tarsum)
 
 		result, _ := json.Marshal(map[string]string{"message": "Tarsum not found"})
@@ -61,12 +61,14 @@ func PutBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 
 	tarsum := strings.Split(digest, ":")[1]
 
-	imagePathTmp := fmt.Sprintf("%v/temp/%v", setting.ImagePath, tarsum)
-	layerfileTmp := fmt.Sprintf("%v/temp/%v/layer", setting.ImagePath, tarsum)
+	imagePathTmp := fmt.Sprintf("%v/tarsum/%v", setting.ImagePath, tarsum)
+	layerfileTmp := fmt.Sprintf("%v/tarsum/%v/layer", setting.ImagePath, tarsum)
 
 	//saving specific tarsum every times is in order to split the same tarsum in HEAD handler
 	i := new(models.Image)
-	if err := i.PutTarsum("", tarsum); err != nil {
+	i.Path = layerfileTmp
+	i.Size = int64(len(layerfileTmp))
+	if err := i.PutTarsum(tarsum); err != nil {
 		log.Error("[REGISTRY API V2] Save tarsum failed: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Save tarsum failed"})
@@ -108,23 +110,11 @@ func GetBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 	tarsum := strings.Split(digest, ":")[1]
 
 	i := new(models.Image)
-	has, imagegrp, _ := i.HasTarsum(tarsum)
+	has, _ := i.HasTarsum(tarsum)
 	if has == false {
 		log.Error("[REGISTRY API V2] Digest not found: %v", tarsum)
 
 		result, _ := json.Marshal(map[string]string{"message": "Digest not found"})
-		return http.StatusNotFound, result
-	}
-
-	if has, _, err := i.Has(imagegrp[1]); err != nil {
-		log.Error("[REGISTRY API V2] Read Image Ancestry Error: %v", err.Error())
-
-		result, _ := json.Marshal(map[string]string{"message": "Read Image Ancestry Error"})
-		return http.StatusBadRequest, result
-	} else if has == false {
-		log.Error("[REGISTRY API V2] Read Image None: %v", imagegrp[1])
-
-		result, _ := json.Marshal(map[string]string{"message": "Read Image None"})
 		return http.StatusNotFound, result
 	}
 
