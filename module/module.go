@@ -2,9 +2,13 @@ package modules
 
 import (
 	"encoding/json"
+	"io"
+	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/containerops/dockyard/models"
+	"github.com/containerops/wrench/utils"
 )
 
 func ParseManifest(data []byte) error {
@@ -34,49 +38,42 @@ func ParseManifest(data []byte) error {
 		}
 		i["id"] = image["id"].(string)
 
-		//Put V1 JSON
 		if err := r.PutJSONFromManifests(i, namespace, repository); err != nil {
 			return err
 		}
 
 		if k == 0 {
-			//Put V1 Tag
 			if err := r.PutTagFromManifests(image["id"].(string), namespace, repository, tag.(string), string(data)); err != nil {
 				return err
 			}
 		}
-		/*
-			img := new(models.Image)
-
-			blobSum := manifest["fsLayers"].([]interface{})[k].(map[string]interface{})["blobSum"].(string)
-			tarsum := strings.Split(blobSum, ":")[1]
-
-			fmt.Println("[Registry API V2] Image %s sha256: %s", image["id"].(string), v.(map[string]interface{})["v1Compatibility"].(string))
-
-			//Put Image Json
-			if err := img.PutJSON(image["id"].(string), v.(map[string]interface{})["v1Compatibility"].(string), setting.APIVERSION_V2); err != nil {
-				return err
-			}
-
-			//Put Image Layer
-			basePath := setting.BasePath
-			layerfile := fmt.Sprintf("%v/uuid/%v/layer", basePath, tarsum)
-
-			if err := img.PutLayer(image["id"].(string), layerfile, true, int64(image["Size"].(float64))); err != nil {
-				return err
-			}
-
-			//Put Checksum
-			if err := img.PutChecksum(image["id"].(string), tarsum, true, ""); err != nil {
-				return err
-			}
-
-			//Put Ancestry
-			if err := img.PutAncestry(image["id"].(string)); err != nil {
-				return err
-			}
-		*/
 	}
 
 	return nil
+}
+
+func CopyImgLayer(srcPath, srcFile, dstPath, dstFile string, resp io.Reader) (int, error) {
+	if !utils.IsDirExist(dstPath) {
+		os.MkdirAll(dstPath, os.ModePerm)
+	}
+
+	if utils.IsFileExist(dstFile) {
+		os.Remove(dstFile)
+	}
+
+	var data []byte
+	if _, err := os.Stat(srcFile); err == nil {
+		data, _ = ioutil.ReadFile(srcFile)
+		if err := ioutil.WriteFile(dstFile, data, 0777); err != nil {
+			return 0, err
+		}
+		os.RemoveAll(srcPath)
+	} else {
+		data, _ = ioutil.ReadAll(resp)
+		if err := ioutil.WriteFile(dstFile, data, 0777); err != nil {
+			return 0, err
+		}
+	}
+
+	return len(data), nil
 }
