@@ -32,10 +32,35 @@ const (
 	HeaderVary            = "Vary"
 )
 
+// GzipOptions represents a struct for specifying configuration options for the GZip middleware.
+type GzipOptions struct {
+	// Compression level. Can be DefaultCompression(-1) or any integer value between BestSpeed(1) and BestCompression(9) inclusive.
+	CompressionLevel int
+}
+
+func isCompressionLevelValid(level int) bool {
+	return level == gzip.DefaultCompression ||
+		(level >= gzip.BestSpeed && level <= gzip.BestCompression)
+}
+
+func prepareGzipOptions(options []GzipOptions) GzipOptions {
+	var opt GzipOptions
+	if len(options) > 0 {
+		opt = options[0]
+	}
+
+	if !isCompressionLevelValid(opt.CompressionLevel) {
+		opt.CompressionLevel = gzip.DefaultCompression
+	}
+	return opt
+}
+
 // Gziper returns a Handler that adds gzip compression to all requests.
 // Make sure to include the Gzip middleware above other middleware
 // that alter the response body (like the render middleware).
-func Gziper() Handler {
+func Gziper(options ...GzipOptions) Handler {
+	opt := prepareGzipOptions(options)
+
 	return func(ctx *Context) {
 		if !strings.Contains(ctx.Req.Header.Get(HeaderAcceptEncoding), "gzip") {
 			return
@@ -45,12 +70,20 @@ func Gziper() Handler {
 		headers.Set(HeaderContentEncoding, "gzip")
 		headers.Set(HeaderVary, HeaderAcceptEncoding)
 
-		gz := gzip.NewWriter(ctx.Resp)
+		// We've made sure compression level is valid in prepareGzipOptions,
+		// no need to check same error again.
+		gz, err := gzip.NewWriterLevel(ctx.Resp, opt.CompressionLevel)
+		if err != nil {
+			panic(err.Error())
+		}
 		defer gz.Close()
 
 		gzw := gzipResponseWriter{gz, ctx.Resp}
 		ctx.Resp = gzw
 		ctx.MapTo(gzw, (*http.ResponseWriter)(nil))
+		if ctx.Render != nil {
+			ctx.Render.SetResponseWriter(gzw)
+		}
 
 		ctx.Next()
 
@@ -68,7 +101,6 @@ func (grw gzipResponseWriter) Write(p []byte) (int, error) {
 	if len(grw.Header().Get(HeaderContentType)) == 0 {
 		grw.Header().Set(HeaderContentType, http.DetectContentType(p))
 	}
-
 	return grw.w.Write(p)
 }
 

@@ -66,6 +66,7 @@ BOOL_FALSE = false
 FLOAT64 = 1.25
 INT = 10
 TIME = 2015-01-01T20:17:05Z
+DURATION = 2h45m
 
 [array]
 STRINGS = en, zh, de
@@ -74,8 +75,11 @@ INTS = 1, 2, 3
 TIMES = 2015-01-01T20:17:05Z,2015-01-01T20:17:05Z,2015-01-01T20:17:05Z
 
 [note]
+empty_lines = next line is empty\
 
 [advance]
+value with quotes = "some value"
+value quote2 again = 'some value'
 true = """"2+3=5""""
 "1+1=2" = true
 """6+1=7""" = true
@@ -83,7 +87,15 @@ true = """"2+3=5""""
 """"6+6"""" = 12
 ` + "`" + `7-2=4` + "`" + ` = false
 ADDRESS = ` + "`" + `404 road,
-NotFound, State, 50000` + "`"
+NotFound, State, 50000` + "`" + `
+
+two_lines = how about \
+	continuation lines?
+lots_of_lines = 1 \
+	2 \
+	3 \
+	4 \
+`
 
 func Test_Load(t *testing.T) {
 	Convey("Load from data sources", t, func() {
@@ -139,6 +151,9 @@ func Test_Load(t *testing.T) {
 
 		Convey("Load with bad values", func() {
 			_, err := Load([]byte(`name="""Unknwon`))
+			So(err, ShouldNotBeNil)
+
+			_, err = Load([]byte(`key = "value`))
 			So(err, ShouldNotBeNil)
 		})
 	})
@@ -232,6 +247,10 @@ func Test_Values(t *testing.T) {
 				So(sec.Key("INT").MustInt64(), ShouldEqual, 10)
 				So(sec.Key("TIME").MustTime().String(), ShouldEqual, t.String())
 
+				dur, err := time.ParseDuration("2h45m")
+				So(err, ShouldBeNil)
+				So(sec.Key("DURATION").MustDuration().Seconds(), ShouldEqual, dur.Seconds())
+
 				Convey("Must get values with default value", func() {
 					So(sec.Key("STRING_404").MustString("404"), ShouldEqual, "404")
 					So(sec.Key("BOOL_404").MustBool(true), ShouldBeTrue)
@@ -242,6 +261,8 @@ func Test_Values(t *testing.T) {
 					t, err := time.Parse(time.RFC3339, "2014-01-01T20:17:05Z")
 					So(err, ShouldBeNil)
 					So(sec.Key("TIME_404").MustTime(t).String(), ShouldEqual, t.String())
+
+					So(sec.Key("DURATION_404").MustDuration(dur).Seconds(), ShouldEqual, dur.Seconds())
 				})
 			})
 		})
@@ -331,7 +352,7 @@ func Test_Values(t *testing.T) {
 		})
 
 		Convey("Get key strings", func() {
-			So(strings.Join(cfg.Section("types").KeyStrings(), ","), ShouldEqual, "STRING,BOOL,BOOL_FALSE,FLOAT64,INT,TIME")
+			So(strings.Join(cfg.Section("types").KeyStrings(), ","), ShouldEqual, "STRING,BOOL,BOOL_FALSE,FLOAT64,INT,TIME,DURATION")
 		})
 
 		Convey("Delete a key", func() {
@@ -414,6 +435,7 @@ func Test_File_SaveTo(t *testing.T) {
 		cfg.Section("").Key("NAME").Comment = "Package name"
 		cfg.Section("author").Comment = `Information about package author
 # Bio can be written in multiple lines.`
+		cfg.Section("advanced").Key("val w/ pound").SetValue("my#password")
 		So(cfg.SaveTo("testdata/conf_out.ini"), ShouldBeNil)
 	})
 }

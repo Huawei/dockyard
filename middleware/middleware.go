@@ -3,20 +3,25 @@ package middleware
 import (
 	"github.com/Unknwon/macaron"
 
-	_ "github.com/macaron-contrib/session/redis"
+	"github.com/containerops/wrench/setting"
 )
 
 func SetMiddlewares(m *macaron.Macaron) {
-	//设置静态文件目录，静态文件的访问不进行日志输出
-	m.Use(macaron.Static("static", macaron.StaticOptions{
+	//Set static file directory,static file access without log output
+	m.Use(macaron.Static("external", macaron.StaticOptions{
 		Expires: func() string { return "max-age=0" },
 	}))
 
-	//设置全局 Logger
-	m.Map(Log)
-	//设置 logger 的 Handler 函数，处理所有 Request 的日志输出
-	m.Use(logger())
+	InitLog(setting.RunMode, setting.LogPath)
 
-	//设置 panic 的 Recovery
+	//Set global Logger
+	m.Map(Log)
+	//Set logger handler function, deal with all the Request log output
+	m.Use(logger(setting.RunMode))
+
+	//Set the response header info
+	m.Use(setRespHeaders())
+
+	//Set recovery handler to returns a middleware that recovers from any panics
 	m.Use(macaron.Recovery())
 }
