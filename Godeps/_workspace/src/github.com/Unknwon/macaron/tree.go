@@ -1,5 +1,4 @@
-// Copyright 2013 Beego Authors
-// Copyright 2014 Unknwon
+// Copyright 2015 Unknwon
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
 // not use this file except in compliance with the License. You may obtain
@@ -15,407 +14,366 @@
 
 package macaron
 
-// NOTE: last sync 0c93364 on Dec 19, 2014.
-
 import (
-	"path"
 	"regexp"
 	"strings"
 
 	"github.com/Unknwon/com"
 )
 
-type leafInfo struct {
-	// Names of wildcards that lead to this leaf.
-	// eg, ["id" "name"] for the wildcard ":id" and ":name".
-	wildcards []string
-	// Not nil if the leaf is regexp.
-	regexps *regexp.Regexp
-	handle  Handle
+type patternType int8
+
+const (
+	_PATTERN_STATIC    patternType = iota // /home
+	_PATTERN_REGEXP                       // /:id([0-9]+)
+	_PATTERN_PATH_EXT                     // /*.*
+	_PATTERN_HOLDER                       // /:user
+	_PATTERN_MATCH_ALL                    // /*
+)
+
+// Leaf represents a leaf route information.
+type Leaf struct {
+	parent *Tree
+
+	typ        patternType
+	pattern    string
+	rawPattern string // Contains wildcard instead of regexp
+	wildcards  []string
+	reg        *regexp.Regexp
+	optional   bool
+
+	handle Handle
 }
 
-func (leaf *leafInfo) match(wildcardValues []string) (ok bool, params Params) {
-	if leaf.regexps == nil {
-		if len(wildcardValues) == 0 && len(leaf.wildcards) > 0 {
-			if com.IsSliceContainsStr(leaf.wildcards, ":") {
-				params = make(map[string]string)
-				j := 0
-				for _, v := range leaf.wildcards {
-					if v == ":" {
-						continue
-					}
-					params[v] = ""
-					j += 1
-				}
-				return true, params
-			}
-			return false, nil
-		} else if len(wildcardValues) == 0 {
-			return true, nil // Static path.
-		}
+var wildcardPattern = regexp.MustCompile(`:[a-zA-Z0-9]+`)
 
-		// Match *
-		if len(leaf.wildcards) == 1 && leaf.wildcards[0] == ":splat" {
-			params = make(map[string]string)
-			params[":splat"] = path.Join(wildcardValues...)
-			return true, params
-		}
-
-		// Match *.*
-		if len(leaf.wildcards) == 3 && leaf.wildcards[0] == "." {
-			params = make(map[string]string)
-			lastone := wildcardValues[len(wildcardValues)-1]
-			strs := strings.SplitN(lastone, ".", 2)
-			if len(strs) == 2 {
-				params[":ext"] = strs[1]
-			} else {
-				params[":ext"] = ""
-			}
-			params[":path"] = path.Join(wildcardValues[:len(wildcardValues)-1]...) + "/" + strs[0]
-			return true, params
-		}
-
-		// Match :id
-		params = make(map[string]string)
-		j := 0
-		for _, v := range leaf.wildcards {
-			if v == ":" {
-				continue
-			}
-			if v == "." {
-				lastone := wildcardValues[len(wildcardValues)-1]
-				strs := strings.SplitN(lastone, ".", 2)
-				if len(strs) == 2 {
-					params[":ext"] = strs[1]
-				} else {
-					params[":ext"] = ""
-				}
-				if len(wildcardValues[j:]) == 1 {
-					params[":path"] = strs[0]
-				} else {
-					params[":path"] = path.Join(wildcardValues[j:]...) + "/" + strs[0]
-				}
-				return true, params
-			}
-			if len(wildcardValues) <= j {
-				return false, nil
-			}
-			params[v] = wildcardValues[j]
-			j++
-		}
-		if len(params) != len(wildcardValues) {
-			return false, nil
-		}
-		return true, params
-	}
-
-	if !leaf.regexps.MatchString(path.Join(wildcardValues...)) {
-		return false, nil
-	}
-	params = make(map[string]string)
-	matches := leaf.regexps.FindStringSubmatch(path.Join(wildcardValues...))
-	for i, match := range matches[1:] {
-		params[leaf.wildcards[i]] = match
-	}
-	return true, params
+func isSpecialRegexp(pattern, regStr string, pos []int) bool {
+	return len(pattern) >= pos[1]+len(regStr) && pattern[pos[1]:pos[1]+len(regStr)] == regStr
 }
 
-// Tree represents a router tree for Macaron instance.
+// getNextWildcard tries to find next wildcard and update pattern with corresponding regexp.
+func getNextWildcard(pattern string) (wildcard, _ string) {
+	pos := wildcardPattern.FindStringIndex(pattern)
+	if pos == nil {
+		return "", pattern
+	}
+	wildcard = pattern[pos[0]:pos[1]]
+
+	// Reach last character or no regexp is given.
+	if len(pattern) == pos[1] {
+		return wildcard, strings.Replace(pattern, wildcard, `(.+)`, 1)
+	} else if pattern[pos[1]] != '(' {
+		switch {
+		case isSpecialRegexp(pattern, ":int", pos):
+			pattern = strings.Replace(pattern, ":int", "([0-9]+)", 1)
+		case isSpecialRegexp(pattern, ":string", pos):
+			pattern = strings.Replace(pattern, ":string", "([\\w]+)", 1)
+		default:
+			return wildcard, strings.Replace(pattern, wildcard, `(.+)`, 1)
+		}
+	}
+
+	// Cut out placeholder directly.
+	return wildcard, pattern[:pos[0]] + pattern[pos[1]:]
+}
+
+func getWildcards(pattern string) (string, []string) {
+	wildcards := make([]string, 0, 2)
+
+	// Keep getting next wildcard until nothing is left.
+	var wildcard string
+	for {
+		wildcard, pattern = getNextWildcard(pattern)
+		if len(wildcard) > 0 {
+			wildcards = append(wildcards, wildcard)
+		} else {
+			break
+		}
+	}
+
+	return pattern, wildcards
+}
+
+// getRawPattern removes all regexp but keeps wildcards for building URL path.
+func getRawPattern(rawPattern string) string {
+	rawPattern = strings.Replace(rawPattern, ":int", "", -1)
+	rawPattern = strings.Replace(rawPattern, ":string", "", -1)
+
+	for {
+		startIdx := strings.Index(rawPattern, "(")
+		if startIdx == -1 {
+			break
+		}
+
+		closeIdx := strings.Index(rawPattern, ")")
+		if closeIdx > -1 {
+			rawPattern = rawPattern[:startIdx] + rawPattern[closeIdx+1:]
+		}
+	}
+	return rawPattern
+}
+
+func checkPattern(pattern string) (typ patternType, rawPattern string, wildcards []string, reg *regexp.Regexp) {
+	pattern = strings.TrimLeft(pattern, "?")
+	rawPattern = getRawPattern(pattern)
+
+	if pattern == "*" {
+		typ = _PATTERN_MATCH_ALL
+	} else if pattern == "*.*" {
+		typ = _PATTERN_PATH_EXT
+	} else if strings.Contains(pattern, ":") {
+		typ = _PATTERN_REGEXP
+		pattern, wildcards = getWildcards(pattern)
+		if pattern == "(.+)" {
+			typ = _PATTERN_HOLDER
+		} else {
+			reg = regexp.MustCompile(pattern)
+		}
+	}
+	return typ, rawPattern, wildcards, reg
+}
+
+func NewLeaf(parent *Tree, pattern string, handle Handle) *Leaf {
+	typ, rawPattern, wildcards, reg := checkPattern(pattern)
+	optional := false
+	if len(pattern) > 0 && pattern[0] == '?' {
+		optional = true
+	}
+	return &Leaf{parent, typ, pattern, rawPattern, wildcards, reg, optional, handle}
+}
+
+// URLPath build path part of URL by given pair values.
+func (l *Leaf) URLPath(pairs ...string) string {
+	if len(pairs)%2 != 0 {
+		panic("number of pairs does not match")
+	}
+
+	urlPath := l.rawPattern
+	parent := l.parent
+	for parent != nil {
+		urlPath = parent.rawPattern + "/" + urlPath
+		parent = parent.parent
+	}
+	for i := 0; i < len(pairs); i += 2 {
+		if len(pairs[i]) == 0 {
+			panic("pair value cannot be empty: " + com.ToStr(i))
+		} else if pairs[i][0] != ':' && pairs[i] != "*" && pairs[i] != "*.*" {
+			pairs[i] = ":" + pairs[i]
+		}
+		urlPath = strings.Replace(urlPath, pairs[i], pairs[i+1], 1)
+	}
+	return urlPath
+}
+
+// Tree represents a router tree in Macaron.
 type Tree struct {
-	fixroutes map[string]*Tree
-	wildcard  *Tree
-	leaves    []*leafInfo
+	parent *Tree
+
+	typ        patternType
+	pattern    string
+	rawPattern string
+	wildcards  []string
+	reg        *regexp.Regexp
+
+	subtrees []*Tree
+	leaves   []*Leaf
 }
 
-// NewTree initializes and returns a router tree.
+func NewSubtree(parent *Tree, pattern string) *Tree {
+	typ, rawPattern, wildcards, reg := checkPattern(pattern)
+	return &Tree{parent, typ, pattern, rawPattern, wildcards, reg, make([]*Tree, 0, 5), make([]*Leaf, 0, 5)}
+}
+
 func NewTree() *Tree {
-	return &Tree{
-		fixroutes: make(map[string]*Tree),
-	}
+	return NewSubtree(nil, "")
 }
 
-// splitPath splites patthen into parts.
-//
-// Examples:
-//		"/" -> []
-// 		"/admin" -> ["admin"]
-// 		"/admin/" -> ["admin"]
-// 		"/admin/users" -> ["admin", "users"]
-func splitPath(pattern string) []string {
-	if len(pattern) == 0 {
-		return []string{}
+func (t *Tree) addLeaf(pattern string, handle Handle) *Leaf {
+	for i := 0; i < len(t.leaves); i++ {
+		if t.leaves[i].pattern == pattern {
+			return t.leaves[i]
+		}
 	}
 
-	elements := strings.Split(pattern, "/")
-	if elements[0] == "" {
-		elements = elements[1:]
-	}
-	if elements[len(elements)-1] == "" {
-		elements = elements[:len(elements)-1]
-	}
-	return elements
-}
+	leaf := NewLeaf(t, pattern, handle)
 
-// AddRouter adds a new route to router tree.
-func (t *Tree) AddRouter(pattern string, handle Handle) {
-	t.addSegments(splitPath(pattern), handle, nil, "")
-}
-
-// splitSegment splits segment into parts.
-//
-// Examples:
-// 		"admin" -> false, nil, ""
-// 		":id" -> true, [:id], ""
-// 		"?:id" -> true, [: :id], ""        : meaning can empty
-// 		":id:int" -> true, [:id], ([0-9]+)
-// 		":name:string" -> true, [:name], ([\w]+)
-// 		":id([0-9]+)" -> true, [:id], ([0-9]+)
-// 		":id([0-9]+)_:name" -> true, [:id :name], ([0-9]+)_(.+)
-// 		"cms_:id_:page.html" -> true, [:id :page], cms_(.+)_(.+).html
-// 		"*" -> true, [:splat], ""
-// 		"*.*" -> true,[. :path :ext], ""      . meaning separator
-func splitSegment(key string) (bool, []string, string) {
-	if strings.HasPrefix(key, "*") {
-		if key == "*.*" {
-			return true, []string{".", ":path", ":ext"}, ""
+	// Add exact same leaf to grandparent/parent level without optional.
+	if leaf.optional {
+		parent := leaf.parent
+		if parent.parent != nil {
+			parent.parent.addLeaf(parent.pattern, handle)
 		} else {
-			return true, []string{":splat"}, ""
+			parent.addLeaf("", handle) // Root tree can add as empty pattern.
 		}
 	}
-	if strings.ContainsAny(key, ":") {
-		var paramsNum int
-		var out []rune
-		var start bool
-		var startexp bool
-		var param []rune
-		var expt []rune
-		var skipnum int
-		params := []string{}
-		reg := regexp.MustCompile(`[a-zA-Z0-9]+`)
-		for i, v := range key {
-			if skipnum > 0 {
-				skipnum -= 1
-				continue
-			}
-			if start {
-				//:id:int and :name:string
-				if v == ':' {
-					if len(key) >= i+4 {
-						if key[i+1:i+4] == "int" {
-							out = append(out, []rune("([0-9]+)")...)
-							params = append(params, ":"+string(param))
-							start = false
-							startexp = false
-							skipnum = 3
-							param = make([]rune, 0)
-							paramsNum += 1
-							continue
-						}
-					}
-					if len(key) >= i+7 {
-						if key[i+1:i+7] == "string" {
-							out = append(out, []rune(`([\w]+)`)...)
-							params = append(params, ":"+string(param))
-							paramsNum += 1
-							start = false
-							startexp = false
-							skipnum = 6
-							param = make([]rune, 0)
-							continue
-						}
-					}
-				}
-				// params only support a-zA-Z0-9
-				if reg.MatchString(string(v)) {
-					param = append(param, v)
-					continue
-				}
-				if v != '(' {
-					out = append(out, []rune(`(.+)`)...)
-					params = append(params, ":"+string(param))
-					param = make([]rune, 0)
-					paramsNum += 1
-					start = false
-					startexp = false
-				}
-			}
-			if startexp {
-				if v != ')' {
-					expt = append(expt, v)
-					continue
-				}
-			}
-			if v == ':' {
-				param = make([]rune, 0)
-				start = true
-			} else if v == '(' {
-				startexp = true
-				start = false
-				params = append(params, ":"+string(param))
-				paramsNum += 1
-				expt = make([]rune, 0)
-				expt = append(expt, '(')
-			} else if v == ')' {
-				startexp = false
-				expt = append(expt, ')')
-				out = append(out, expt...)
-				param = make([]rune, 0)
-			} else if v == '?' {
-				params = append(params, ":")
-			} else {
-				out = append(out, v)
-			}
+
+	i := 0
+	for ; i < len(t.leaves); i++ {
+		if leaf.typ < t.leaves[i].typ {
+			break
 		}
-		if len(param) > 0 {
-			if paramsNum > 0 {
-				out = append(out, []rune(`(.+)`)...)
-			}
-			params = append(params, ":"+string(param))
-		}
-		return true, params, string(out)
+	}
+
+	if i == len(t.leaves) {
+		t.leaves = append(t.leaves, leaf)
 	} else {
-		return false, nil, ""
+		t.leaves = append(t.leaves[:i], append([]*Leaf{leaf}, t.leaves[i:]...)...)
 	}
+	return leaf
 }
 
-// addSegments add segments to the router tree.
-func (t *Tree) addSegments(segments []string, handle Handle, wildcards []string, reg string) {
-	// Fixed root route.
-	if len(segments) == 0 {
-		if reg != "" {
-			filterCards := make([]string, 0, len(wildcards))
-			for _, v := range wildcards {
-				if v == ":" || v == "." {
-					continue
-				}
-				filterCards = append(filterCards, v)
-			}
-			t.leaves = append(t.leaves, &leafInfo{
-				handle:    handle,
-				wildcards: filterCards,
-				regexps:   regexp.MustCompile("^" + reg + "$"),
-			})
-		} else {
-			t.leaves = append(t.leaves, &leafInfo{
-				handle:    handle,
-				wildcards: wildcards,
-			})
+func (t *Tree) addSubtree(segment, pattern string, handle Handle) *Leaf {
+	for i := 0; i < len(t.subtrees); i++ {
+		if t.subtrees[i].pattern == segment {
+			return t.subtrees[i].addNextSegment(pattern, handle)
 		}
-		return
 	}
 
-	seg := segments[0]
-	iswild, params, regexpStr := splitSegment(seg)
-	//for the router  /login/*/access match /login/2009/11/access
-	if !iswild && com.IsSliceContainsStr(wildcards, ":splat") {
-		iswild = true
-		regexpStr = seg
-	}
-	if seg == "*" && len(wildcards) > 0 && reg == "" {
-		iswild = true
-		regexpStr = "(.+)"
-	}
-	if iswild {
-		if t.wildcard == nil {
-			t.wildcard = NewTree()
+	subtree := NewSubtree(t, segment)
+	i := 0
+	for ; i < len(t.subtrees); i++ {
+		if subtree.typ < t.subtrees[i].typ {
+			break
 		}
-		if regexpStr != "" {
-			if reg == "" {
-				rr := ""
-				for _, w := range wildcards {
-					if w == "." || w == ":" {
-						continue
-					}
-					if w == ":splat" {
-						rr = rr + "(.+)/"
-					} else {
-						rr = rr + "([^/]+)/"
-					}
-				}
-				regexpStr = rr + regexpStr
-			} else {
-				regexpStr = "/" + regexpStr
-			}
-		} else if reg != "" {
-			if seg == "*.*" {
-				regexpStr = "/([^.]+).(.+)"
-			} else {
-				for _, w := range params {
-					if w == "." || w == ":" {
-						continue
-					}
-					regexpStr = "/([^/]+)" + regexpStr
-				}
-			}
-		}
-		t.wildcard.addSegments(segments[1:], handle, append(wildcards, params...), reg+regexpStr)
+	}
+
+	if i == len(t.subtrees) {
+		t.subtrees = append(t.subtrees, subtree)
 	} else {
-		subTree, ok := t.fixroutes[seg]
-		if !ok {
-			subTree = NewTree()
-			t.fixroutes[seg] = subTree
-		}
-		subTree.addSegments(segments[1:], handle, wildcards, reg)
+		t.subtrees = append(t.subtrees[:i], append([]*Tree{subtree}, t.subtrees[i:]...)...)
 	}
+	return subtree.addNextSegment(pattern, handle)
 }
 
-func (t *Tree) match(segments []string, wildcardValues []string) (handle Handle, params Params) {
-	// Handle leaf nodes.
-	if len(segments) == 0 {
-		for _, l := range t.leaves {
-			if ok, pa := l.match(wildcardValues); ok {
-				return l.handle, pa
-			}
-		}
-		if t.wildcard != nil {
-			for _, l := range t.wildcard.leaves {
-				if ok, pa := l.match(wildcardValues); ok {
-					return l.handle, pa
-				}
-			}
+func (t *Tree) addNextSegment(pattern string, handle Handle) *Leaf {
+	pattern = strings.TrimPrefix(pattern, "/")
 
-		}
-		return nil, nil
+	i := strings.Index(pattern, "/")
+	if i == -1 {
+		return t.addLeaf(pattern, handle)
 	}
-
-	seg, segs := segments[0], segments[1:]
-
-	subTree, ok := t.fixroutes[seg]
-	if ok {
-		handle, params = subTree.match(segs, wildcardValues)
-	} else if len(segs) == 0 { //.json .xml
-		if subindex := strings.LastIndex(seg, "."); subindex != -1 {
-			subTree, ok = t.fixroutes[seg[:subindex]]
-			if ok {
-				handle, params = subTree.match(segs, wildcardValues)
-				if handle != nil {
-					if params == nil {
-						params = make(map[string]string)
-					}
-					params[":ext"] = seg[subindex+1:]
-					return handle, params
-				}
-			}
-		}
-	}
-	if handle == nil && t.wildcard != nil {
-		handle, params = t.wildcard.match(segs, append(wildcardValues, seg))
-	}
-	if handle == nil {
-		for _, l := range t.leaves {
-			if ok, pa := l.match(append(wildcardValues, segments...)); ok {
-				return l.handle, pa
-			}
-		}
-	}
-	return handle, params
+	return t.addSubtree(pattern[:i], pattern[i+1:], handle)
 }
 
-// Match returns Handle and params if any route is matched.
-func (t *Tree) Match(pattern string) (Handle, Params) {
-	if len(pattern) == 0 || pattern[0] != '/' {
-		return nil, nil
+func (t *Tree) Add(pattern string, handle Handle) *Leaf {
+	pattern = strings.TrimSuffix(pattern, "/")
+	return t.addNextSegment(pattern, handle)
+}
+
+func (t *Tree) matchLeaf(globLevel int, url string, params Params) (Handle, bool) {
+	for i := 0; i < len(t.leaves); i++ {
+		switch t.leaves[i].typ {
+		case _PATTERN_STATIC:
+			if t.leaves[i].pattern == url {
+				return t.leaves[i].handle, true
+			}
+		case _PATTERN_REGEXP:
+			results := t.leaves[i].reg.FindStringSubmatch(url)
+			// Number of results and wildcasrd should be exact same.
+			if len(results)-1 != len(t.leaves[i].wildcards) {
+				break
+			}
+
+			for j := 0; j < len(t.leaves[i].wildcards); j++ {
+				params[t.leaves[i].wildcards[j]] = results[j+1]
+			}
+			return t.leaves[i].handle, true
+		case _PATTERN_PATH_EXT:
+			j := strings.LastIndex(url, ".")
+			if j > -1 {
+				params[":path"] = url[:j]
+				params[":ext"] = url[j+1:]
+			} else {
+				params[":path"] = url
+			}
+			return t.leaves[i].handle, true
+		case _PATTERN_HOLDER:
+			params[t.leaves[i].wildcards[0]] = url
+			return t.leaves[i].handle, true
+		case _PATTERN_MATCH_ALL:
+			params["*"] = url
+			params["*"+com.ToStr(globLevel)] = url
+			return t.leaves[i].handle, true
+		}
+	}
+	return nil, false
+}
+
+func (t *Tree) matchSubtree(globLevel int, segment, url string, params Params) (Handle, bool) {
+	for i := 0; i < len(t.subtrees); i++ {
+		switch t.subtrees[i].typ {
+		case _PATTERN_STATIC:
+			if t.subtrees[i].pattern == segment {
+				if handle, ok := t.subtrees[i].matchNextSegment(globLevel, url, params); ok {
+					return handle, true
+				}
+			}
+		case _PATTERN_REGEXP:
+			results := t.subtrees[i].reg.FindStringSubmatch(segment)
+			if len(results)-1 != len(t.subtrees[i].wildcards) {
+				break
+			}
+
+			for j := 0; j < len(t.subtrees[i].wildcards); j++ {
+				params[t.subtrees[i].wildcards[j]] = results[j+1]
+			}
+			if handle, ok := t.subtrees[i].matchNextSegment(globLevel, url, params); ok {
+				return handle, true
+			}
+		case _PATTERN_HOLDER:
+			if handle, ok := t.subtrees[i].matchNextSegment(globLevel+1, url, params); ok {
+				params[t.subtrees[i].wildcards[0]] = segment
+				return handle, true
+			}
+		case _PATTERN_MATCH_ALL:
+			if handle, ok := t.subtrees[i].matchNextSegment(globLevel+1, url, params); ok {
+				params["*"+com.ToStr(globLevel)] = segment
+				return handle, true
+			}
+		}
 	}
 
-	return t.match(splitPath(pattern), nil)
+	if len(t.leaves) > 0 {
+		leaf := t.leaves[len(t.leaves)-1]
+		if leaf.typ == _PATTERN_PATH_EXT {
+			url = segment + "/" + url
+			j := strings.LastIndex(url, ".")
+			if j > -1 {
+				params[":path"] = url[:j]
+				params[":ext"] = url[j+1:]
+			} else {
+				params[":path"] = url
+			}
+			return leaf.handle, true
+		} else if leaf.typ == _PATTERN_MATCH_ALL {
+			params["*"] = segment + "/" + url
+			params["*"+com.ToStr(globLevel)] = segment + "/" + url
+			return leaf.handle, true
+		}
+	}
+	return nil, false
+}
+
+func (t *Tree) matchNextSegment(globLevel int, url string, params Params) (Handle, bool) {
+	i := strings.Index(url, "/")
+	if i == -1 {
+		return t.matchLeaf(globLevel, url, params)
+	}
+	return t.matchSubtree(globLevel, url[:i], url[i+1:], params)
+}
+
+func (t *Tree) Match(url string) (Handle, Params, bool) {
+	url = strings.TrimPrefix(url, "/")
+	url = strings.TrimSuffix(url, "/")
+	params := make(Params)
+	handle, ok := t.matchNextSegment(0, url, params)
+	return handle, params, ok
+}
+
+// MatchTest returns true if given URL is matched by given pattern.
+func MatchTest(pattern, url string) bool {
+	t := NewTree()
+	t.Add(pattern, nil)
+	_, _, ok := t.Match(url)
+	return ok
 }

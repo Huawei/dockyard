@@ -1,17 +1,25 @@
 package web
 
 import (
+	"fmt"
+
 	"github.com/Unknwon/macaron"
 
 	"github.com/containerops/dockyard/middleware"
 	"github.com/containerops/dockyard/router"
+	"github.com/containerops/wrench/db"
+	"github.com/containerops/wrench/setting"
 )
 
 func SetDockyardMacaron(m *macaron.Macaron) {
-	//设置 Setting
+	//Setting Database
+	if err := db.InitDB(setting.DBURI, setting.DBPasswd, setting.DBDB); err != nil {
+		fmt.Printf("Connect Database Error %s", err.Error())
+	}
 
-	//设置 Middleware
+	//Setting Middleware
 	middleware.SetMiddlewares(m)
-	//设置 Router
+
+	//Setting Router
 	router.SetRouters(m)
 }

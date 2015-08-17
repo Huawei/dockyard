@@ -7,7 +7,7 @@ import (
 	"github.com/codegangsta/cli"
 
 	"github.com/containerops/dockyard/cmd"
-	"github.com/containerops/dockyard/setting"
+	"github.com/containerops/wrench/setting"
 )
 
 func init() {
@@ -15,6 +15,8 @@ func init() {
 }
 
 func main() {
+	setting.SetConfig("conf/containerops.conf")
+
 	app := cli.NewApp()
 
 	app.Name = setting.AppName
@@ -25,8 +27,6 @@ func main() {
 
 	app.Commands = []cli.Command{
 		cmd.CmdWeb,
-		cmd.CmdBackend,
-		cmd.CmdDatabase,
 	}
 
 	app.Flags = append(app.Flags, []cli.Flag{}...)

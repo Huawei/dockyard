@@ -169,6 +169,32 @@ Earth
 ------  end  --- */
 ```
 
+赞爆了！那要是我属于一行的内容写不下想要写到第二行怎么办？
+
+```ini
+[advance]
+two_lines = how about \
+	continuation lines?
+lots_of_lines = 1 \
+	2 \
+	3 \
+	4
+```
+
+简直是小菜一碟！
+
+```go
+cfg.Section("advance").Key("two_lines").String() // how about continuation lines?
+cfg.Section("advance").Key("lots_of_lines").String() // 1 2 3 4 
+```
+
+需要注意的是，值两侧的单引号会被自动剔除：
+
+```ini
+foo = "some value" // foo: some value
+bar = 'some value' // bar: some value
+```
+
 这就是全部了？哈哈，当然不是。
 
 #### 操作键值的辅助方法
@@ -340,7 +366,7 @@ func main() {
 	err = ini.MapToWithMapper(&Info{}, ini.TitleUnderscore, []byte("packag_name=ini"))
 	// ...
 
-	cfg, err := ini.Load("PACKAGE_NAME=ini")
+	cfg, err := ini.Load([]byte("PACKAGE_NAME=ini"))
 	// ...
 	info := new(Info)
 	cfg.NameMapper = ini.AllCapsUnderscore
