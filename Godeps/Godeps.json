@@ -3,6 +3,11 @@
 	"GoVersion": "go1.4.2",
 	"Deps": [
 		{
+			"ImportPath": "github.com/Sirupsen/logrus",
+			"Comment": "v0.8.6-1-g8bca266",
+			"Rev": "8bca2664072173a3c71db4c28ca8d304079b1787"
+		},
+		{
 			"ImportPath": "github.com/Unknwon/com",
 			"Rev": "47d7d2b81a44157600669037e11e9ddfbf16745f"
 		},
@@ -27,19 +32,63 @@
 		},
 		{
 			"ImportPath": "github.com/containerops/wrench/db",
-			"Rev": "4663f11c7fcc03a9c467f3f5fa640b31b06105f3"
+			"Rev": "ce091398c02a0711bd39fd0a8de2c1eb2fafc0c2"
 		},
 		{
 			"ImportPath": "github.com/containerops/wrench/setting",
-			"Rev": "4663f11c7fcc03a9c467f3f5fa640b31b06105f3"
+			"Rev": "ce091398c02a0711bd39fd0a8de2c1eb2fafc0c2"
 		},
 		{
 			"ImportPath": "github.com/containerops/wrench/utils",
-			"Rev": "4663f11c7fcc03a9c467f3f5fa640b31b06105f3"
+			"Rev": "ce091398c02a0711bd39fd0a8de2c1eb2fafc0c2"
+		},
+		{
+			"ImportPath": "github.com/docker/docker/pkg/archive",
+			"Comment": "v1.4.1-5132-gc19a00d",
+			"Rev": "c19a00d4cbc52adc7da76f2f5f70bb38190c2271"
+		},
+		{
+			"ImportPath": "github.com/docker/docker/pkg/fileutils",
+			"Comment": "v1.4.1-5132-gc19a00d",
+			"Rev": "c19a00d4cbc52adc7da76f2f5f70bb38190c2271"
+		},
+		{
+			"ImportPath": "github.com/docker/docker/pkg/ioutils",
+			"Comment": "v1.4.1-5132-gc19a00d",
+			"Rev": "c19a00d4cbc52adc7da76f2f5f70bb38190c2271"
+		},
+		{
+			"ImportPath": "github.com/docker/docker/pkg/pools",
+			"Comment": "v1.4.1-5132-gc19a00d",
+			"Rev": "c19a00d4cbc52adc7da76f2f5f70bb38190c2271"
+		},
+		{
+			"ImportPath": "github.com/docker/docker/pkg/promise",
+			"Comment": "v1.4.1-5132-gc19a00d",
+			"Rev": "c19a00d4cbc52adc7da76f2f5f70bb38190c2271"
+		},
+		{
+			"ImportPath": "github.com/docker/docker/pkg/stdcopy",
+			"Comment": "v1.4.1-5132-gc19a00d",
+			"Rev": "c19a00d4cbc52adc7da76f2f5f70bb38190c2271"
+		},
+		{
+			"ImportPath": "github.com/docker/docker/pkg/system",
+			"Comment": "v1.4.1-5132-gc19a00d",
+			"Rev": "c19a00d4cbc52adc7da76f2f5f70bb38190c2271"
+		},
+		{
+			"ImportPath": "github.com/docker/docker/pkg/units",
+			"Comment": "v1.4.1-5132-gc19a00d",
+			"Rev": "c19a00d4cbc52adc7da76f2f5f70bb38190c2271"
 		},
 		{
 			"ImportPath": "github.com/docker/libtrust",
 			"Rev": "9cbd2a1374f46905c68a4eb3694a130610adc62a"
+		},
+		{
+			"ImportPath": "github.com/satori/go.uuid",
+			"Rev": "6b8e5b55d20d01ad47ecfe98e5171688397c61e9"
 		},
 		{
 			"ImportPath": "gopkg.in/bsm/ratelimit.v1",
