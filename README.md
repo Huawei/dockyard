@@ -162,9 +162,7 @@ Please submit issue at https://github.com/containerops/dockyard/issues
 # Maintainers
 
 * Meaglith Ma https://twitter.com/genedna
-* Allen Chen https://github.com/chliang2030598
 * Leo Meng https://github.com/fivestarsky
-* Unknwon https://twitter.com/joe2010xtmf
 
 
 # Licensing
