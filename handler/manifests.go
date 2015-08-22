@@ -45,7 +45,8 @@ func PutManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 		return http.StatusBadRequest, result
 	}
 
-	random := fmt.Sprintf("https://%v/v2/%v/%v/manifests/%v",
+	random := fmt.Sprintf("%s://%s/v2/%s/%s/manifests/%s",
+		setting.ListenMode,
 		setting.Domains,
 		namespace,
 		repository,
