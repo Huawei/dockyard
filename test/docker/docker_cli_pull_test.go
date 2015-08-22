@@ -99,6 +99,7 @@ func TestPullV2RepoWithoutTags(t *testing.T) {
 
 	reponame := "busybox"
 	repoDest := test.Domains + "/" + test.UserName + "/" + reponame
+	repotags := []string{"latest", "1.0", "2.0"}
 
 	_, registry, err := getCurrentVersion()
 	if err != nil {
@@ -106,20 +107,33 @@ func TestPullV2RepoWithoutTags(t *testing.T) {
 	}
 
 	if registry == "V2" {
+		for _, v := range repotags {
+			tag := repoDest + ":" + v
+			if err = exec.Command(test.DockerBinary, "inspect", tag).Run(); err == nil {
+				cmd = exec.Command(test.DockerBinary, "rmi", tag)
+				if out, err = test.ParseCmdCtx(cmd); err != nil {
+					t.Fatalf("Pull testing preparation is failed: [Info]%v, [Error]%v", out, err)
+				}
+			}
+		}
+
 		for i := 1; i <= 2; i++ {
 			cmd = exec.Command(test.DockerBinary, "pull", repoDest)
 			if out, err = test.ParseCmdCtx(cmd); err != nil {
 				t.Fatalf("Pull %v failed: [Info]%v, [Error]%v", repoDest, out, err)
 			}
-			/*
-				if !strings.Contains(out, "Using default tag: latest") {
-					t.Fatalf("Not expected result")
-				}
-			*/
 		}
 
-		repotags := []string{"latest"}
-		if err := chkAndDelAllRepoTags(repoDest, repotags); err != nil {
+		for _, v := range repotags {
+			if v != "latest" {
+				tag := repoDest + ":" + v
+				if err = exec.Command(test.DockerBinary, "inspect", tag).Run(); err == nil {
+					t.Fatalf("Not expect result")
+				}
+			}
+		}
+
+		if err := chkAndDelAllRepoTags(repoDest, []string{"latest"}); err != nil {
 			t.Fatalf("Pull %v failed, it is not found in location. [Error]%v", repoDest, err.Error())
 		}
 	}
