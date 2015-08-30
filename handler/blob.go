@@ -45,7 +45,8 @@ func PostBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte)
 
 	uuid := utils.MD5(uuid.NewV4().String())
 	state := utils.MD5(fmt.Sprintf("%s/%s/%s", namespace, repository, time.Now().UnixNano()/int64(time.Millisecond)))
-	random := fmt.Sprintf("https://%s/v2/%s/%s/blobs/uploads/%s?_state=%s",
+	random := fmt.Sprintf("%s://%s/v2/%s/%s/blobs/uploads/%s?_state=%s",
+		setting.ListenMode,
 		setting.Domains,
 		namespace,
 		repository,
@@ -88,7 +89,8 @@ func PatchBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte
 	}
 
 	state := utils.MD5(fmt.Sprintf("%s/%s/%s", namespace, repository, time.Now().UnixNano()/int64(time.Millisecond)))
-	random := fmt.Sprintf("https://%s/v2/%s/%s/blobs/uploads/%s?_state=%s",
+	random := fmt.Sprintf("%s://%s/v2/%s/%s/blobs/uploads/%s?_state=%s",
+		setting.ListenMode,
 		setting.Domains,
 		namespace,
 		repository,
@@ -131,7 +133,8 @@ func PutBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 		return http.StatusBadRequest, result
 	}
 
-	random := fmt.Sprintf("https://%s/v2/%s/%s/blobs/%s",
+	random := fmt.Sprintf("%s://%s/v2/%s/%s/blobs/%s",
+		setting.ListenMode,
 		setting.Domains,
 		ctx.Params(":namespace"),
 		ctx.Params(":repository"),
