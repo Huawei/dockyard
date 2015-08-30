@@ -66,6 +66,11 @@ domains = containerops.me
 registry = 0.9
 distribution = registry/2.0
 standalone = true
+driver = qiniu
+
+[qiniu]
+access_key = xxx
+secret_key = xxx
 ```
 
 * runmode: application run mode must be `dev` or `prod`.
