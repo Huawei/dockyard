@@ -31,16 +31,6 @@ var CmdWeb = cli.Command{
 			Value: 80,
 			Usage: "web service listen at port 80; if run with https will be 443.",
 		},
-		cli.StringFlag{
-			Name:  "backend",
-			Value: "",
-			Usage: "Start object storage service in the backend of service.",
-		},
-		cli.StringFlag{
-			Name:  "driver",
-			Value: "",
-			Usage: "Backend object storage driver, like s3, qiniu...",
-		},
 	},
 }
 
