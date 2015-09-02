@@ -10,6 +10,7 @@ import (
 	"github.com/Unknwon/macaron"
 	"github.com/codegangsta/cli"
 
+	"github.com/containerops/dockyard/backend"
 	"github.com/containerops/dockyard/web"
 	"github.com/containerops/wrench/setting"
 	"github.com/containerops/wrench/utils"
@@ -40,18 +41,20 @@ func runWeb(c *cli.Context) {
 	//Set Macaron Web Middleware And Routers
 	web.SetDockyardMacaron(m)
 
+	backend.InitBackend()
+
 	switch setting.ListenMode {
 	case "http":
 		listenaddr := fmt.Sprintf("%s:%d", c.String("address"), c.Int("port"))
 		if err := http.ListenAndServe(listenaddr, m); err != nil {
-			fmt.Printf("start dockyard http service error: %v", err.Error())
+			fmt.Printf("Start Dockyard http service error: %v", err.Error())
 		}
 		break
 	case "https":
 		listenaddr := fmt.Sprintf("%s:443", c.String("address"))
 		server := &http.Server{Addr: listenaddr, TLSConfig: &tls.Config{MinVersion: tls.VersionTLS10}, Handler: m}
 		if err := server.ListenAndServeTLS(setting.HttpsCertFile, setting.HttpsKeyFile); err != nil {
-			fmt.Printf("start dockyard https service error: %v", err.Error())
+			fmt.Printf("Start Dockyard https service error: %v", err.Error())
 		}
 		break
 	case "unix":
@@ -61,11 +64,11 @@ func runWeb(c *cli.Context) {
 		}
 
 		if listener, err := net.Listen("unix", listenaddr); err != nil {
-			fmt.Printf("start dockyard unix socket error: %v", err.Error())
+			fmt.Printf("Start Dockyard unix socket error: %v", err.Error())
 		} else {
 			server := &http.Server{Handler: m}
 			if err := server.Serve(listener); err != nil {
-				fmt.Printf("start dockyard unix socket error: %v", err.Error())
+				fmt.Printf("Start Dockyard unix socket error: %v", err.Error())
 			}
 		}
 		break

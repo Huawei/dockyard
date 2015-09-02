@@ -1,7 +1,7 @@
-package backend
+package drivers
 
 import (
-	"errors"
+	"fmt"
 	"reflect"
 )
 
@@ -9,7 +9,6 @@ type Injector map[string]reflect.Value
 
 func NewInjector(size int) Injector {
 	return make(Injector, size)
-
 }
 
 func (inj Injector) Bind(name string, fn interface{}) {
@@ -19,11 +18,11 @@ func (inj Injector) Bind(name string, fn interface{}) {
 
 func (inj Injector) Call(name string, params ...interface{}) (result []reflect.Value, err error) {
 	if _, ok := inj[name]; !ok {
-		err = errors.New(name + " does not exist.")
+		err = fmt.Errorf(name + " does not exist.")
 		return
 	}
 	if len(params) != inj[name].Type().NumIn() {
-		err = errors.New("The number of params is not adapted.")
+		err = fmt.Errorf("The number of params is not adapted.")
 		return
 	}
 	in := make([]reflect.Value, len(params))
