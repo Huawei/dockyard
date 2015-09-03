@@ -5,7 +5,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -20,68 +19,53 @@ import (
 )
 
 var (
-	g_aliEndpoint        string
-	g_aliBucket          string
-	g_aliAccessKeyID     string
-	g_aliAccessKeySecret string
+	AliyunEndpoint        string
+	AliyunBucket          string
+	AliyunAccessKeyID     string
+	AliyunAccessKeySecret string
 )
 
 func init() {
-
-	gopath := os.Getenv("GOPATH")
-	if gopath == "" {
-		fmt.Errorf("read env GOPATH fail")
-		os.Exit(1)
-	}
-	err := aligetconfig(gopath + "/src/github.com/containerops/dockyard/conf/runtime.conf")
-	if err != nil {
-		fmt.Errorf("read config file conf/runtime.conf fail:" + err.Error())
-		os.Exit(1)
-	}
-	g_injector.Bind("alicloudsave", alicloudsave)
+	fmt.Println("aliyun")
+	InjectReflect.Bind("aliyunsave", aliyunsave)
 }
 
-func aligetconfig(conffile string) (err error) {
-	conf, err := config.NewConfig("ini", conffile)
-	if err != nil {
-		return err
+func aliyunSetconfig(conf config.ConfigContainer) error {
+	AliyunEndpoint = conf.String("aliyun::endpoint")
+	if AliyunEndpoint == "" {
+		return fmt.Errorf("Read endpoint of aliyun failed!")
 	}
 
-	g_aliEndpoint = conf.String("alicloud::endpoint")
-	if g_aliEndpoint == "" {
-		return errors.New("read config file's endpoint failed!")
+	AliyunBucket = conf.String("aliyun::bucket")
+	if AliyunBucket == "" {
+		return fmt.Errorf("Read bucket of aliyun failed!")
 	}
 
-	g_aliBucket = conf.String("alicloud::bucket")
-	if g_aliBucket == "" {
-		return errors.New("read config file's bucket failed!")
+	AliyunAccessKeyID = conf.String("aliyun::accessKeyID")
+	if AliyunAccessKeyID == "" {
+		return fmt.Errorf("Read accessKeyID of aliyun failed!")
 	}
 
-	g_aliAccessKeyID = conf.String("alicloud::accessKeyID")
-	if g_aliAccessKeyID == "" {
-		return errors.New("read config file's accessKeyID failed!")
-	}
-
-	g_aliAccessKeySecret = conf.String("alicloud::accessKeysecret")
-	if g_aliAccessKeySecret == "" {
-		return errors.New("read config file's accessKeysecret failed!")
+	AliyunAccessKeySecret = conf.String("aliyun::accessKeysecret")
+	if AliyunAccessKeySecret == "" {
+		return fmt.Errorf("Read accessKeysecret of aliyun failed!")
 	}
 	return nil
 }
 
-func alicloudsave(file string) (url string, err error) {
+func aliyunsave(file string) (url string, err error) {
 
-	client := NewClient(g_aliAccessKeyID, g_aliAccessKeySecret)
+	client := NewClient(AliyunAccessKeyID, AliyunAccessKeySecret)
 
-	bucket := NewBucket(g_aliBucket, g_aliEndpoint, client)
+	bucket := NewBucket(AliyunBucket, AliyunEndpoint, client)
 
 	var key string
 	//get the filename from the file , eg,get "1.txt" from /home/liugenping/1.txt
 	for _, key = range strings.Split(file, "/") {
 
 	}
-	opath := "/" + g_aliBucket + "/" + key
-	url = "http://" + g_aliEndpoint + opath
+	opath := "/" + AliyunBucket + "/" + key
+	url = "http://" + AliyunEndpoint + opath
 
 	headers := map[string]string{}
 
@@ -152,7 +136,7 @@ func (b *Bucket) Put(object string, content io.Reader, headers map[string]string
 	}
 
 	if resp.StatusCode != 200 {
-		err = errors.New(resp.Status)
+		err = fmt.Errorf(resp.Status)
 		return err
 	}
 

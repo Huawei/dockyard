@@ -4,7 +4,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -16,59 +15,43 @@ import (
 )
 
 var (
-	g_amazons3Endpoint        string
-	g_amazons3Bucket          string
-	g_amazons3AccessKeyID     string
-	g_amazons3AccessKeySecret string
+	Amazons3Endpoint        string
+	Amazons3Bucket          string
+	Amazons3AccessKeyID     string
+	Amazons3AccessKeySecret string
 )
 
 func init() {
-
-	gopath := os.Getenv("GOPATH")
-	if gopath == "" {
-		fmt.Errorf("read env GOPATH fail")
-		os.Exit(1)
-	}
-	err := amazons3getconfig(gopath + "/src/github.com/containerops/dockyard/conf/runtime.conf")
-	if err != nil {
-		fmt.Errorf("read config file conf/runtime.conf fail:" + err.Error())
-		os.Exit(1)
-	}
-	g_injector.Bind("amazons3cloudsave", amazons3cloudsave)
+	InjectReflect.Bind("amazons3save", amazons3save)
 }
 
-func amazons3getconfig(conffile string) (err error) {
-	conf, err := config.NewConfig("ini", conffile)
-	if err != nil {
-		return err
+func amazons3Setconfig(conf config.ConfigContainer) error {
+	Amazons3Endpoint = conf.String("amazons3::endpoint")
+	if Amazons3Endpoint == "" {
+		return fmt.Errorf("Read endpoint of amazons3 failed!")
 	}
 
-	g_amazons3Endpoint = conf.String("amazons3cloud::endpoint")
-	if g_amazons3Endpoint == "" {
-		return errors.New("read config file's endpoint failed!")
+	Amazons3Bucket = conf.String("amazons3::bucket")
+	if Amazons3Bucket == "" {
+		return fmt.Errorf("Read bucket of amazons3 failed!")
 	}
 
-	g_amazons3Bucket = conf.String("amazons3cloud::bucket")
-	if g_amazons3Bucket == "" {
-		return errors.New("read config file's bucket failed!")
+	Amazons3AccessKeyID = conf.String("amazons3::accessKeyID")
+	if Amazons3AccessKeyID == "" {
+		return fmt.Errorf("Read accessKeyID of amazons3 failed!")
 	}
 
-	g_amazons3AccessKeyID = conf.String("amazons3cloud::accessKeyID")
-	if g_amazons3AccessKeyID == "" {
-		return errors.New("read config file's accessKeyID failed!")
-	}
-
-	g_amazons3AccessKeySecret = conf.String("amazons3cloud::accessKeysecret")
-	if g_amazons3AccessKeySecret == "" {
-		return errors.New("read config file's accessKeysecret failed!")
+	Amazons3AccessKeySecret = conf.String("amazons3::accessKeysecret")
+	if Amazons3AccessKeySecret == "" {
+		return fmt.Errorf("Read accessKeysecret of amazons3 failed!")
 	}
 	return nil
 }
 
-func amazons3cloudsave(file string) (url string, err error) {
+func amazons3save(file string) (url string, err error) {
 
 	var key string
-	//get the filename from the file , eg,get "1.txt" from /home/liugenping/1.txt
+
 	for _, key = range strings.Split(file, "/") {
 
 	}
@@ -85,19 +68,19 @@ func amazons3cloudsave(file string) (url string, err error) {
 	}
 	filesize := fi.Size()
 
-	requstUrl := "http://" + g_amazons3Bucket + "." + g_amazons3Endpoint + "/" + key
+	requstUrl := "http://" + Amazons3Bucket + "." + Amazons3Endpoint + "/" + key
 	r, _ := http.NewRequest("PUT", requstUrl, fin)
 	r.ContentLength = int64(filesize)
 	r.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
 	r.Header.Set("X-Amz-Acl", "public-read")
 
-	amazons3Sign(r, key, g_amazons3AccessKeyID, g_amazons3AccessKeySecret)
+	amazons3Sign(r, key, Amazons3AccessKeyID, Amazons3AccessKeySecret)
 	_, err = http.DefaultClient.Do(r)
 	if err != nil {
 		return "", err
 	}
 
-	url = "http://" + g_amazons3Endpoint + "/" + g_amazons3Bucket + "/" + key
+	url = "http://" + Amazons3Endpoint + "/" + Amazons3Bucket + "/" + key
 	return url, nil
 
 }
@@ -125,7 +108,7 @@ func amazons3cloudMakePlainText(r *http.Request, key string) (plainText string) 
 		plainText += amzHeader + "\n"
 	}
 
-	plainText += "/" + g_amazons3Bucket + "/" + key
+	plainText += "/" + Amazons3Bucket + "/" + key
 	return
 }
 
