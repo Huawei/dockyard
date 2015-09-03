@@ -12,7 +12,6 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"golang.org/x/oauth2/jwt"
-	//"github.com/google/google-api-go-client/storage/v1"
 )
 
 var (
@@ -62,7 +61,7 @@ func init() {
 		log.Fatalf("GCS reading conf/runtime.conf, GCS get clientEmail err, is nil")
 	}
 
-	g_injector.Bind("googlecloudsave", googlecloudsave)
+	InjectReflect.Bind("googlecloudsave", googlecloudsave)
 }
 
 func googlecloudsave(file string) (url string, err error) {
