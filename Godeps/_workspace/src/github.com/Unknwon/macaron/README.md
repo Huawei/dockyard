@@ -18,7 +18,7 @@ The very basic usage of Macaron:
 ```go
 package main
 
-import "github.com/Unknwon/macaron"
+import "gopkg.in/macaron.v1"
 
 func main() {
 	m := macaron.Classic()

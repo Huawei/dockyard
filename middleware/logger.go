@@ -3,8 +3,8 @@ package middleware
 import (
 	"fmt"
 
-	"github.com/Unknwon/macaron"
 	"github.com/astaxie/beego/logs"
+	"gopkg.in/macaron.v1"
 )
 
 var Log *logs.BeeLogger
