@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Unknwon/macaron"
+	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/wrench/setting"
 )

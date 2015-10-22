@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/Unknwon/macaron"
 	"github.com/codegangsta/cli"
+	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/dockyard/backend"
 	"github.com/containerops/dockyard/web"

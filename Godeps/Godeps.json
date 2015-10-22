@@ -12,7 +12,7 @@
 			"Rev": "47d7d2b81a44157600669037e11e9ddfbf16745f"
 		},
 		{
-			"ImportPath": "github.com/Unknwon/macaron",
+			"ImportPath": "gopkg.in/macaron.v1",
 			"Rev": "635c89ac7410dd20df967e37e8f7f173e126cedd"
 		},
 		{
