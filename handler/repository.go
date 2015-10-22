@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/Unknwon/macaron"
 	"github.com/astaxie/beego/logs"
+	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/wrench/db"
