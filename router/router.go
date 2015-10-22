@@ -1,7 +1,7 @@
 package router
 
 import (
-	"github.com/Unknwon/macaron"
+	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/dockyard/handler"
 )

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Unknwon/macaron"
 	"github.com/astaxie/beego/logs"
+	"gopkg.in/macaron.v1"
 )
 
 func GetUsersV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {

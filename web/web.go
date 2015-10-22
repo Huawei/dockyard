@@ -3,7 +3,7 @@ package web
 import (
 	"fmt"
 
-	"github.com/Unknwon/macaron"
+	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/dockyard/middleware"
 	"github.com/containerops/dockyard/router"
