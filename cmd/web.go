@@ -12,7 +12,6 @@ import (
 
 	"github.com/containerops/dockyard/backend"
 	"github.com/containerops/dockyard/web"
-	webgen "github.com/containerops/generator/web"
 	"github.com/containerops/wrench/setting"
 	"github.com/containerops/wrench/utils"
 )
@@ -41,7 +40,6 @@ func runWeb(c *cli.Context) {
 
 	//Set Macaron Web Middleware And Routers
 	web.SetDockyardMacaron(m)
-	webgen.SetGeneratorMacaron(m)
 
 	backend.InitBackend()
 
