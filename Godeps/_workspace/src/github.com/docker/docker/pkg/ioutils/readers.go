@@ -2,14 +2,17 @@ package ioutils
 
 import (
 	"bytes"
-	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
-	"math/big"
+	"math/rand"
 	"sync"
 	"time"
+
+	"github.com/docker/docker/pkg/random"
 )
+
+var rndSrc = random.NewSource()
 
 type readCloserWrapper struct {
 	io.Reader
@@ -20,6 +23,7 @@ func (r *readCloserWrapper) Close() error {
 	return r.closer()
 }
 
+// NewReadCloserWrapper returns a new io.ReadCloser.
 func NewReadCloserWrapper(r io.Reader, closer func() error) io.ReadCloser {
 	return &readCloserWrapper{
 		Reader: r,
@@ -40,6 +44,7 @@ func (r *readerErrWrapper) Read(p []byte) (int, error) {
 	return n, err
 }
 
+// NewReaderErrWrapper returns a new io.Reader.
 func NewReaderErrWrapper(r io.Reader, closer func()) io.Reader {
 	return &readerErrWrapper{
 		reader: r,
@@ -65,19 +70,16 @@ type bufReader struct {
 	maxReadDataReset     int64
 }
 
-func NewBufReader(r io.Reader) *bufReader {
-	var timeout int
-	if randVal, err := rand.Int(rand.Reader, big.NewInt(120)); err == nil {
-		timeout = int(randVal.Int64()) + 180
-	} else {
-		timeout = 300
-	}
+// NewBufReader returns a new bufReader.
+func NewBufReader(r io.Reader) io.ReadCloser {
+	timeout := rand.New(rndSrc).Intn(120) + 180
+
 	reader := &bufReader{
 		buf:                  &bytes.Buffer{},
 		drainBuf:             make([]byte, 1024),
 		reuseBuf:             make([]byte, 4096),
 		maxReuse:             1000,
-		resetTimeout:         time.Second * time.Duration(timeout),
+		resetTimeout:         time.Duration(timeout) * time.Second,
 		bufLenResetThreshold: 100 * 1024,
 		maxReadDataReset:     10 * 1024 * 1024,
 		reader:               r,
@@ -87,7 +89,8 @@ func NewBufReader(r io.Reader) *bufReader {
 	return reader
 }
 
-func NewBufReaderWithDrainbufAndBuffer(r io.Reader, drainBuffer []byte, buffer *bytes.Buffer) *bufReader {
+// NewBufReaderWithDrainbufAndBuffer returns a BufReader with drainBuffer and buffer.
+func NewBufReaderWithDrainbufAndBuffer(r io.Reader, drainBuffer []byte, buffer *bytes.Buffer) io.ReadCloser {
 	reader := &bufReader{
 		buf:      buffer,
 		drainBuf: drainBuffer,
@@ -211,6 +214,7 @@ func (r *bufReader) Read(p []byte) (n int, err error) {
 	}
 }
 
+// Close closes the bufReader
 func (r *bufReader) Close() error {
 	closer, ok := r.reader.(io.ReadCloser)
 	if !ok {
@@ -219,6 +223,7 @@ func (r *bufReader) Close() error {
 	return closer.Close()
 }
 
+// HashData returns the sha256 sum of src.
 func HashData(src io.Reader) (string, error) {
 	h := sha256.New()
 	if _, err := io.Copy(h, src); err != nil {
@@ -227,6 +232,8 @@ func HashData(src io.Reader) (string, error) {
 	return "sha256:" + hex.EncodeToString(h.Sum(nil)), nil
 }
 
+// OnEOFReader wraps a io.ReadCloser and a function
+// the function will run at the end of file or close the file.
 type OnEOFReader struct {
 	Rc io.ReadCloser
 	Fn func()
@@ -240,6 +247,7 @@ func (r *OnEOFReader) Read(p []byte) (n int, err error) {
 	return
 }
 
+// Close closes the file and run the function.
 func (r *OnEOFReader) Close() error {
 	err := r.Rc.Close()
 	r.runFunc()

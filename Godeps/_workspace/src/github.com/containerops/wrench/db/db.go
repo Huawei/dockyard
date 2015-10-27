@@ -14,7 +14,6 @@ const (
 	GLOBAL_TARSUM_INDEX     = "GLOBAL_TARSUM_INDEX"
 	GLOBAL_TAG_INDEX        = "GLOBAL_TAG_INDEX"
 	GLOBAL_COMPOSE_INDEX    = "GLOBAL_COMPOSE_INDEX"
-	GLOBAL_LIBRARY_INDEX    = "GLOBAL_LIBRARY_INDEX"
 	//Sail Data Index
 	GLOBAL_USER_INDEX         = "GLOBAL_USER_INDEX"
 	GLOBAL_ORGANIZATION_INDEX = "GLOBAL_ORGANIZATION_INDEX"
@@ -71,9 +70,6 @@ func Key(object string, keys ...string) (result string) {
 	case "COMPOSE":
 	case "compose":
 		result = fmt.Sprintf("COMPOSE-%s-%s", keys[0], keys[1])
-	case "LIBRARY":
-	case "library":
-		result = fmt.Sprintf("LIBRARY-%s", keys[0])
 	case "ADMIN":
 	case "admin":
 		result = fmt.Sprintf("ADMIN-%s", keys[0])

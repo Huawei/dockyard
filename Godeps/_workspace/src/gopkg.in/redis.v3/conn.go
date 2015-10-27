@@ -42,8 +42,9 @@ func (cn *conn) init(opt *Options) error {
 		return nil
 	}
 
-	// Use connection to connect to Redis.
-	pool := newSingleConnPoolConn(cn)
+	// Use connection to connect to redis
+	pool := newSingleConnPool(nil, false)
+	pool.SetConn(cn)
 
 	// Client is not closed because we want to reuse underlying connection.
 	client := newClient(opt, pool)
@@ -66,11 +67,7 @@ func (cn *conn) init(opt *Options) error {
 func (cn *conn) writeCmds(cmds ...Cmder) error {
 	buf := cn.buf[:0]
 	for _, cmd := range cmds {
-		var err error
-		buf, err = appendArgs(buf, cmd.args())
-		if err != nil {
-			return err
-		}
+		buf = appendArgs(buf, cmd.args())
 	}
 
 	_, err := cn.Write(buf)
