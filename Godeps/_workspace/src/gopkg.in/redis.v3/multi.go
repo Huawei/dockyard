@@ -44,22 +44,14 @@ func (c *Multi) Close() error {
 }
 
 func (c *Multi) Watch(keys ...string) *StatusCmd {
-	args := make([]interface{}, 1+len(keys))
-	args[0] = "WATCH"
-	for i, key := range keys {
-		args[1+i] = key
-	}
+	args := append([]string{"WATCH"}, keys...)
 	cmd := NewStatusCmd(args...)
 	c.Process(cmd)
 	return cmd
 }
 
 func (c *Multi) Unwatch(keys ...string) *StatusCmd {
-	args := make([]interface{}, 1+len(keys))
-	args[0] = "UNWATCH"
-	for i, key := range keys {
-		args[1+i] = key
-	}
+	args := append([]string{"UNWATCH"}, keys...)
 	cmd := NewStatusCmd(args...)
 	c.Process(cmd)
 	return cmd
