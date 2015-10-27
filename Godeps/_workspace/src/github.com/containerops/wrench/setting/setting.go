@@ -44,7 +44,7 @@ func SetConfig(path string) error {
 
 	conf, err = config.NewConfig("ini", path)
 	if err != nil {
-		fmt.Errorf("Read %s error: %v", path, err.Error())
+		return fmt.Errorf("Read %s error: %v", path, err.Error())
 	}
 
 	if appname := conf.String("appname"); appname != "" {
@@ -119,11 +119,10 @@ func SetConfig(path string) error {
 
 	DBDB, err = conf.Int64("db::db")
 
-	//Dockyard
+	//Dockyard object storage,default to use dockyard storage
+	BackendDriver = "native"
 	if backenddriver := conf.String("dockyard::driver"); backenddriver != "" {
 		BackendDriver = backenddriver
-	} else if backenddriver == "" {
-		err = fmt.Errorf("Backend driver config value is null")
 	}
 
 	if imagepath := conf.String("dockyard::path"); imagepath != "" {

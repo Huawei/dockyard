@@ -78,8 +78,8 @@ var reflectTime = reflect.TypeOf(time.Now()).Kind()
 // setWithProperType sets proper value to field based on its type,
 // but it does not return error for failing parsing,
 // because we want to use default value that is already assigned to strcut.
-func setWithProperType(t reflect.Type, key *Key, field reflect.Value, delim string) error {
-	switch t.Kind() {
+func setWithProperType(kind reflect.Kind, key *Key, field reflect.Value, delim string) error {
+	switch kind {
 	case reflect.String:
 		if len(key.String()) == 0 {
 			return nil
@@ -92,12 +92,6 @@ func setWithProperType(t reflect.Type, key *Key, field reflect.Value, delim stri
 		}
 		field.SetBool(boolVal)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		durationVal, err := key.Duration()
-		if err == nil {
-			field.Set(reflect.ValueOf(durationVal))
-			return nil
-		}
-
 		intVal, err := key.Int64()
 		if err != nil {
 			return nil
@@ -140,7 +134,7 @@ func setWithProperType(t reflect.Type, key *Key, field reflect.Value, delim stri
 		}
 		field.Set(slice)
 	default:
-		return fmt.Errorf("unsupported type '%s'", t)
+		return fmt.Errorf("unsupported type '%s'", kind)
 	}
 	return nil
 }
@@ -183,7 +177,7 @@ func (s *Section) mapTo(val reflect.Value) error {
 		}
 
 		if key, err := s.GetKey(fieldName); err == nil {
-			if err = setWithProperType(tpField.Type, key, field, parseDelim(tpField.Tag.Get("delim"))); err != nil {
+			if err = setWithProperType(tpField.Type.Kind(), key, field, parseDelim(tpField.Tag.Get("delim"))); err != nil {
 				return fmt.Errorf("error mapping field(%s): %v", fieldName, err)
 			}
 		}
