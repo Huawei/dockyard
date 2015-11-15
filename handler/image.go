@@ -142,7 +142,7 @@ func PutImageLayerv1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []b
 		os.Remove(layerfile)
 	}
 
-	data, _ := ioutil.ReadAll(ctx.Req.Request.Body)
+	data, _ := ctx.Req.Body().Bytes()
 	if err := ioutil.WriteFile(layerfile, data, 0777); err != nil {
 		log.Error("[REGISTRY API V1] Put Image Layer File Error: %v", err.Error())
 

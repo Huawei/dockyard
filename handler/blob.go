@@ -80,7 +80,7 @@ func PatchBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte
 		os.Remove(layerfileTmp)
 	}
 
-	data, _ := ioutil.ReadAll(ctx.Req.Request.Body)
+	data, _ := ctx.Req.Body().Bytes()
 	if err := ioutil.WriteFile(layerfileTmp, data, 0777); err != nil {
 		log.Error("[REGISTRY API V2] Save layerfile failed: %v", err.Error())
 
@@ -104,6 +104,7 @@ func PatchBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusAccepted, result
 }
+
 func PutBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	desc := ctx.Params(":uuid")
 	uuid := strings.Split(desc, "?")[0]
@@ -115,7 +116,9 @@ func PutBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 	layerfileTmp := fmt.Sprintf("%v/%v/layer", setting.ImagePath, uuid)
 	imagePath := fmt.Sprintf("%v/tarsum/%v", setting.ImagePath, tarsum)
 	layerfile := fmt.Sprintf("%v/tarsum/%v/layer", setting.ImagePath, tarsum)
-	layerlen, err := modules.CopyImgLayer(imagePathTmp, layerfileTmp, imagePath, layerfile, ctx.Req.Request.Body)
+
+	reqbody, _ := ctx.Req.Body().Bytes()
+	layerlen, err := module.CopyImgLayer(imagePathTmp, layerfileTmp, imagePath, layerfile, reqbody)
 	if err != nil {
 		log.Error("[REGISTRY API V2] Save layerfile failed: %v", err.Error())
 
