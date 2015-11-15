@@ -8,21 +8,23 @@ import (
 
 	"github.com/containerops/dockyard/backend/drivers"
 	"github.com/containerops/dockyard/cmd"
+	_ "github.com/containerops/dockyard/middleware/notifications"
 	"github.com/containerops/wrench/setting"
 )
 
-func init() {
-	//
-}
-
 func main() {
 	if err := setting.SetConfig("conf/containerops.conf"); err != nil {
-		fmt.Printf("Read config error: %v", err.Error())
+		fmt.Printf("Read config failed: %v", err.Error())
 		return
 	}
 
+	if err := setting.GetConfFromJSON("conf/config.json"); err != nil {
+		fmt.Printf("Read middleware config failed and skip its function. %v", err.Error())
+		//return
+	}
+
 	if err := drivers.SetConfig("conf/containerops.conf"); err != nil {
-		fmt.Printf("Read backend config error: %v", err.Error())
+		fmt.Printf("Read backend config failed: %v", err.Error())
 		return
 	}
 
