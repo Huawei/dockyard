@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"runtime"
 
 	"github.com/codegangsta/cli"
 
@@ -13,7 +12,7 @@ import (
 )
 
 func init() {
-  //
+	//
 }
 
 func main() {
