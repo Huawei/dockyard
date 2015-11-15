@@ -5,6 +5,7 @@ import (
 
 	"gopkg.in/macaron.v1"
 
+	"github.com/containerops/dockyard/backend"
 	"github.com/containerops/dockyard/middleware"
 	"github.com/containerops/dockyard/router"
 	"github.com/containerops/wrench/db"
@@ -14,7 +15,13 @@ import (
 func SetDockyardMacaron(m *macaron.Macaron) {
 	//Setting Database
 	if err := db.InitDB(setting.DBURI, setting.DBPasswd, setting.DBDB); err != nil {
-		fmt.Printf("Connect Database Error %s", err.Error())
+		fmt.Printf("Connect Database error %s", err.Error())
+	}
+
+	backend.InitBackend()
+
+	if err := middleware.Initfunc(); err != nil {
+		fmt.Printf("Init middleware error %s", err.Error())
 	}
 
 	//Setting Middleware
