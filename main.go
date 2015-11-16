@@ -6,7 +6,6 @@ import (
 
 	"github.com/codegangsta/cli"
 
-	"github.com/containerops/dockyard/backend/drivers"
 	"github.com/containerops/dockyard/cmd"
 	_ "github.com/containerops/dockyard/middleware/notifications"
 	"github.com/containerops/wrench/setting"
@@ -18,15 +17,8 @@ func main() {
 		return
 	}
 
-	if err := setting.GetConfFromJSON("conf/config.json"); err != nil {
-		fmt.Printf("Read middleware config failed and skip its function. %v", err.Error())
-		//return
-	}
-
-	if err := drivers.SetConfig("conf/containerops.conf"); err != nil {
-		fmt.Printf("Read backend config failed: %v", err.Error())
-		return
-	}
+	//if read middleware config failed, register function of middleware will be skipped
+	setting.GetConfFromJSON("conf/config.json")
 
 	app := cli.NewApp()
 

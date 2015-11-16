@@ -18,7 +18,9 @@ func SetDockyardMacaron(m *macaron.Macaron) {
 		fmt.Printf("Connect Database error %s", err.Error())
 	}
 
-	backend.InitBackend()
+	if err := backend.InitBackend(); err != nil {
+		fmt.Printf("Init backend error %s", err.Error())
+	}
 
 	if err := middleware.Initfunc(); err != nil {
 		fmt.Printf("Init middleware error %s", err.Error())
