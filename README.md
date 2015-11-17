@@ -13,7 +13,6 @@ Clone code which Dockyard is depended into directory:
 git clone https://github.com/containerops/dockyard.git $GOPATH/src/github.com/containerops/dockyard
 git clone https://github.com/containerops/crew.git $GOPATH/src/github.com/containerops/crew
 git clone https://github.com/containerops/wrench.git $GOPATH/src/github.com/containerops/wrench
-git clone https://github.com/containerops/ameba.git $GOPATH/src/github.com/containerops/ameba
 ```
 
 Then exec commands in each project directory as below,it will download the third dependent packages automatically:
@@ -26,9 +25,6 @@ cd $GOPATH/src/github.com/containerops/crew
 go get
 
 cd $GOPATH/src/github.com/containerops/wrench
-go get
-
-cd $GOPATH/src/github.com/containerops/ameba
 go get
 ```
 
@@ -69,8 +65,10 @@ standalone = true
 driver = qiniu
 
 [qiniu]
-access_key = xxx
-secret_key = xxx
+endpoint = xxx
+bucket = xxx
+accessKeyID = xxx
+accessKeysecret = xxx
 ```
 
 * runmode: application run mode must be `dev` or `prod`.
@@ -87,6 +85,31 @@ secret_key = xxx
 * [dockyard] distribution: specify the version of Docker V2 protocol.
 * [dockyard] standalone: must be `true` or `false`,specify run mode whether do authorization checks or not.
 
+# Dockyard middleware configuration
+
+Specify parameters to enable Dockyard notification function.
+
+## `config.json` Example
+
+```ini
+{
+   "notifications":{
+      "name":"notifications",
+      "endpoints":[
+         {
+            "name":"notifyProxy",
+            "url":"http://notifyproxy:8088/events",
+            "headers":{"Authorization":["Bearer","token"]},
+            "timeout":5000,
+            "threshold":5,
+            "backoff":5000,
+            "eventdb":"/tmp",
+            "disabled":false
+         }
+      ]
+   }
+}
+```
 
 # Nginx configuration
 
