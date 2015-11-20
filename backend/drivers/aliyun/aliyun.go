@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/astaxie/beego/config"
+	"github.com/containerops/dockyard/backend/drivers"
 )
 
 var (
@@ -25,12 +26,16 @@ var (
 	AliyunAccessKeySecret string
 )
 
+type AliyunDrv struct{}
+
 func init() {
 	fmt.Println("aliyun")
-	InjectReflect.Bind("aliyunsave", aliyunsave)
+	drivers.Drv["aliyun"] = &AliyunDrv{}
+	//InjectReflect.Bind("aliyunsave", aliyunsave)
 }
 
-func aliyunSetconfig(conf config.ConfigContainer) error {
+//func aliyunSetconfig(conf config.ConfigContainer) error {
+func (d *AliyunDrv) ReadConfig(conf config.ConfigContainer) error {
 	AliyunEndpoint = conf.String("aliyun::endpoint")
 	if AliyunEndpoint == "" {
 		return fmt.Errorf("Read endpoint of aliyun failed!")
@@ -50,6 +55,8 @@ func aliyunSetconfig(conf config.ConfigContainer) error {
 	if AliyunAccessKeySecret == "" {
 		return fmt.Errorf("Read accessKeysecret of aliyun failed!")
 	}
+
+	drivers.InjectReflect.Bind("aliyunsave", aliyunsave)
 	return nil
 }
 
@@ -68,7 +75,8 @@ func aliyunsave(file string) (url string, err error) {
 	url = "http://" + AliyunEndpoint + opath
 
 	headers := map[string]string{}
-
+	fmt.Println(url)
+	fmt.Println(opath)
 	err = bucket.PutFile(key, file, headers)
 
 	if nil != err {
