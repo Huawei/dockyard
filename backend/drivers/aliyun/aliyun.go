@@ -15,21 +15,31 @@ import (
 	"strings"
 	"time"
 
-	"github.com/astaxie/beego/config"
+	_"github.com/astaxie/beego/config"
+
+	"github.com/containerops/dockyard/backend/drivers"
+   	"github.com/containerops/wrench/setting"
 )
 
+/*
 var (
 	AliyunEndpoint        string
 	AliyunBucket          string
 	AliyunAccessKeyID     string
 	AliyunAccessKeySecret string
 )
+*/
 
 func init() {
-	fmt.Println("aliyun")
-	InjectReflect.Bind("aliyunsave", aliyunsave)
+	//	fmt.Println("aliyun")
+	drivers.Register("aliyun", InitFunc)
 }
 
+func InitFunc() {
+	drivers.InjectReflect.Bind("aliyunsave", aliyunsave)
+}
+
+/*
 func aliyunSetconfig(conf config.ConfigContainer) error {
 	AliyunEndpoint = conf.String("aliyun::endpoint")
 	if AliyunEndpoint == "" {
@@ -52,20 +62,21 @@ func aliyunSetconfig(conf config.ConfigContainer) error {
 	}
 	return nil
 }
+*/
 
 func aliyunsave(file string) (url string, err error) {
 
-	client := NewClient(AliyunAccessKeyID, AliyunAccessKeySecret)
-
-	bucket := NewBucket(AliyunBucket, AliyunEndpoint, client)
+	//client := NewClient(AliyunAccessKeyID, AliyunAccessKeySecret)
+	client := NewClient(setting.AccessKeyID,setting.AccessKeysecret)
+	bucket := NewBucket(setting.Bucket, setting.Endpoint, client)
 
 	var key string
 	//get the filename from the file , eg,get "1.txt" from /home/liugenping/1.txt
 	for _, key = range strings.Split(file, "/") {
 
 	}
-	opath := "/" + AliyunBucket + "/" + key
-	url = "http://" + AliyunEndpoint + opath
+	opath := "/" + setting.Bucket + "/" + key
+	url = "http://" + setting.Endpoint + opath
 
 	headers := map[string]string{}
 
