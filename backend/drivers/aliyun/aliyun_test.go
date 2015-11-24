@@ -3,26 +3,16 @@ package backend
 import (
 	"net/http"
 	"testing"
-
-	"github.com/astaxie/beego/config"
+	
+	"github.com/containerops/wrench/setting"
 )
 
 func Test_aliyunsave(t *testing.T) {
-	var err error
-	var conf config.ConfigContainer
+	
 	var url string
-	//var d *AliyunDrv
-
-	conf, err = config.NewConfig("ini", "../../../conf/containerops.conf")
-	if err != nil {
-		t.Error(err)
-	}
-
-	d := new(AliyunDrv)
-	err = d.ReadConfig(conf)
-	if err != nil {
-		t.Error(err)
-	}
+	
+	
+	err := setting.SetConfig("../../../conf/containerops.conf")
 
 	file := "aliyun_test.go"
 	url, err = aliyunsave(file)
