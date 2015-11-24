@@ -15,23 +15,12 @@ import (
 	"strings"
 	"time"
 
-	_"github.com/astaxie/beego/config"
 
 	"github.com/containerops/dockyard/backend/drivers"
    	"github.com/containerops/wrench/setting"
 )
 
-/*
-var (
-	AliyunEndpoint        string
-	AliyunBucket          string
-	AliyunAccessKeyID     string
-	AliyunAccessKeySecret string
-)
-*/
-
 func init() {
-	//	fmt.Println("aliyun")
 	drivers.Register("aliyun", InitFunc)
 }
 
@@ -39,34 +28,9 @@ func InitFunc() {
 	drivers.InjectReflect.Bind("aliyunsave", aliyunsave)
 }
 
-/*
-func aliyunSetconfig(conf config.ConfigContainer) error {
-	AliyunEndpoint = conf.String("aliyun::endpoint")
-	if AliyunEndpoint == "" {
-		return fmt.Errorf("Read endpoint of aliyun failed!")
-	}
-
-	AliyunBucket = conf.String("aliyun::bucket")
-	if AliyunBucket == "" {
-		return fmt.Errorf("Read bucket of aliyun failed!")
-	}
-
-	AliyunAccessKeyID = conf.String("aliyun::accessKeyID")
-	if AliyunAccessKeyID == "" {
-		return fmt.Errorf("Read accessKeyID of aliyun failed!")
-	}
-
-	AliyunAccessKeySecret = conf.String("aliyun::accessKeysecret")
-	if AliyunAccessKeySecret == "" {
-		return fmt.Errorf("Read accessKeysecret of aliyun failed!")
-	}
-	return nil
-}
-*/
 
 func aliyunsave(file string) (url string, err error) {
 
-	//client := NewClient(AliyunAccessKeyID, AliyunAccessKeySecret)
 	client := NewClient(setting.AccessKeyID,setting.AccessKeysecret)
 	bucket := NewBucket(setting.Bucket, setting.Endpoint, client)
 

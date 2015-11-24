@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"testing"
 	
-	_"github.com/containerops/dockyard/backend/drivers"
 	"github.com/containerops/wrench/setting"
 )
 
