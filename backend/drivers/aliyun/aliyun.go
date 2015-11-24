@@ -15,57 +15,32 @@ import (
 	"strings"
 	"time"
 
-	"github.com/astaxie/beego/config"
-)
 
-var (
-	AliyunEndpoint        string
-	AliyunBucket          string
-	AliyunAccessKeyID     string
-	AliyunAccessKeySecret string
+	"github.com/containerops/dockyard/backend/drivers"
+   	"github.com/containerops/wrench/setting"
 )
 
 func init() {
-	fmt.Println("aliyun")
-	InjectReflect.Bind("aliyunsave", aliyunsave)
+	drivers.Register("aliyun", InitFunc)
 }
 
-func aliyunSetconfig(conf config.ConfigContainer) error {
-	AliyunEndpoint = conf.String("aliyun::endpoint")
-	if AliyunEndpoint == "" {
-		return fmt.Errorf("Read endpoint of aliyun failed!")
-	}
-
-	AliyunBucket = conf.String("aliyun::bucket")
-	if AliyunBucket == "" {
-		return fmt.Errorf("Read bucket of aliyun failed!")
-	}
-
-	AliyunAccessKeyID = conf.String("aliyun::accessKeyID")
-	if AliyunAccessKeyID == "" {
-		return fmt.Errorf("Read accessKeyID of aliyun failed!")
-	}
-
-	AliyunAccessKeySecret = conf.String("aliyun::accessKeysecret")
-	if AliyunAccessKeySecret == "" {
-		return fmt.Errorf("Read accessKeysecret of aliyun failed!")
-	}
-	return nil
+func InitFunc() {
+	drivers.InjectReflect.Bind("aliyunsave", aliyunsave)
 }
+
 
 func aliyunsave(file string) (url string, err error) {
 
-	client := NewClient(AliyunAccessKeyID, AliyunAccessKeySecret)
-
-	bucket := NewBucket(AliyunBucket, AliyunEndpoint, client)
+	client := NewClient(setting.AccessKeyID,setting.AccessKeysecret)
+	bucket := NewBucket(setting.Bucket, setting.Endpoint, client)
 
 	var key string
 	//get the filename from the file , eg,get "1.txt" from /home/liugenping/1.txt
 	for _, key = range strings.Split(file, "/") {
 
 	}
-	opath := "/" + AliyunBucket + "/" + key
-	url = "http://" + AliyunEndpoint + opath
+	opath := "/" + setting.Bucket + "/" + key
+	url = "http://" + setting.Endpoint + opath
 
 	headers := map[string]string{}
 
