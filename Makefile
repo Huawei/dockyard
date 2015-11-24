@@ -8,4 +8,3 @@ install:
 		cp dockyard /usr/local/bin/dockyard
 clean:
 		go clean
-		rm dockyard
