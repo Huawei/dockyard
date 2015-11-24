@@ -1,11 +1,12 @@
 package redis
 
 import (
+	"bufio"
 	"net"
 	"time"
-
-	"gopkg.in/bufio.v1"
 )
+
+const defaultBufSize = 4096
 
 var (
 	zeroTime = time.Time{}
@@ -30,7 +31,7 @@ func newConnDialer(opt *Options) func() (*conn, error) {
 		}
 		cn := &conn{
 			netcn: netcn,
-			buf:   make([]byte, 0, 64),
+			buf:   make([]byte, defaultBufSize),
 		}
 		cn.rd = bufio.NewReader(cn)
 		return cn, cn.init(opt)
@@ -42,12 +43,8 @@ func (cn *conn) init(opt *Options) error {
 		return nil
 	}
 
-	// Use connection to connect to redis
-	pool := newSingleConnPool(nil, false)
-	pool.SetConn(cn)
-
-	// Client is not closed because we want to reuse underlying connection.
-	client := newClient(opt, pool)
+	// Temp client for Auth and Select.
+	client := newClient(opt, newSingleConnPool(cn))
 
 	if opt.Password != "" {
 		if err := client.Auth(opt.Password).Err(); err != nil {
@@ -67,7 +64,11 @@ func (cn *conn) init(opt *Options) error {
 func (cn *conn) writeCmds(cmds ...Cmder) error {
 	buf := cn.buf[:0]
 	for _, cmd := range cmds {
-		buf = appendArgs(buf, cmd.args())
+		var err error
+		buf, err = appendArgs(buf, cmd.args())
+		if err != nil {
+			return err
+		}
 	}
 
 	_, err := cn.Write(buf)
@@ -98,4 +99,17 @@ func (cn *conn) RemoteAddr() net.Addr {
 
 func (cn *conn) Close() error {
 	return cn.netcn.Close()
+}
+
+func isSameSlice(s1, s2 []byte) bool {
+	return len(s1) > 0 && len(s2) > 0 && &s1[0] == &s2[0]
+}
+
+func (cn *conn) copyBuf(b []byte) []byte {
+	if isSameSlice(b, cn.buf) {
+		new := make([]byte, len(b))
+		copy(new, b)
+		return new
+	}
+	return b
 }
