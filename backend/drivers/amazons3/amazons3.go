@@ -48,7 +48,7 @@ func amazons3save(file string) (url string, err error) {
 	r, _ := http.NewRequest("PUT", requstUrl, fin)
 	r.ContentLength = int64(filesize)
 	r.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
-	r.Header.Set("X-Amz-Acl", "public-read")
+	r.Header.Set("X-Amz-Acl", "public-write")
 	
 	fmt.Println(requstUrl)
 
