@@ -11,41 +11,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/astaxie/beego/config"
+	"github.com/containerops/dockyard/backend/drivers"
+   	"github.com/containerops/wrench/setting"
 )
 
-var (
-	Amazons3Endpoint        string
-	Amazons3Bucket          string
-	Amazons3AccessKeyID     string
-	Amazons3AccessKeySecret string
-)
 
 func init() {
-	InjectReflect.Bind("amazons3save", amazons3save)
+	drivers.Register("amazons3", InitFunc)
 }
 
-func amazons3Setconfig(conf config.ConfigContainer) error {
-	Amazons3Endpoint = conf.String("amazons3::endpoint")
-	if Amazons3Endpoint == "" {
-		return fmt.Errorf("Read endpoint of amazons3 failed!")
-	}
-
-	Amazons3Bucket = conf.String("amazons3::bucket")
-	if Amazons3Bucket == "" {
-		return fmt.Errorf("Read bucket of amazons3 failed!")
-	}
-
-	Amazons3AccessKeyID = conf.String("amazons3::accessKeyID")
-	if Amazons3AccessKeyID == "" {
-		return fmt.Errorf("Read accessKeyID of amazons3 failed!")
-	}
-
-	Amazons3AccessKeySecret = conf.String("amazons3::accessKeysecret")
-	if Amazons3AccessKeySecret == "" {
-		return fmt.Errorf("Read accessKeysecret of amazons3 failed!")
-	}
-	return nil
+func InitFunc() {
+	drivers.InjectReflect.Bind("amazons3save", amazons3save)
 }
 
 func amazons3save(file string) (url string, err error) {
@@ -68,19 +44,21 @@ func amazons3save(file string) (url string, err error) {
 	}
 	filesize := fi.Size()
 
-	requstUrl := "http://" + Amazons3Bucket + "." + Amazons3Endpoint + "/" + key
+	requstUrl := "http://" + setting.Bucket + "." + setting.Endpoint + "/" + key
 	r, _ := http.NewRequest("PUT", requstUrl, fin)
 	r.ContentLength = int64(filesize)
 	r.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
 	r.Header.Set("X-Amz-Acl", "public-read")
+	
+	fmt.Println(requstUrl)
 
-	amazons3Sign(r, key, Amazons3AccessKeyID, Amazons3AccessKeySecret)
+	amazons3Sign(r, key, setting.AccessKeyID, setting.AccessKeysecret)
 	_, err = http.DefaultClient.Do(r)
 	if err != nil {
 		return "", err
 	}
 
-	url = "http://" + Amazons3Endpoint + "/" + Amazons3Bucket + "/" + key
+	url = "http://" + setting.Endpoint + "/" + setting.Bucket + "/" + key
 	return url, nil
 
 }
@@ -108,7 +86,7 @@ func amazons3cloudMakePlainText(r *http.Request, key string) (plainText string) 
 		plainText += amzHeader + "\n"
 	}
 
-	plainText += "/" + Amazons3Bucket + "/" + key
+	plainText += "/" + setting.Bucket + "/" + key
 	return
 }
 
