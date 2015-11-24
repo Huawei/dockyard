@@ -1,5 +1,4 @@
-Redis client for Golang [![Build Status](https://travis-ci.org/go-redis/redis.png?branch=master)](https://travis-ci.org/go-redis/redis)
-=======================
+# Redis client for Golang [![Build Status](https://travis-ci.org/go-redis/redis.png?branch=master)](https://travis-ci.org/go-redis/redis)
 
 Supports:
 
@@ -12,19 +11,18 @@ Supports:
 - [Redis Sentinel](http://godoc.org/gopkg.in/redis.v3#NewFailoverClient).
 - [Redis Cluster](http://godoc.org/gopkg.in/redis.v3#NewClusterClient).
 - [Ring](http://godoc.org/gopkg.in/redis.v3#NewRing).
+- [Cache friendly](https://github.com/go-redis/cache).
 
 API docs: http://godoc.org/gopkg.in/redis.v3.
 Examples: http://godoc.org/gopkg.in/redis.v3#pkg-examples.
 
-Installation
-------------
+## Installation
 
 Install:
 
     go get gopkg.in/redis.v3
 
-Quickstart
-----------
+## Quickstart
 
 ```go
 func ExampleNewClient() {
@@ -64,13 +62,11 @@ func ExampleClient() {
 }
 ```
 
-Howto
------
+## Howto
 
 Please go through [examples](http://godoc.org/gopkg.in/redis.v3#pkg-examples) to get an idea how to use this package.
 
-Look and feel
--------------
+## Look and feel
 
 Some corner cases:
 
@@ -93,3 +89,7 @@ Some corner cases:
 
     EVAL "return {KEYS[1],ARGV[1]}" 1 "key" "hello"
     vals, err := client.Eval("return {KEYS[1],ARGV[1]}", []string{"key"}, []string{"hello"}).Result()
+
+## Shameless plug
+
+Check my [PostgreSQL client for Go](https://github.com/go-pg/pg).
