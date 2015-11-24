@@ -1,10 +1,12 @@
 # Dockyard: An image hub for containers
 
 ## What is Dockyard
+Dockyard is an image hub for docker, rkt or other container engines.
 
 ## How it works
 
 ## Why it matters
+With dockyard you can manage your container images as freely as you can, you need not to concern with different container engines, and you will not be locked in by docker hub.
 
 ## Roadmap
 
