@@ -6,8 +6,6 @@ import (
 	"reflect"
 	"sync"
 
-	"github.com/astaxie/beego/config"
-
 	"github.com/containerops/wrench/setting"
 )
 
@@ -33,24 +31,16 @@ type ShareChannel struct {
 	waitGroup  *sync.WaitGroup
 }
 
-type ProtoDriver interface {
-	ReadConfig(conf config.ConfigContainer) error
-}
+type INITFUNC func()
 
-var Drv = make(map[string]ProtoDriver)
+var Drv = make(map[string]INITFUNC)
 
-func SetConfig(path string) error {
-	var err error
-	var conf config.ConfigContainer
-
-	conf, err = config.NewConfig("ini", path)
-	if err != nil {
-		return fmt.Errorf("Read %s error: %v", path, err.Error())
+func Register(name string, initfunc INITFUNC) error {
+	if _, existed := Drv[name]; existed {
+		return fmt.Errorf("%v has already been registered", name)
 	}
 
-	if err = Drv[setting.BackendDriver].ReadConfig(conf); err != nil {
-		return err
-	}
+	Drv[name] = initfunc
 
 	return nil
 }

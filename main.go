@@ -3,29 +3,22 @@ package main
 import (
 	"fmt"
 	"os"
-	"runtime"
 
 	"github.com/codegangsta/cli"
 
-	"github.com/containerops/dockyard/backend/drivers"
 	"github.com/containerops/dockyard/cmd"
+	_ "github.com/containerops/dockyard/middleware/notifications"
 	"github.com/containerops/wrench/setting"
 )
 
-func init() {
-  //
-}
-
 func main() {
 	if err := setting.SetConfig("conf/containerops.conf"); err != nil {
-		fmt.Printf("Read config error: %v", err.Error())
+		fmt.Printf("Read config failed: %v", err.Error())
 		return
 	}
 
-	if err := drivers.SetConfig("conf/containerops.conf"); err != nil {
-		fmt.Printf("Read backend config error: %v", err.Error())
-		return
-	}
+	//if read middleware config failed, register function of middleware will be skipped
+	setting.GetConfFromJSON("conf/config.json")
 
 	app := cli.NewApp()
 

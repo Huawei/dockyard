@@ -10,7 +10,6 @@ import (
 	"github.com/codegangsta/cli"
 	"gopkg.in/macaron.v1"
 
-	"github.com/containerops/dockyard/backend"
 	"github.com/containerops/dockyard/web"
 	"github.com/containerops/wrench/setting"
 	"github.com/containerops/wrench/utils"
@@ -40,8 +39,6 @@ func runWeb(c *cli.Context) {
 
 	//Set Macaron Web Middleware And Routers
 	web.SetDockyardMacaron(m)
-
-	backend.InitBackend()
 
 	switch setting.ListenMode {
 	case "http":
