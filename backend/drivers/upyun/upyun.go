@@ -2,52 +2,21 @@ package upyun
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"strings"
 
-	"github.com/astaxie/beego/config"
 	"github.com/upyun/go-sdk/upyun"
 
 	"github.com/containerops/dockyard/backend/drivers"
+	"github.com/containerops/wrench/setting"
 )
-
-var (
-	UpyunEndpoint string
-	UpyunBucket   string
-	UpyunUser     string
-	UpyunPasswd   string
-)
-
-type UpyunDrv struct{}
 
 func init() {
-	drivers.Drv["upyun"] = &UpyunDrv{}
+	drivers.Register("upyun", InitFunc)
 }
 
-func (d *UpyunDrv) ReadConfig(conf config.ConfigContainer) error {
-	UpyunEndpoint = conf.String("upyun::endpoint")
-	if UpyunEndpoint == "" {
-		return fmt.Errorf("Read endpoint of Upyun failed!")
-	}
-
-	UpyunBucket = conf.String("upyun::bucket")
-	if UpyunBucket == "" {
-		return fmt.Errorf("Read bucket of Upyun failed!")
-	}
-
-	UpyunUser = conf.String("upyun::user")
-	if UpyunUser == "" {
-		return fmt.Errorf("Read user of Upyun failed!")
-	}
-
-	UpyunPasswd = conf.String("upyun::passwd")
-	if UpyunPasswd == "" {
-		return fmt.Errorf("Read passwd of Upyun failed!")
-	}
-
+func InitFunc() {
 	drivers.InjectReflect.Bind("upyunsave", upyunsave)
-	return nil
 }
 
 func upyunsave(file string) (url string, err error) {
@@ -58,16 +27,16 @@ func upyunsave(file string) (url string, err error) {
 
 	}
 
-	opath := "/" + UpyunBucket + "/" + key
-	url = "http://" + UpyunEndpoint + opath
+	opath := "/" + setting.Bucket + "/" + key
+	url = "http://" + setting.Endpoint + opath
 
 	var u *upyun.UpYun
-	u = upyun.NewUpYun(UpyunBucket, UpyunUser, UpyunPasswd)
+	u = upyun.NewUpYun(setting.Bucket, setting.User, setting.Passwd)
 	if nil == u {
 		return "", errors.New("UpYun.NewUpYun Fail")
 	}
 
-	u.SetEndpoint(UpyunEndpoint)
+	u.SetEndpoint(setting.Endpoint)
 
 	fin, err := os.Open(file)
 	if err != nil {
