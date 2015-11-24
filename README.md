@@ -4,11 +4,17 @@
 Dockyard is an image hub for docker, rkt or other container engines.
 
 ## How it works
+Please refer to [design](design.md) for more information.
 
 ## Why it matters
 With dockyard you can manage your container images as freely as you can, you need not to concern with different container engines, and you will not be locked in by docker hub.
 
-## Roadmap
+## Current Status
+Please watch this space for updates on the progress.
+Dockyard project is under heavy development and is ready for simple use.
+
+## Future
+Please refer to [roadmap](ROADMAP.md) for more information.
 
 ## Try it out
 Although dockyard is still in development, we encourage you to try out the tool and give feedback. 
@@ -31,8 +37,8 @@ make
 sudo make install
 ```
 
-### Preliminary work
-It is quite easy to use dockyard, only a little work should be done before starting dockyard service. Please follow the instructions as below.
+### Prerequisites
+It is quite easy to use dockyard, only a little work should be done before starting dockyard service. Take it easy, just follow the instructions as below.
 
 #### Dockyard runtime configuration
 Please add a runtime config file named `runtime.conf` under `dockyard/conf` before starting `dockyard` service. Below is a `runtime.conf` example:
@@ -82,7 +88,7 @@ accessKeysecret = xxx
 * [dockyard] standalone: must be `true` or `false`,specify run mode whether do authorization checks or not.
 
 #### Dockyard middleware configuration
-Specify parameters to enable Dockyard notification function. Below is an example of `config.json`
+Specify parameters to enable Dockyard notification function. Below is an example of `config.json`:
 
 ```ini
 {
@@ -155,18 +161,18 @@ server {
 ./dockyard web --address 0.0.0.0 --port 80
 ```
 
-- Run behind Nginx:
+- Run with Nginx:
 
 ```bash
 ./dockyard web --address 127.0.0.1 --port 9911
 ```
 
 ### Enjoy it
-Congratulations! Dockyard is ready for you, enjoy it:-)
+Congratulations! Dockyard is ready for you, just enjoy it:-)
 - Add **containerops.me** in your `hosts` file like `192.168.1.66 containerops.me` with IP which run `dockyard`.
 - Then `push` with `docker push containerops.me/somebody/ubuntu`.
 - You could `pull` with `docker pull -a containerops.me/somebody/ubuntu`.
-- Work fun!
+- Work for fun!
 
 ## How to involve
 If any issues are encountered while using the dockyard project, several avenues are available for support:
