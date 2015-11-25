@@ -2,7 +2,15 @@
 ![Dockyard](docs/dockyard.jpg "Dockyard")
 
 ## What is Dockyard
-Dockyard is an image hub for docker, rkt or other container engines.
+Dockyard is an image hub for docker, rkt or other container engines. Its features include:
+- Image storage and meta discovery for popular container runtime such as docker and rkt.
+- Image distribution by P2P protocol.
+- Public and private repositories for users and organizations.
+- Built-in object storage engine and drivers.
+- Built-in object storage service.
+- Built-in container volume management for runtime with distributed file system.
+- Convert image object to distributed file-system for container mount and start directly.
+- Container image encryption and verification.
 
 ## How it works
 Please refer to [design](docs/design.md) for more information.
@@ -13,8 +21,21 @@ With dockyard you can manage your container images as freely as you can, you nee
 ## Current Status
 Please watch this space for updates on the progress.
 Dockyard project is under heavy development and is ready for simple use.
+- Docker registry V1                 [Done]
+- Docker registry V2                 [Done]
+- Object storage backend and drivers [Done]
+- REST API interface                 [Done]
+- Rkt Meta Discovery                 [Done]
+- P2P modules                        [In progress]
+- Object storage service             [In progress]
 
 ## Future
+Work in the future illustrated as below:
+- Volume management with distributed file-system.
+- Convert between object storage and distributed file-system.
+- Web interface and CLI interface.
+- Container image encryption and verification.
+
 Please refer to [roadmap](ROADMAP.md) for more information.
 
 ## Try it out
