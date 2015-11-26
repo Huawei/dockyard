@@ -1,4 +1,4 @@
-package backend
+package amazons3
 
 import (
 	"testing"
