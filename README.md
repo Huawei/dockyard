@@ -13,6 +13,10 @@ Dockyard is an image hub for docker, rkt or other container engines. Its feature
 - Container image encryption and verification.
 
 ## How it works
+The architecture of Dockyard illustrated as below:
+
+![arch](docs/arch.png "architecture")
+
 Please refer to [design](docs/design.md) for more information.
 
 ## Why it matters
