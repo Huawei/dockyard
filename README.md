@@ -27,13 +27,13 @@ With dockyard you can manage your container images as freely as you can, you nee
 ## Current Status
 Please watch this space for updates on the progress.
 Dockyard project is under heavy development and is ready for simple use.
-- Docker registry V1                 [Done]
-- Docker registry V2                 [Done]
-- Object storage backend and drivers [Done]
-- REST API interface                 [Done]
-- Rkt Meta Discovery                 [Done]
-- P2P modules                        [In progress]
-- Object storage service             [In progress]
+- Docker registry V1
+- Docker registry V2
+- Object storage backend and drivers
+- REST API interface
+- Rkt Meta Discovery
+- P2P modules
+- Object storage service
 
 ## Future
 Work in the future illustrated as below:
