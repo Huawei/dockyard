@@ -46,11 +46,12 @@ func SetRouters(m *macaron.Macaron) {
 	})
 
 	//Rkt Registry & Hub API
-	//acis discovery
-	m.Get("/:repository/?ac-discovery=1", handler.DiscoveryACIHandler)
+	//acis discovery responds endpoints
+	m.Get("/:imagename/?ac-discovery=1", handler.DiscoveryACIHandler)
+
 	//acis fetch
-	m.Get("/image/:aciname", handler.GetACIHandler)
-	m.Get("/pubkeys/aci-pubkeys.gpg", handler.GetPukkeysHandler)
+	m.Get("/ac-image/:aciname", handler.GetACIHandler)
+	m.Get("/ac-pubkeys/pubkeys.gpg", handler.GetPubkeysHandler)
 
 	//acis push
 	m.Group("/ac-push", func() {
