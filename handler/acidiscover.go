@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"fmt"
+	"html/template"
 	"net/http"
 
 	"github.com/astaxie/beego/logs"
@@ -9,13 +11,29 @@ import (
 	"github.com/containerops/wrench/setting"
 )
 
-// TBD: discovery template should be keep in line with ACI
-func DiscoveryACIHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	repo := ctx.Params(":repository")
+// TBD: discovery template should be updated to keep in line with ACI
+func DiscoveryACIHandler(ctx *macaron.Context, log *logs.BeeLogger) {
+	img := ctx.Params(":imagename")
 
-	content := setting.Domains + "/" + repo + " " + setting.ListenMode + "://" + setting.Domains
-	result := "<meta name=\"ac-discovery\" content=\"" + content + "/image/" + repo + "-{version}-{os}-{arch}.{ext}\">\r\n"
-	result += "<meta name=\"ac-discovery-pubkeys\" content=\"" + content + "/pubkeys/aci-pubkeys.gpg\">\r\n"
+	t, err := template.ParseFiles("conf/acifetchtemplate.html")
+	if err != nil {
+		log.Error("[ACI API] Discovery parse template file failed: %v", err.Error())
+		ctx.Resp.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(ctx.Resp, fmt.Sprintf("%v", err))
+		return
+	}
 
-	return http.StatusOK, []byte(result)
+	err = t.Execute(ctx.Resp, struct {
+		Name       string
+		ServerName string
+		Domain     string
+	}{
+		Name:       img,
+		ServerName: setting.Domains,
+		Domain:     setting.ListenMode,
+	})
+	if err != nil {
+		log.Error("[ACI API] Discovery respond failed: %v", err.Error())
+		fmt.Fprintf(ctx.Resp, fmt.Sprintf("%v", err))
+	}
 }

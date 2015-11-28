@@ -13,12 +13,11 @@ import (
 
 /* TBD:
 The current contents as blow just be added for testing ACI fetch,
-they will be updated after ACI push finished
+they will be updated after ACI ac-push finished
 */
 
-// TDB: GetPukkeysHandler is not supported now, it will be updated soon
-func GetPukkeysHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	pubkeypath := setting.ImagePath + "/acitest/" + "aci-pubkeys.gpg"
+func GetPubkeysHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
+	pubkeypath := setting.ImagePath + "/acitest/" + "pubkeys.gpg"
 	pubkey, err := ioutil.ReadFile(pubkeypath)
 	if err != nil {
 		log.Error("[ACI API] Get pubkey file failed: %v", err.Error())
