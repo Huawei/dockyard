@@ -76,9 +76,6 @@ var (
 // The root page. Builds a human-readable list of what ACIs are available,
 // and also provides the meta tags for the server for meta discovery.
 func RenderListOfACIs(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-
-	fmt.Println("renderListOfACIs")
-
 	if gpgpubkey == nil {
 		fmt.Fprintf(os.Stderr, "internal error: gpgpubkey is nil")
 		result, _ := json.Marshal("internal error: gpgpubkey is nil")
@@ -111,20 +108,19 @@ func RenderListOfACIs(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 		return http.StatusInternalServerError, result
 	}
 
-	fmt.Printf("renderListOfACIs templatedir:%v\r\n", templatedir)
 	t, err := template.ParseFiles(path.Join(templatedir, "acitemplate.html"))
 	if err != nil {
 		fmt.Fprintf(ctx.Resp, fmt.Sprintf("%v", err))
 		result, _ := json.Marshal(err)
 		return http.StatusInternalServerError, result
 	}
-	fmt.Printf("renderListOfACIs t: %v:\r\n", t)
+
 	acis, err := listACIs()
 	if err != nil {
 		result, _ := json.Marshal(err)
 		return http.StatusInternalServerError, result
 	}
-	fmt.Printf("renderListOfACIs acis: %v:\r\n", acis)
+
 	err = t.Execute(ctx.Resp, struct {
 		ServerName string
 		ACIs       []aci
@@ -144,7 +140,6 @@ func RenderListOfACIs(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 // Sends the gpg public keys specified via the flag to the client
 func GetPubkeys(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	fmt.Println("getPubkeys")
 	if *gpgpubkey == "" {
 		result, _ := json.Marshal(map[string]string{})
 		return http.StatusNotFound, result
@@ -166,16 +161,14 @@ func GetPubkeys(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 }
 
 func InitiateUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	fmt.Println("initiateUpload")
-
 	image := ctx.Params(":image")
 	if image == "" {
 		result, _ := json.Marshal(map[string]string{})
 		return http.StatusNotFound, result
 	}
-	fmt.Printf("initiateUpload image:%v\r\n", image)
+
 	uploadNum := strconv.Itoa(newUpload(image))
-	fmt.Printf("initiateUpload uploadNum:%v\r\n", uploadNum)
+
 	var prefix string
 	if *https {
 		prefix = "https://" + serverName
@@ -193,13 +186,11 @@ func InitiateUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	}
 
 	result, _ := json.Marshal(deets)
-	fmt.Printf("initiateUpload result:%v\r\n", result)
 	return http.StatusInternalServerError, result
 
 }
 
 func UploadManifest(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	fmt.Println("uploadManifest")
 	num, err := strconv.Atoi(ctx.Params(":num"))
 	if err != nil {
 		result, _ := json.Marshal(map[string]string{})
@@ -217,8 +208,6 @@ func UploadManifest(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 }
 
 func ReceiveSignUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	fmt.Println("receiveSignUpload")
-
 	num, err := strconv.Atoi(ctx.Params(":num"))
 	if err != nil {
 		result, _ := json.Marshal(map[string]string{})
@@ -265,8 +254,6 @@ func ReceiveSignUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 }
 
 func ReceiveAciUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	fmt.Println("receiveAciUpload")
-
 	num, err := strconv.Atoi(ctx.Params(":num"))
 	if err != nil {
 		result, _ := json.Marshal(map[string]string{})
@@ -313,17 +300,14 @@ func ReceiveAciUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 }
 
 func tmpSigPath(num int) string {
-	fmt.Println("tmpSigPath")
 	return path.Join(directory, "tmp", strconv.Itoa(num)+".asc")
 }
 
 func tmpACIPath(num int) string {
-	fmt.Println("tmpACIPath")
 	return path.Join(directory, "tmp", strconv.Itoa(num))
 }
 
 func CompleteUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	fmt.Println("completeUpload")
 	num, err := strconv.Atoi(ctx.Params(":num"))
 	if err != nil {
 		result, _ := json.Marshal(map[string]string{})
@@ -403,7 +387,6 @@ func CompleteUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 }
 
 func reportFailure(num int) error {
-	fmt.Println("reportFailure")
 	err := abortUpload(num)
 	if err != nil {
 		return err
@@ -423,7 +406,6 @@ func msgFailure(msg, clientmsg string) (int, []byte) {
 }
 
 func abortUpload(num int) error {
-	fmt.Println("abortUpload")
 	newuploadLock.Lock()
 	delete(uploads, num)
 	newuploadLock.Unlock()
@@ -454,7 +436,6 @@ func abortUpload(num int) error {
 }
 
 func finishUpload(num int) error {
-	fmt.Println("finishUpload")
 	newuploadLock.Lock()
 	up, ok := uploads[num]
 	if ok {
@@ -481,7 +462,6 @@ func finishUpload(num int) error {
 }
 
 func newUpload(image string) int {
-	fmt.Println("newUpload")
 	newuploadLock.Lock()
 	uploadcounter++
 	uploads[uploadcounter] = &upload{
@@ -493,7 +473,6 @@ func newUpload(image string) int {
 }
 
 func getUpload(num int) *upload {
-	fmt.Println("getUpload")
 	var up *upload
 	newuploadLock.Lock()
 	up, ok := uploads[num]
@@ -505,7 +484,6 @@ func getUpload(num int) *upload {
 }
 
 func gotSig(num int) error {
-	fmt.Println("gotSig")
 	newuploadLock.Lock()
 	_, ok := uploads[num]
 	if ok {
@@ -519,7 +497,6 @@ func gotSig(num int) error {
 }
 
 func gotACI(num int) error {
-	fmt.Println("gotACI")
 	newuploadLock.Lock()
 	_, ok := uploads[num]
 	if ok {
@@ -533,7 +510,6 @@ func gotACI(num int) error {
 }
 
 func gotMan(num int) error {
-	fmt.Println("gotMan")
 	newuploadLock.Lock()
 	_, ok := uploads[num]
 	if ok {
@@ -547,8 +523,6 @@ func gotMan(num int) error {
 }
 
 func listACIs() ([]aci, error) {
-	fmt.Println("listACIs")
-	fmt.Printf("listACIs directory:%v\r\n", directory)
 	files, err := ioutil.ReadDir(directory)
 	if err != nil {
 		return nil, err
@@ -561,7 +535,7 @@ func listACIs() ([]aci, error) {
 		if len(tokens) != 4 {
 			continue
 		}
-		fmt.Println("listACIs tokens:%v\r\n", tokens)
+
 		tokens1 := strings.Split(tokens[3], ".")
 		if len(tokens1) != 2 {
 			continue
