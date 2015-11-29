@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"os"
 
 	"gopkg.in/macaron.v1"
 
@@ -31,4 +32,20 @@ func SetDockyardMacaron(m *macaron.Macaron) {
 
 	//Setting Router
 	router.SetRouters(m)
+
+	//Create acpool to store aci/asc/pubkey
+	err := func() error {
+		acpoolname := setting.ImagePath + "/acpool"
+		if _, err := os.Stat(acpoolname); err == nil {
+			return nil
+		}
+
+		if err := os.Mkdir(acpoolname, 0755); err != nil {
+			return err
+		}
+		return nil
+	}()
+	if err != nil {
+		fmt.Printf("Create acpool for rkt failed %s", err.Error())
+	}
 }
