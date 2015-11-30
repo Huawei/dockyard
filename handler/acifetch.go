@@ -12,14 +12,18 @@ import (
 )
 
 /* TBD:
-The current contents as blow just be added for testing ACI fetch,
-they will be updated after ACI ac-push finished
+current implementation as blow just be added for testing ACI fetch,
+they would be updated after ACI ac-push finished
 */
 
 func GetPubkeysHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	pubkeypath := setting.ImagePath + "/acitest/" + "pubkeys.gpg"
-	pubkey, err := ioutil.ReadFile(pubkeypath)
-	if err != nil {
+	var pubkey []byte
+	var err error
+
+	pubkeypath := setting.ImagePath + "/acpool/" + "pubkeys.gpg"
+	if pubkey, err = ioutil.ReadFile(pubkeypath); err != nil {
+		// TBD: consider to fetch pubkey from other storage medium
+
 		log.Error("[ACI API] Get pubkey file failed: %v", err.Error())
 		result, _ := json.Marshal(map[string]string{"message": "Get pubkey file failed"})
 		return http.StatusNotFound, result
@@ -29,10 +33,16 @@ func GetPubkeysHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 }
 
 func GetACIHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	name := ctx.Params(":aciname")
-	imgpath := setting.ImagePath + "/acitest/" + name
-	img, err := ioutil.ReadFile(imgpath)
-	if err != nil {
+	var img []byte
+	var err error
+
+	name := ctx.Params(":acname")
+
+	//support to fetch images from location storage, it will be supported to fetch from cloud etc.
+	imgpath := setting.ImagePath + "/acpool/" + name
+	if img, err = ioutil.ReadFile(imgpath); err != nil {
+		// TBD: consider to fetch image from other storage medium
+
 		log.Error("[ACI API] Get ACI file failed: %v", err.Error())
 		result, _ := json.Marshal(map[string]string{"message": "Get ACI file failed"})
 		return http.StatusNotFound, result
