@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"html/template"
 	"io"
@@ -18,165 +17,92 @@ import (
 	"github.com/astaxie/beego/logs"
 	"gopkg.in/macaron.v1"
 
+	"github.com/containerops/dockyard/models"
 	"github.com/containerops/wrench/setting"
 )
 
-type aci struct {
-	Name    string
-	Details []acidetails
-}
-
-type acidetails struct {
-	Version string
-	OS      string
-	Arch    string
-	Signed  bool
-	LastMod string
-}
-
-type initiateDetails struct {
-	ACIPushVersion string `json:"aci_push_version"`
-	Multipart      bool   `json:"multipart"`
-	ManifestURL    string `json:"upload_manifest_url"`
-	SignatureURL   string `json:"upload_signature_url"`
-	ACIURL         string `json:"upload_aci_url"`
-	CompletedURL   string `json:"completed_url"`
-}
-
-type completeMsg struct {
-	Success      bool   `json:"success"`
-	Reason       string `json:"reason,omitempty"`
-	ServerReason string `json:"server_reason,omitempty"`
-}
-
-type upload struct {
-	Started time.Time
-	Image   string
-	GotSig  bool
-	GotACI  bool
-	GotMan  bool
-}
 
 var (
-	serverName  string
-	directory   string
-	templatedir string
-
+	directory     string
+	templatedir   string
 	uploadcounter int
 	newuploadLock sync.Mutex
-	uploads       map[int]*upload
-
-	gpgpubkey = flag.String("pubkeys", "",
-		"Path to gpg public keys images will be signed with")
-	https = flag.Bool("https", false,
-		"Whether or not to provide https URLs for meta discovery")
-	port = flag.Int("port", 80, "The port to run the server on")
+	uploads       map[int]*models.Upload
+	acis          []models.Aci
 )
+
+func init() {
+
+	uploads = make(map[int]*models.Upload)
+
+	directory := setting.ImagePath + "/acpool/"
+	templatedir := "conf"
+
+	acis, err := listACIs()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v", err)
+	}
+}
 
 // The root page. Builds a human-readable list of what ACIs are available,
 // and also provides the meta tags for the server for meta discovery.
-func RenderListOfACIs(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	if gpgpubkey == nil {
-		fmt.Fprintf(os.Stderr, "internal error: gpgpubkey is nil")
-		result, _ := json.Marshal("internal error: gpgpubkey is nil")
-		return http.StatusInternalServerError, result
-	}
-
-	if https == nil {
-		fmt.Fprintf(os.Stderr, "internal error: https is nil")
-		result, _ := json.Marshal("internal error: https is nil")
-		return http.StatusInternalServerError, result
-	}
-
-	if port == nil {
-		fmt.Fprintf(os.Stderr, "internal error: port is nil")
-		result, _ := json.Marshal("internal error: port is nil")
-		return http.StatusInternalServerError, result
-	}
-
-	uploads = make(map[int]*upload)
-
-	serverName := setting.Domains
-	directory := "/var/lib/rkt/cas/imagelocks"
-	templatedir := "/home" // TBD:
+func RenderListOfACIs(ctx *macaron.Context, log *logs.BeeLogger) {
 
 	os.RemoveAll(path.Join(directory, "tmp"))
 	err := os.MkdirAll(path.Join(directory, "tmp"), 0755)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v", err)
-		result, _ := json.Marshal(err)
-		return http.StatusInternalServerError, result
 	}
 
 	t, err := template.ParseFiles(path.Join(templatedir, "acitemplate.html"))
 	if err != nil {
-		fmt.Fprintf(ctx.Resp, fmt.Sprintf("%v", err))
-		result, _ := json.Marshal(err)
-		return http.StatusInternalServerError, result
-	}
-
-	acis, err := listACIs()
-	if err != nil {
-		result, _ := json.Marshal(err)
-		return http.StatusInternalServerError, result
+		fmt.Fprintf(os.Stderr, "%v", err)
 	}
 
 	err = t.Execute(ctx.Resp, struct {
 		ServerName string
-		ACIs       []aci
-		HTTPS      bool
+		ACIs       []models.Aci
+		Domain     string
 	}{
-		ServerName: serverName,
+		ServerName: setting.Domains,
 		ACIs:       acis,
-		HTTPS:      *https,
+		Domain:     setting.ListenMode,
 	})
 	if err != nil {
-		result, _ := json.Marshal(err)
-		return http.StatusInternalServerError, result
+		fmt.Fprintf(os.Stderr, "%v", err)
 	}
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
 }
 
-// Sends the gpg public keys specified via the flag to the client
+// Sends the gpg public keys specif`ied via the flag to the client
 func GetPubkeys(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	if *gpgpubkey == "" {
-		result, _ := json.Marshal(map[string]string{})
+	var pubkey []byte
+	var err error
+
+	pubkeypath := setting.ImagePath + "/acpool/" + "pubkeys.gpg"
+	if pubkey, err = ioutil.ReadFile(pubkeypath); err != nil {
+		// TBD: consider to fetch pubkey from other storage medium
+
+		log.Error("[ACI API] Get pubkey file failed: %v", err.Error())
+		result, _ := json.Marshal(map[string]string{"message": "Get pubkey file failed"})
 		return http.StatusNotFound, result
 	}
-	file, err := os.Open(*gpgpubkey)
-	if err != nil {
-		result, _ := json.Marshal("error opening gpg public key")
-		return http.StatusInternalServerError, result
-	}
-	defer file.Close()
-	_, err = io.Copy(ctx.Resp, file)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error reading gpg public key: %v", err)
-		result, _ := json.Marshal("error reading gpg public key")
-		return http.StatusNotFound, result
-	}
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
+	return http.StatusOK, pubkey
 }
 
 func InitiateUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	image := ctx.Params(":image")
 	if image == "" {
-		result, _ := json.Marshal(map[string]string{})
+		log.Error("[ACI API]Get image name failed")
+		result, _ := json.Marshal(map[string]string{"message": "Get image name failed"})
 		return http.StatusNotFound, result
 	}
 
 	uploadNum := strconv.Itoa(newUpload(image))
 
 	var prefix string
-	if *https {
-		prefix = "https://" + serverName
-	} else {
-		prefix = "http://" + serverName
-	}
+	prefix = setting.ListenMode+"://" + setting.Domains + "/ac-push" 
 
-	deets := initiateDetails{
+	deets := models.InitiateDetails{
 		ACIPushVersion: "0.0.1",
 		Multipart:      false,
 		ManifestURL:    prefix + "/manifest/" + uploadNum,
@@ -190,57 +116,52 @@ func InitiateUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 }
 
-func UploadManifest(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
+func UploadManifest(ctx *macaron.Context, log *logs.BeeLogger) (int) {
 	num, err := strconv.Atoi(ctx.Params(":num"))
 	if err != nil {
-		result, _ := json.Marshal(map[string]string{})
-		return http.StatusNotFound, result
+		return http.StatusNotFound
 	}
 
 	err = gotMan(num)
 	if err != nil {
-		result, _ := json.Marshal(err)
-		return http.StatusInternalServerError, result
+		fmt.Fprintf(os.Stderr, "%v", err)
+		return http.StatusInternalServerError
 	}
-
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
+	return http.StatusOK
 }
 
-func ReceiveSignUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
+func ReceiveSignUpload(ctx *macaron.Context, log *logs.BeeLogger) (int) {
 	num, err := strconv.Atoi(ctx.Params(":num"))
 	if err != nil {
-		result, _ := json.Marshal(map[string]string{})
-		return http.StatusNotFound, result
+		return http.StatusNotFound
 	}
 
 	up := getUpload(num)
 	if up == nil {
-		result, _ := json.Marshal(map[string]string{})
-		return http.StatusNotFound, result
+		return http.StatusNotFound
 	}
 
 	_, err = os.Stat(up.Image)
 	if err == nil {
-		result, _ := json.Marshal("item already uploaded")
-		return http.StatusConflict, result
+		log.Error("[ACI API]item already uploaded")
+		return http.StatusConflict
 	} else if !os.IsNotExist(err) {
-		result, _ := json.Marshal(err)
-		return http.StatusInternalServerError, result
+		fmt.Fprintf(os.Stderr, "%v", err)
+		return http.StatusInternalServerError
 	}
 
 	aci, err := os.OpenFile(tmpSigPath(num),
 		os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
-		result, _ := json.Marshal(err)
-		return http.StatusInternalServerError, result
+		fmt.Fprintf(os.Stderr, "%v", err)
+		return http.StatusInternalServerError
 	}
 	defer aci.Close()
 
 	_, err = io.Copy(aci, ctx.Req.Request.Body)
 	if err != nil {
-		result, _ := json.Marshal(err)
-		return http.StatusInternalServerError, result
+		fmt.Fprintf(os.Stderr, "%v", err)
+		return http.StatusInternalServerError
 	}
 
 	err = gotSig(num)
@@ -249,54 +170,51 @@ func ReceiveSignUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 		return http.StatusInternalServerError, result
 	}
 
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
+	return http.StatusOK
 }
 
-func ReceiveAciUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
+func ReceiveAciUpload(ctx *macaron.Context, log *logs.BeeLogger) (int) {
 	num, err := strconv.Atoi(ctx.Params(":num"))
 	if err != nil {
-		result, _ := json.Marshal(map[string]string{})
-		return http.StatusNotFound, result
+		fmt.Fprintf(os.Stderr, "%v", err)
+		return http.StatusNotFound
 	}
 
 	up := getUpload(num)
 	if up == nil {
-		result, _ := json.Marshal(map[string]string{})
-		return http.StatusNotFound, result
+		fmt.Fprintf(os.Stderr, "%v", err)
+		return http.StatusNotFound
 	}
 
 	_, err = os.Stat(up.Image)
 	if err == nil {
-		result, _ := json.Marshal("item already uploaded")
-		return http.StatusConflict, result
+		log.Error("[ACI API]item already uploaded")
+		return http.StatusConflict
 	} else if !os.IsNotExist(err) {
-		result, _ := json.Marshal(err)
-		return http.StatusInternalServerError, result
+		fmt.Fprintf(os.Stderr, "%v", err)
+		return http.StatusInternalServerError
 	}
 
 	aci, err := os.OpenFile(tmpACIPath(num),
 		os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
-		result, _ := json.Marshal(err)
-		return http.StatusInternalServerError, result
+		fmt.Fprintf(os.Stderr, "%v", err)
+		return http.StatusInternalServerError
 	}
 	defer aci.Close()
 
 	_, err = io.Copy(aci, ctx.Req.Request.Body)
 	if err != nil {
-		result, _ := json.Marshal(err)
-		return http.StatusInternalServerError, result
+		fmt.Fprintf(os.Stderr, "%v", err)
+		return http.StatusInternalServerError
 	}
 
 	err = gotACI(num)
 	if err != nil {
-		result, _ := json.Marshal(err)
-		return http.StatusInternalServerError, result
+		fmt.Fprintf(os.Stderr, "%v", err)
+		return http.StatusInternalServerError
 	}
-
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
+	return http.StatusOK
 }
 
 func tmpSigPath(num int) string {
@@ -328,9 +246,10 @@ func CompleteUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 	fmt.Fprintf(os.Stderr, "body: %s\n", string(body))
 
-	msg := completeMsg{}
+	msg := models.CompleteMsg{}
 	err = json.Unmarshal(body, &msg)
 	if err != nil {
+		log.Error("[ACI API]error unmarshaling json: %v", err.Error())
 		result, _ := json.Marshal("error unmarshaling json")
 		return http.StatusBadRequest, result
 	}
@@ -338,6 +257,7 @@ func CompleteUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	if !msg.Success {
 		err := reportFailure(num)
 		if err != nil {
+		    log.Error("[ACI API]client reported failure: %v", err.Error())
 			status, result := msgFailure("client reported failure", msg.Reason)
 			return status, result
 		}
@@ -346,6 +266,7 @@ func CompleteUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	if !up.GotMan {
 		err := reportFailure(num)
 		if err != nil {
+		    log.Error("[ACI API]manifest wasn't uploaded: %v", err.Error())
 			status, result := msgFailure("manifest wasn't uploaded", msg.Reason)
 			return status, result
 		}
@@ -354,6 +275,7 @@ func CompleteUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	if !up.GotSig {
 		err := reportFailure(num)
 		if err != nil {
+		    log.Error("[ACI API]signature wasn't uploaded: %v", err.Error())
 			status, result := msgFailure("signature wasn't uploaded", msg.Reason)
 			return status, result
 		}
@@ -362,6 +284,7 @@ func CompleteUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	if !up.GotACI {
 		err := reportFailure(num)
 		if err != nil {
+		    log.Error("[ACI API]ACI wasn't uploaded: %v", err.Error())
 			status, result := msgFailure("ACI wasn't uploaded", msg.Reason)
 			return status, result
 		}
@@ -373,12 +296,13 @@ func CompleteUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	if err != nil {
 		err := reportFailure(num)
 		if err != nil {
+		    log.Error("[ACI API]Internal Server Error: %v", err.Error())
 			status, result := msgFailure("Internal Server Error", msg.Reason)
 			return status, result
 		}
 	}
 
-	succmsg := completeMsg{
+	succmsg := models.CompleteMsg{
 		Success: true,
 	}
 
@@ -395,12 +319,11 @@ func reportFailure(num int) error {
 }
 
 func msgFailure(msg, clientmsg string) (int, []byte) {
-	failmsg := completeMsg{
+	failmsg := models.CompleteMsg{
 		Success:      false,
 		Reason:       clientmsg,
 		ServerReason: msg,
 	}
-
 	result, _ := json.Marshal(failmsg)
 	return http.StatusInternalServerError, result
 }
@@ -464,7 +387,7 @@ func finishUpload(num int) error {
 func newUpload(image string) int {
 	newuploadLock.Lock()
 	uploadcounter++
-	uploads[uploadcounter] = &upload{
+	uploads[uploadcounter] = &models.Upload{
 		Started: time.Now(),
 		Image:   image,
 	}
@@ -472,8 +395,8 @@ func newUpload(image string) int {
 	return uploadcounter
 }
 
-func getUpload(num int) *upload {
-	var up *upload
+func getUpload(num int) *models.Upload {
+	var up *models.Upload
 	newuploadLock.Lock()
 	up, ok := uploads[num]
 	newuploadLock.Unlock()
@@ -522,13 +445,13 @@ func gotMan(num int) error {
 	return nil
 }
 
-func listACIs() ([]aci, error) {
+func listACIs() ([]models.Aci, error) {
 	files, err := ioutil.ReadDir(directory)
 	if err != nil {
 		return nil, err
 	}
 
-	var acis []aci
+	var acis []models.Aci
 	for _, file := range files {
 		_, fname := path.Split(file.Name())
 		tokens := strings.Split(fname, "-")
@@ -556,7 +479,7 @@ func listACIs() ([]aci, error) {
 			return nil, err
 		}
 
-		details := acidetails{
+		details := models.Acidetails{
 			Version: tokens[1],
 			OS:      tokens[2],
 			Arch:    tokens1[0],
@@ -569,9 +492,9 @@ func listACIs() ([]aci, error) {
 			acis[len(acis)-1].Details = append(acis[len(acis)-1].Details,
 				details)
 		} else {
-			acis = append(acis, aci{
+			acis = append(acis, models.Aci{
 				Name:    tokens[0],
-				Details: []acidetails{details},
+				Details: []models.Acidetails{details},
 			})
 		}
 	}
