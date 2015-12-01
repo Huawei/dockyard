@@ -17,51 +17,82 @@ import (
 	"github.com/astaxie/beego/logs"
 	"gopkg.in/macaron.v1"
 
-	"github.com/containerops/dockyard/models"
 	"github.com/containerops/wrench/setting"
 )
 
+
+type aci struct {
+	Name    string
+	Details []acidetails
+}
+
+type acidetails struct {
+	Version string
+	OS      string
+	Arch    string
+	Signed  bool
+	LastMod string
+}
+
+type initiateDetails struct {
+	ACIPushVersion string `json:"aci_push_version"`
+	Multipart      bool   `json:"multipart"`
+	ManifestURL    string `json:"upload_manifest_url"`
+	SignatureURL   string `json:"upload_signature_url"`
+	ACIURL         string `json:"upload_aci_url"`
+	CompletedURL   string `json:"completed_url"`
+}
+
+type completeMsg struct {
+	Success      bool   `json:"success"`
+	Reason       string `json:"reason,omitempty"`
+	ServerReason string `json:"server_reason,omitempty"`
+}
+
+type upload struct {
+	Started time.Time
+	Image   string
+	GotSig  bool
+	GotACI  bool
+	GotMan  bool
+}
 
 var (
 	directory     string
 	templatedir   string
 	uploadcounter int
 	newuploadLock sync.Mutex
-	uploads       map[int]*models.Upload
-	acis          []models.Aci
+	uploads       map[int]*upload
 )
 
 func init() {
+	uploads = make(map[int]*upload)
 
-	uploads = make(map[int]*models.Upload)
+	directory = setting.ImagePath + "/acpool/"
+	templatedir = "conf"
 
-	directory := setting.ImagePath + "/acpool/"
-	templatedir := "conf"
-
-	acis, err := listACIs()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v", err)
-	}
 }
 
-// The root page. Builds a human-readable list of what ACIs are available,
-// and also provides the meta tags for the server for meta discovery.
 func RenderListOfACIs(ctx *macaron.Context, log *logs.BeeLogger) {
-
 	os.RemoveAll(path.Join(directory, "tmp"))
 	err := os.MkdirAll(path.Join(directory, "tmp"), 0755)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v", err)
 	}
 
-	t, err := template.ParseFiles(path.Join(templatedir, "acitemplate.html"))
+	t, err := template.ParseFiles(path.Join(templatedir, "acipushtemplate.html"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v", err)
+	}
+
+	acis, err := listACIs()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v", err)
 	}
 
 	err = t.Execute(ctx.Resp, struct {
 		ServerName string
-		ACIs       []models.Aci
+		ACIs       []aci
 		Domain     string
 	}{
 		ServerName: setting.Domains,
@@ -73,15 +104,12 @@ func RenderListOfACIs(ctx *macaron.Context, log *logs.BeeLogger) {
 	}
 }
 
-// Sends the gpg public keys specif`ied via the flag to the client
 func GetPubkeys(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	var pubkey []byte
 	var err error
 
 	pubkeypath := setting.ImagePath + "/acpool/" + "pubkeys.gpg"
 	if pubkey, err = ioutil.ReadFile(pubkeypath); err != nil {
-		// TBD: consider to fetch pubkey from other storage medium
-
 		log.Error("[ACI API] Get pubkey file failed: %v", err.Error())
 		result, _ := json.Marshal(map[string]string{"message": "Get pubkey file failed"})
 		return http.StatusNotFound, result
@@ -102,7 +130,7 @@ func InitiateUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	var prefix string
 	prefix = setting.ListenMode+"://" + setting.Domains + "/ac-push" 
 
-	deets := models.InitiateDetails{
+	deets := initiateDetails{
 		ACIPushVersion: "0.0.1",
 		Multipart:      false,
 		ManifestURL:    prefix + "/manifest/" + uploadNum,
@@ -166,8 +194,8 @@ func ReceiveSignUpload(ctx *macaron.Context, log *logs.BeeLogger) (int) {
 
 	err = gotSig(num)
 	if err != nil {
-		result, _ := json.Marshal(err)
-		return http.StatusInternalServerError, result
+		fmt.Fprintf(os.Stderr, "%v", err)
+		return http.StatusInternalServerError
 	}
 
 	return http.StatusOK
@@ -246,7 +274,7 @@ func CompleteUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 	fmt.Fprintf(os.Stderr, "body: %s\n", string(body))
 
-	msg := models.CompleteMsg{}
+	msg := completeMsg{}
 	err = json.Unmarshal(body, &msg)
 	if err != nil {
 		log.Error("[ACI API]error unmarshaling json: %v", err.Error())
@@ -290,8 +318,6 @@ func CompleteUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 		}
 	}
 
-	//TODO: image verification here
-
 	err = finishUpload(num)
 	if err != nil {
 		err := reportFailure(num)
@@ -302,7 +328,7 @@ func CompleteUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 		}
 	}
 
-	succmsg := models.CompleteMsg{
+	succmsg := completeMsg{
 		Success: true,
 	}
 
@@ -319,7 +345,7 @@ func reportFailure(num int) error {
 }
 
 func msgFailure(msg, clientmsg string) (int, []byte) {
-	failmsg := models.CompleteMsg{
+	failmsg := completeMsg{
 		Success:      false,
 		Reason:       clientmsg,
 		ServerReason: msg,
@@ -387,7 +413,7 @@ func finishUpload(num int) error {
 func newUpload(image string) int {
 	newuploadLock.Lock()
 	uploadcounter++
-	uploads[uploadcounter] = &models.Upload{
+	uploads[uploadcounter] = &upload{
 		Started: time.Now(),
 		Image:   image,
 	}
@@ -395,8 +421,8 @@ func newUpload(image string) int {
 	return uploadcounter
 }
 
-func getUpload(num int) *models.Upload {
-	var up *models.Upload
+func getUpload(num int) *upload {
+	var up *upload
 	newuploadLock.Lock()
 	up, ok := uploads[num]
 	newuploadLock.Unlock()
@@ -445,13 +471,13 @@ func gotMan(num int) error {
 	return nil
 }
 
-func listACIs() ([]models.Aci, error) {
+func listACIs() ([]aci, error) {
 	files, err := ioutil.ReadDir(directory)
 	if err != nil {
 		return nil, err
 	}
 
-	var acis []models.Aci
+	var acis []aci
 	for _, file := range files {
 		_, fname := path.Split(file.Name())
 		tokens := strings.Split(fname, "-")
@@ -479,7 +505,7 @@ func listACIs() ([]models.Aci, error) {
 			return nil, err
 		}
 
-		details := models.Acidetails{
+		details := acidetails{
 			Version: tokens[1],
 			OS:      tokens[2],
 			Arch:    tokens1[0],
@@ -492,9 +518,9 @@ func listACIs() ([]models.Aci, error) {
 			acis[len(acis)-1].Details = append(acis[len(acis)-1].Details,
 				details)
 		} else {
-			acis = append(acis, models.Aci{
+			acis = append(acis, aci{
 				Name:    tokens[0],
-				Details: []models.Acidetails{details},
+				Details: []acidetails{details},
 			})
 		}
 	}
