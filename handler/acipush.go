@@ -144,105 +144,123 @@ func InitiateUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 }
 
-func UploadManifest(ctx *macaron.Context, log *logs.BeeLogger) (int) {
+func UploadManifest(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	num, err := strconv.Atoi(ctx.Params(":num"))
 	if err != nil {
-		return http.StatusNotFound
+		result, _ := json.Marshal(map[string]string{})
+		return http.StatusNotFound, result
 	}
 
 	err = gotMan(num)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v", err)
-		return http.StatusInternalServerError
+		result, _ := json.Marshal(map[string]string{})
+		return http.StatusInternalServerError, result
 	}
-	return http.StatusOK
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
 }
 
-func ReceiveSignUpload(ctx *macaron.Context, log *logs.BeeLogger) (int) {
+func ReceiveSignUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	num, err := strconv.Atoi(ctx.Params(":num"))
 	if err != nil {
-		return http.StatusNotFound
+		result, _ := json.Marshal(map[string]string{})
+		return http.StatusNotFound, result
 	}
 
 	up := getUpload(num)
 	if up == nil {
-		return http.StatusNotFound
+		result, _ := json.Marshal(map[string]string{})
+		return http.StatusNotFound, result
 	}
 
 	_, err = os.Stat(up.Image)
 	if err == nil {
 		log.Error("[ACI API]item already uploaded")
-		return http.StatusConflict
+		result, _ := json.Marshal(map[string]string{"message": "item already uploaded"})
+		return http.StatusConflict, result
 	} else if !os.IsNotExist(err) {
 		fmt.Fprintf(os.Stderr, "%v", err)
-		return http.StatusInternalServerError
+		result, _ := json.Marshal(map[string]string{})
+		return http.StatusInternalServerError, result
 	}
 
 	aci, err := os.OpenFile(tmpSigPath(num),
 		os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v", err)
-		return http.StatusInternalServerError
+		result, _ := json.Marshal(map[string]string{})
+		return http.StatusInternalServerError, result
 	}
 	defer aci.Close()
 
 	_, err = io.Copy(aci, ctx.Req.Request.Body)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v", err)
-		return http.StatusInternalServerError
+		result, _ := json.Marshal(map[string]string{})
+		return http.StatusInternalServerError, result
 	}
 
 	err = gotSig(num)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v", err)
-		return http.StatusInternalServerError
+		result, _ := json.Marshal(map[string]string{})
+		return http.StatusInternalServerError, result
 	}
-
-	return http.StatusOK
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
 }
 
-func ReceiveAciUpload(ctx *macaron.Context, log *logs.BeeLogger) (int) {
+func ReceiveAciUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	num, err := strconv.Atoi(ctx.Params(":num"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v", err)
-		return http.StatusNotFound
+		result, _ := json.Marshal(map[string]string{})
+		return http.StatusNotFound, result
 	}
 
 	up := getUpload(num)
 	if up == nil {
 		fmt.Fprintf(os.Stderr, "%v", err)
-		return http.StatusNotFound
+		result, _ := json.Marshal(map[string]string{})
+		return http.StatusNotFound, result
 	}
 
 	_, err = os.Stat(up.Image)
 	if err == nil {
 		log.Error("[ACI API]item already uploaded")
-		return http.StatusConflict
+		result, _ := json.Marshal(map[string]string{"message": "item already uploaded"})
+		return http.StatusConflict, result
 	} else if !os.IsNotExist(err) {
 		fmt.Fprintf(os.Stderr, "%v", err)
-		return http.StatusInternalServerError
+		result, _ := json.Marshal(map[string]string{})
+		return http.StatusInternalServerError, result
 	}
 
 	aci, err := os.OpenFile(tmpACIPath(num),
 		os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v", err)
-		return http.StatusInternalServerError
+		result, _ := json.Marshal(map[string]string{})
+		return http.StatusInternalServerError, result
 	}
 	defer aci.Close()
 
 	_, err = io.Copy(aci, ctx.Req.Request.Body)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v", err)
-		return http.StatusInternalServerError
+		result, _ := json.Marshal(map[string]string{})
+		return http.StatusInternalServerError, result
 	}
 
 	err = gotACI(num)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v", err)
-		return http.StatusInternalServerError
+		result, _ := json.Marshal(map[string]string{})
+		return http.StatusInternalServerError, result
 	}
-	return http.StatusOK
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
 }
 
 func tmpSigPath(num int) string {
