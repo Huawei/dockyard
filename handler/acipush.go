@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"html/template"
 	"io"
@@ -20,6 +19,7 @@ import (
 
 	"github.com/containerops/wrench/setting"
 )
+
 
 type aci struct {
 	Name    string
@@ -58,123 +58,77 @@ type upload struct {
 }
 
 var (
-	serverName  string
-	directory   string
-	templatedir string
-
+	directory     string
+	templatedir   string
 	uploadcounter int
 	newuploadLock sync.Mutex
 	uploads       map[int]*upload
-
-	gpgpubkey = flag.String("pubkeys", "",
-		"Path to gpg public keys images will be signed with")
-	https = flag.Bool("https", false,
-		"Whether or not to provide https URLs for meta discovery")
-	port = flag.Int("port", 80, "The port to run the server on")
 )
 
-// The root page. Builds a human-readable list of what ACIs are available,
-// and also provides the meta tags for the server for meta discovery.
-func RenderListOfACIs(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	if gpgpubkey == nil {
-		fmt.Fprintf(os.Stderr, "internal error: gpgpubkey is nil")
-		result, _ := json.Marshal("internal error: gpgpubkey is nil")
-		return http.StatusInternalServerError, result
-	}
-
-	if https == nil {
-		fmt.Fprintf(os.Stderr, "internal error: https is nil")
-		result, _ := json.Marshal("internal error: https is nil")
-		return http.StatusInternalServerError, result
-	}
-
-	if port == nil {
-		fmt.Fprintf(os.Stderr, "internal error: port is nil")
-		result, _ := json.Marshal("internal error: port is nil")
-		return http.StatusInternalServerError, result
-	}
-
+func init() {
 	uploads = make(map[int]*upload)
 
-	serverName := setting.Domains
-	directory := "/var/lib/rkt/cas/imagelocks"
-	templatedir := "/home" // TBD:
+	directory = setting.ImagePath + "/acpool/"
+	templatedir = "conf"
 
+}
+
+func RenderListOfACIs(ctx *macaron.Context, log *logs.BeeLogger) {
 	os.RemoveAll(path.Join(directory, "tmp"))
 	err := os.MkdirAll(path.Join(directory, "tmp"), 0755)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v", err)
-		result, _ := json.Marshal(err)
-		return http.StatusInternalServerError, result
 	}
 
-	t, err := template.ParseFiles(path.Join(templatedir, "acitemplate.html"))
+	t, err := template.ParseFiles(path.Join(templatedir, "acipushtemplate.html"))
 	if err != nil {
-		fmt.Fprintf(ctx.Resp, fmt.Sprintf("%v", err))
-		result, _ := json.Marshal(err)
-		return http.StatusInternalServerError, result
+		fmt.Fprintf(os.Stderr, "%v", err)
 	}
 
 	acis, err := listACIs()
 	if err != nil {
-		result, _ := json.Marshal(err)
-		return http.StatusInternalServerError, result
+		fmt.Fprintf(os.Stderr, "%v", err)
 	}
 
 	err = t.Execute(ctx.Resp, struct {
 		ServerName string
 		ACIs       []aci
-		HTTPS      bool
+		ListenMode string
 	}{
-		ServerName: serverName,
+		ServerName: setting.Domains,
 		ACIs:       acis,
-		HTTPS:      *https,
+		ListenMode: setting.ListenMode,
 	})
 	if err != nil {
-		result, _ := json.Marshal(err)
-		return http.StatusInternalServerError, result
+		fmt.Fprintf(os.Stderr, "%v", err)
 	}
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
 }
 
-// Sends the gpg public keys specified via the flag to the client
 func GetPubkeys(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	if *gpgpubkey == "" {
-		result, _ := json.Marshal(map[string]string{})
+	var pubkey []byte
+	var err error
+
+	pubkeypath := setting.ImagePath + "/acpool/" + "pubkeys.gpg"
+	if pubkey, err = ioutil.ReadFile(pubkeypath); err != nil {
+		log.Error("[ACI API] Get pubkey file failed: %v", err.Error())
+		result, _ := json.Marshal(map[string]string{"message": "Get pubkey file failed"})
 		return http.StatusNotFound, result
 	}
-	file, err := os.Open(*gpgpubkey)
-	if err != nil {
-		result, _ := json.Marshal("error opening gpg public key")
-		return http.StatusInternalServerError, result
-	}
-	defer file.Close()
-	_, err = io.Copy(ctx.Resp, file)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error reading gpg public key: %v", err)
-		result, _ := json.Marshal("error reading gpg public key")
-		return http.StatusNotFound, result
-	}
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
+	return http.StatusOK, pubkey
 }
 
 func InitiateUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	image := ctx.Params(":image")
 	if image == "" {
-		result, _ := json.Marshal(map[string]string{})
+		log.Error("[ACI API]Get image name failed")
+		result, _ := json.Marshal(map[string]string{"message": "Get image name failed"})
 		return http.StatusNotFound, result
 	}
 
 	uploadNum := strconv.Itoa(newUpload(image))
 
 	var prefix string
-	if *https {
-		prefix = "https://" + serverName
-	} else {
-		prefix = "http://" + serverName
-	}
+	prefix = setting.ListenMode+"://" + setting.Domains + "/ac-push" 
 
 	deets := initiateDetails{
 		ACIPushVersion: "0.0.1",
@@ -199,10 +153,10 @@ func UploadManifest(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 	err = gotMan(num)
 	if err != nil {
-		result, _ := json.Marshal(err)
+		fmt.Fprintf(os.Stderr, "%v", err)
+		result, _ := json.Marshal(map[string]string{})
 		return http.StatusInternalServerError, result
 	}
-
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
@@ -222,33 +176,37 @@ func ReceiveSignUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 
 	_, err = os.Stat(up.Image)
 	if err == nil {
-		result, _ := json.Marshal("item already uploaded")
+		log.Error("[ACI API]item already uploaded")
+		result, _ := json.Marshal(map[string]string{"message": "item already uploaded"})
 		return http.StatusConflict, result
 	} else if !os.IsNotExist(err) {
-		result, _ := json.Marshal(err)
+		fmt.Fprintf(os.Stderr, "%v", err)
+		result, _ := json.Marshal(map[string]string{})
 		return http.StatusInternalServerError, result
 	}
 
 	aci, err := os.OpenFile(tmpSigPath(num),
 		os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
-		result, _ := json.Marshal(err)
+		fmt.Fprintf(os.Stderr, "%v", err)
+		result, _ := json.Marshal(map[string]string{})
 		return http.StatusInternalServerError, result
 	}
 	defer aci.Close()
 
 	_, err = io.Copy(aci, ctx.Req.Request.Body)
 	if err != nil {
-		result, _ := json.Marshal(err)
+		fmt.Fprintf(os.Stderr, "%v", err)
+		result, _ := json.Marshal(map[string]string{})
 		return http.StatusInternalServerError, result
 	}
 
 	err = gotSig(num)
 	if err != nil {
-		result, _ := json.Marshal(err)
+		fmt.Fprintf(os.Stderr, "%v", err)
+		result, _ := json.Marshal(map[string]string{})
 		return http.StatusInternalServerError, result
 	}
-
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
@@ -256,45 +214,51 @@ func ReceiveSignUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 func ReceiveAciUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	num, err := strconv.Atoi(ctx.Params(":num"))
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v", err)
 		result, _ := json.Marshal(map[string]string{})
 		return http.StatusNotFound, result
 	}
 
 	up := getUpload(num)
 	if up == nil {
+		fmt.Fprintf(os.Stderr, "%v", err)
 		result, _ := json.Marshal(map[string]string{})
 		return http.StatusNotFound, result
 	}
 
 	_, err = os.Stat(up.Image)
 	if err == nil {
-		result, _ := json.Marshal("item already uploaded")
+		log.Error("[ACI API]item already uploaded")
+		result, _ := json.Marshal(map[string]string{"message": "item already uploaded"})
 		return http.StatusConflict, result
 	} else if !os.IsNotExist(err) {
-		result, _ := json.Marshal(err)
+		fmt.Fprintf(os.Stderr, "%v", err)
+		result, _ := json.Marshal(map[string]string{})
 		return http.StatusInternalServerError, result
 	}
 
 	aci, err := os.OpenFile(tmpACIPath(num),
 		os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
-		result, _ := json.Marshal(err)
+		fmt.Fprintf(os.Stderr, "%v", err)
+		result, _ := json.Marshal(map[string]string{})
 		return http.StatusInternalServerError, result
 	}
 	defer aci.Close()
 
 	_, err = io.Copy(aci, ctx.Req.Request.Body)
 	if err != nil {
-		result, _ := json.Marshal(err)
+		fmt.Fprintf(os.Stderr, "%v", err)
+		result, _ := json.Marshal(map[string]string{})
 		return http.StatusInternalServerError, result
 	}
 
 	err = gotACI(num)
 	if err != nil {
-		result, _ := json.Marshal(err)
+		fmt.Fprintf(os.Stderr, "%v", err)
+		result, _ := json.Marshal(map[string]string{})
 		return http.StatusInternalServerError, result
 	}
-
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
@@ -331,6 +295,7 @@ func CompleteUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	msg := completeMsg{}
 	err = json.Unmarshal(body, &msg)
 	if err != nil {
+		log.Error("[ACI API]error unmarshaling json: %v", err.Error())
 		result, _ := json.Marshal("error unmarshaling json")
 		return http.StatusBadRequest, result
 	}
@@ -338,6 +303,7 @@ func CompleteUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	if !msg.Success {
 		err := reportFailure(num)
 		if err != nil {
+		    log.Error("[ACI API]client reported failure: %v", err.Error())
 			status, result := msgFailure("client reported failure", msg.Reason)
 			return status, result
 		}
@@ -346,6 +312,7 @@ func CompleteUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	if !up.GotMan {
 		err := reportFailure(num)
 		if err != nil {
+		    log.Error("[ACI API]manifest wasn't uploaded: %v", err.Error())
 			status, result := msgFailure("manifest wasn't uploaded", msg.Reason)
 			return status, result
 		}
@@ -354,6 +321,7 @@ func CompleteUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	if !up.GotSig {
 		err := reportFailure(num)
 		if err != nil {
+		    log.Error("[ACI API]signature wasn't uploaded: %v", err.Error())
 			status, result := msgFailure("signature wasn't uploaded", msg.Reason)
 			return status, result
 		}
@@ -362,17 +330,17 @@ func CompleteUpload(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	if !up.GotACI {
 		err := reportFailure(num)
 		if err != nil {
+		    log.Error("[ACI API]ACI wasn't uploaded: %v", err.Error())
 			status, result := msgFailure("ACI wasn't uploaded", msg.Reason)
 			return status, result
 		}
 	}
 
-	//TODO: image verification here
-
 	err = finishUpload(num)
 	if err != nil {
 		err := reportFailure(num)
 		if err != nil {
+		    log.Error("[ACI API]Internal Server Error: %v", err.Error())
 			status, result := msgFailure("Internal Server Error", msg.Reason)
 			return status, result
 		}
@@ -400,7 +368,6 @@ func msgFailure(msg, clientmsg string) (int, []byte) {
 		Reason:       clientmsg,
 		ServerReason: msg,
 	}
-
 	result, _ := json.Marshal(failmsg)
 	return http.StatusInternalServerError, result
 }
