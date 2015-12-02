@@ -15,8 +15,8 @@
 <html lang="en">
     <head>
         <meta charset="utf-8"/>
-        <meta name="ac-discovery-pubkeys" content="{{.ServerName}} {{.Domain}}://{{.ServerName}}/ac-push/pubkeys.gpg">
-        <meta name="ac-push-discovery" content="{{.ServerName}} {{.Domain}}://ac-push/{name}-{version}-{os}-{arch}.{ext}/startupload"/>
+        <meta name="ac-discovery-pubkeys" content="{{.ServerName}} {{.ListenMode}}://{{.ServerName}}/ac-push/pubkeys.gpg">
+        <meta name="ac-push-discovery" content="{{.ServerName}} {{.ListenMode}}://ac-push/{name}-{version}-{os}-{arch}.{ext}/startupload"/>
     </head>
     <body>
         <h1>{{.ServerName}}</h1>

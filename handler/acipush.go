@@ -93,11 +93,11 @@ func RenderListOfACIs(ctx *macaron.Context, log *logs.BeeLogger) {
 	err = t.Execute(ctx.Resp, struct {
 		ServerName string
 		ACIs       []aci
-		Domain     string
+		ListenMode string
 	}{
 		ServerName: setting.Domains,
 		ACIs:       acis,
-		Domain:     setting.ListenMode,
+		ListenMode: setting.ListenMode,
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v", err)

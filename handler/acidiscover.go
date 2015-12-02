@@ -26,11 +26,11 @@ func DiscoveryACIHandler(ctx *macaron.Context, log *logs.BeeLogger) {
 	err = t.Execute(ctx.Resp, struct {
 		Name       string
 		ServerName string
-		Domain     string
+		ListenMode string
 	}{
 		Name:       img,
 		ServerName: setting.Domains,
-		Domain:     setting.ListenMode,
+		ListenMode: setting.ListenMode,
 	})
 	if err != nil {
 		log.Error("[ACI API] Discovery respond failed: %v", err.Error())
