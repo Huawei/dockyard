@@ -1,15 +1,15 @@
 {
 	"ImportPath": "github.com/containerops/dockyard",
-	"GoVersion": "go1.5.1",
+	"GoVersion": "go1.4.2",
 	"Deps": [
 		{
 			"ImportPath": "github.com/Sirupsen/logrus",
-			"Comment": "v0.8.3-3-g07d998d",
-			"Rev": "07d998d174c4e2dc90e2f1989a20724220bca1ff"
+			"Comment": "v0.8.7",
+			"Rev": "418b41d23a1bf978c06faea5313ba194650ac088"
 		},
 		{
 			"ImportPath": "github.com/Unknwon/com",
-			"Rev": "188d690b1aea28bf00ba76983aa285b1d322e3dd"
+			"Rev": "28b053d5a2923b87ce8c5a08f3af779894a72758"
 		},
 		{
 			"ImportPath": "github.com/astaxie/beego/config",
@@ -23,65 +23,65 @@
 		},
 		{
 			"ImportPath": "github.com/codegangsta/cli",
-			"Comment": "1.2.0-135-gf998261",
-			"Rev": "f9982619ccace7df963bb7f6d1de3a6f014ff709"
+			"Comment": "1.2.0-139-g142e6cd",
+			"Rev": "142e6cd241a4dfbf7f07a018f1f8225180018da4"
 		},
 		{
 			"ImportPath": "github.com/containerops/wrench/db",
-			"Rev": "bf6135fccc80ccead4a7cf775cdec5c14a2d3609"
+			"Rev": "fb56c696987d75180c020df1eeb1d55fa96b3eef"
 		},
 		{
 			"ImportPath": "github.com/containerops/wrench/setting",
-			"Rev": "bf6135fccc80ccead4a7cf775cdec5c14a2d3609"
+			"Rev": "fb56c696987d75180c020df1eeb1d55fa96b3eef"
 		},
 		{
 			"ImportPath": "github.com/containerops/wrench/utils",
-			"Rev": "bf6135fccc80ccead4a7cf775cdec5c14a2d3609"
+			"Rev": "fb56c696987d75180c020df1eeb1d55fa96b3eef"
 		},
 		{
 			"ImportPath": "github.com/docker/docker/pkg/archive",
-			"Comment": "v1.4.1-5583-g837a66e",
-			"Rev": "837a66e79b0d458ba12a2ff7bd0ade2770ba9e71"
+			"Comment": "v1.4.1-7109-gc6ec33e",
+			"Rev": "c6ec33ea8f8a2691c9a43f02cc69fcd204e04b18"
 		},
 		{
 			"ImportPath": "github.com/docker/docker/pkg/fileutils",
-			"Comment": "v1.4.1-5583-g837a66e",
-			"Rev": "837a66e79b0d458ba12a2ff7bd0ade2770ba9e71"
+			"Comment": "v1.4.1-7109-gc6ec33e",
+			"Rev": "c6ec33ea8f8a2691c9a43f02cc69fcd204e04b18"
+		},
+		{
+			"ImportPath": "github.com/docker/docker/pkg/idtools",
+			"Comment": "v1.4.1-7109-gc6ec33e",
+			"Rev": "c6ec33ea8f8a2691c9a43f02cc69fcd204e04b18"
 		},
 		{
 			"ImportPath": "github.com/docker/docker/pkg/ioutils",
-			"Comment": "v1.4.1-5583-g837a66e",
-			"Rev": "837a66e79b0d458ba12a2ff7bd0ade2770ba9e71"
+			"Comment": "v1.4.1-7109-gc6ec33e",
+			"Rev": "c6ec33ea8f8a2691c9a43f02cc69fcd204e04b18"
 		},
 		{
 			"ImportPath": "github.com/docker/docker/pkg/pools",
-			"Comment": "v1.4.1-5583-g837a66e",
-			"Rev": "837a66e79b0d458ba12a2ff7bd0ade2770ba9e71"
+			"Comment": "v1.4.1-7109-gc6ec33e",
+			"Rev": "c6ec33ea8f8a2691c9a43f02cc69fcd204e04b18"
 		},
 		{
 			"ImportPath": "github.com/docker/docker/pkg/promise",
-			"Comment": "v1.4.1-5583-g837a66e",
-			"Rev": "837a66e79b0d458ba12a2ff7bd0ade2770ba9e71"
-		},
-		{
-			"ImportPath": "github.com/docker/docker/pkg/random",
-			"Comment": "v1.4.1-5583-g837a66e",
-			"Rev": "837a66e79b0d458ba12a2ff7bd0ade2770ba9e71"
+			"Comment": "v1.4.1-7109-gc6ec33e",
+			"Rev": "c6ec33ea8f8a2691c9a43f02cc69fcd204e04b18"
 		},
 		{
 			"ImportPath": "github.com/docker/docker/pkg/stdcopy",
-			"Comment": "v1.4.1-5583-g837a66e",
-			"Rev": "837a66e79b0d458ba12a2ff7bd0ade2770ba9e71"
+			"Comment": "v1.4.1-7109-gc6ec33e",
+			"Rev": "c6ec33ea8f8a2691c9a43f02cc69fcd204e04b18"
 		},
 		{
 			"ImportPath": "github.com/docker/docker/pkg/system",
-			"Comment": "v1.4.1-5583-g837a66e",
-			"Rev": "837a66e79b0d458ba12a2ff7bd0ade2770ba9e71"
+			"Comment": "v1.4.1-7109-gc6ec33e",
+			"Rev": "c6ec33ea8f8a2691c9a43f02cc69fcd204e04b18"
 		},
 		{
 			"ImportPath": "github.com/docker/docker/pkg/units",
-			"Comment": "v1.4.1-5583-g837a66e",
-			"Rev": "837a66e79b0d458ba12a2ff7bd0ade2770ba9e71"
+			"Comment": "v1.4.1-7109-gc6ec33e",
+			"Rev": "c6ec33ea8f8a2691c9a43f02cc69fcd204e04b18"
 		},
 		{
 			"ImportPath": "github.com/docker/libtrust",
@@ -90,6 +90,14 @@
 		{
 			"ImportPath": "github.com/go-macaron/inject",
 			"Rev": "c5ab7bf3a307593cd44cb272d1a5beea473dd072"
+		},
+		{
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "1c83b3eabd45b6d76072b66b746c20815fb2872d"
+		},
+		{
+			"ImportPath": "github.com/gorilla/mux",
+			"Rev": "ad4d7a5882b961e07e2626045eb995c022ac6664"
 		},
 		{
 			"ImportPath": "github.com/qiniu/api.v6/auth/digest",
@@ -128,7 +136,7 @@
 		},
 		{
 			"ImportPath": "github.com/satori/go.uuid",
-			"Rev": "afe1e2ddf0f05b7c29d388a3f8e76cb15c2231ca"
+			"Rev": "d41af8bb6a7704f00bc3b7cba9355ae6a5a80048"
 		},
 		{
 			"ImportPath": "github.com/upyun/go-sdk/upyun",
@@ -140,23 +148,18 @@
 			"Rev": "bda20d5067a03094fc6762f7ead53027afac5f28"
 		},
 		{
-			"ImportPath": "gopkg.in/bufio.v1",
-			"Comment": "v1",
-			"Rev": "567b2bfa514e796916c4747494d6ff5132a1dfce"
-		},
-		{
 			"ImportPath": "gopkg.in/ini.v1",
-			"Comment": "v0-16-g1772191",
-			"Rev": "177219109c97e7920c933e21c9b25f874357b237"
+			"Comment": "v0-55-g8f40127",
+			"Rev": "8f4012789510d6eb012597c2eeedab1022d15228"
 		},
 		{
 			"ImportPath": "gopkg.in/macaron.v1",
-			"Rev": "1273543230048d67c2cfbbed0162256fd000ba3b"
+			"Rev": "1c6dd87797ae9319b4658cbd48d1d0420b279fd5"
 		},
 		{
 			"ImportPath": "gopkg.in/redis.v3",
-			"Comment": "v3.1.5",
-			"Rev": "2cfe5df7d2593e20161594e4c02ebb305c9ccd8e"
+			"Comment": "v3.2.16",
+			"Rev": "7ea220f54db94ef0b305499d409e9887feaf536e"
 		}
 	]
 }
