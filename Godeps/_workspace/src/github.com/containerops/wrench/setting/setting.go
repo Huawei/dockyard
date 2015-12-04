@@ -61,6 +61,22 @@ var (
 	Clientemail    string
 )
 
+// Clair service config parameters
+var (
+	//Path of the database. Default:  '/db'
+	ClairDBPath string
+	//Remove all the data in DB after stop the clair service. Default: false
+	ClairKeepDB bool
+	//Log level of the clair lib. Default: 'info'
+	//All values: ['critical, error, warning, notice, info, debug, trace']
+	ClairLogLevel string
+	//Update CVE date in every '%dh%dm%ds'. Default: '1h0m0s'
+	ClairUpdateDuration string
+	//Return CVEs with minimal priority to Dockyard. Default: 'Low'
+	//All values: ['Unknown, Negligible, Low, Medium, High, Critical, Defcon1']
+	ClairVulnPriority string
+)
+
 func SetConfig(path string) error {
 	var err error
 
@@ -181,7 +197,7 @@ func SetConfig(path string) error {
 	switch BackendDriver {
 	case "native":
 		//It will be supported soon
-	case "qiniu", "aliyun":
+	case "qiniu", "aliyun", "amazons3":
 		if endpoint := conf.String(BackendDriver + "::" + "endpoint"); endpoint != "" {
 			Endpoint = endpoint
 		} else {
@@ -233,13 +249,17 @@ func SetConfig(path string) error {
 
 	case "qcloud":
 		//It will be supported soon
-	case "amazons3":
-		//It will be supported soon
 	case "googlecloud":
 		//It will be supported soon
 	default:
 		err = fmt.Errorf("Doesn't support %v now", BackendDriver)
 	}
+
+	ClairDBPath = conf.String("clairDBPath")
+	ClairLogLevel = conf.String("clairLogLevel")
+	ClairKeepDB = conf.Bool("clairKeepDB")
+	ClairUpdateDuration = conf.String("clairUpdateDuration")
+	ClairVulnPriority = conf.String("clairVulnPriority")
 
 	return err
 }
