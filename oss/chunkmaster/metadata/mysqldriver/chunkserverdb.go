@@ -2,8 +2,9 @@ package mysqldriver
 
 import (
 	"fmt"
-	"github.com/jcloudpub/speedy/chunkmaster/metadata"
-	"github.com/jcloudpub/speedy/utils"
+
+	"github.com/containerops/dockyard/oss/chunkmaster/metadata"
+	"github.com/containerops/dockyard/oss/utils"
 )
 
 const (

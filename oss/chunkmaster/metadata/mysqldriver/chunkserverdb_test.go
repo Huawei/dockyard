@@ -1,8 +1,9 @@
 package mysqldriver
 
 import (
-	"github.com/jcloudpub/speedy/chunkmaster/metadata"
 	"testing"
+
+	"github.com/containerops/dockyard/oss/chunkmaster/metadata"
 )
 
 func getConn() (metadata.MetaDataDriver, error) {

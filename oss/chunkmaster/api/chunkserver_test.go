@@ -2,9 +2,10 @@ package api
 
 import (
 	"bytes"
-	"github.com/jcloudpub/speedy/utils"
 	"net/http"
 	"testing"
+
+	"github.com/containerops/dockyard/oss/utils"
 )
 
 const (
