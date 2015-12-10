@@ -6,17 +6,17 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/containerops/wrench/setting"
 	"github.com/coreos/clair/database"
 	"github.com/coreos/clair/updater"
+	_ "github.com/coreos/clair/updater/fetchers"
 	"github.com/coreos/clair/utils"
 	"github.com/coreos/clair/utils/types"
 	"github.com/coreos/clair/worker"
-	"github.com/coreos/pkg/capnslog"
-
-	_ "github.com/coreos/clair/updater/fetchers"
 	_ "github.com/coreos/clair/worker/detectors/os"
 	_ "github.com/coreos/clair/worker/detectors/packages"
+	"github.com/coreos/pkg/capnslog"
+
+	"github.com/containerops/wrench/setting"
 )
 
 type ClairConfig struct {
@@ -40,33 +40,29 @@ var (
 )
 
 func init() {
-	var conf ClairConfig
-	// Load database setting
-	if setting.ClairDBPath != "" {
-		conf.DBPath = setting.ClairDBPath
-	} else {
-		conf.DBPath = DefaultClairDBPath
-	}
-
-	conf.KeepDB = setting.ClairKeepDB
-	conf.LogLevel = setting.ClairLogLevel
-	conf.Duration = setting.ClairUpdateDuration
-	conf.VulnPriority = setting.ClairVulnPriority
-
-	if err := ClairServiceInit(conf); err != nil {
-		logrus.Warnf("Cannot init clair service: %v.", err)
-	}
 }
 
-func ClairServiceInit(conf ClairConfig) error {
+func ClairServiceInit() error {
+	// Load database setting
+	if setting.ClairDBPath != "" {
+		clairConf.DBPath = setting.ClairDBPath
+	} else {
+		clairConf.DBPath = DefaultClairDBPath
+	}
+
+	clairConf.KeepDB = setting.ClairKeepDB
+	clairConf.LogLevel = setting.ClairLogLevel
+	clairConf.Duration = setting.ClairUpdateDuration
+	clairConf.VulnPriority = setting.ClairVulnPriority
+
 	// Set database
-	if err := database.Open("bolt", conf.DBPath); err != nil {
+	if err := database.Open("bolt", clairConf.DBPath); err != nil {
 		logrus.Debug(err)
 		return err
 	}
 
 	// Set logLevel of clair lib
-	logLevel, err := capnslog.ParseLevel(strings.ToUpper(conf.LogLevel))
+	logLevel, err := capnslog.ParseLevel(strings.ToUpper(clairConf.LogLevel))
 	if err != nil {
 		logLevel, _ = capnslog.ParseLevel(strings.ToUpper(DefaultClairLogLevel))
 	}
@@ -74,24 +70,24 @@ func ClairServiceInit(conf ClairConfig) error {
 	capnslog.SetFormatter(capnslog.NewPrettyFormatter(os.Stdout, false))
 
 	// Set minumum priority parameter.
-	if types.Priority(conf.VulnPriority).IsValid() {
-		logrus.Debugf("Vuln priority is invalid :%v.", conf.VulnPriority)
-		conf.VulnPriority = DefaultClairVulnPriority
+	if types.Priority(clairConf.VulnPriority).IsValid() {
+		logrus.Debugf("Vuln priority is invalid :%v.", clairConf.VulnPriority)
+		clairConf.VulnPriority = DefaultClairVulnPriority
 	}
 
 	// Set 'duration' and Update the CVE database
-	if conf.Duration == "" {
+	if clairConf.Duration == "" {
 		logrus.Debugf("No duration set, so only update at the beginning.")
 		go updater.Update()
 		clairStopper = nil
 	} else {
 		st := utils.NewStopper()
 		st.Begin()
-		d, err := time.ParseDuration(conf.Duration)
+		d, err := time.ParseDuration(clairConf.Duration)
 		if err != nil {
 			logrus.Warnf("Wrong duration format, use the default duration: %v.", DefaultClairUpdateDuration)
-			conf.Duration = DefaultClairUpdateDuration
-			d, err = time.ParseDuration(conf.Duration)
+			clairConf.Duration = DefaultClairUpdateDuration
+			d, err = time.ParseDuration(clairConf.Duration)
 			if err != nil {
 				logrus.Debugf("Cannot pare du %v", err)
 			}
@@ -101,7 +97,6 @@ func ClairServiceInit(conf ClairConfig) error {
 		clairStopper = st
 		st.Begin()
 	}
-	clairConf = conf
 	return nil
 }
 

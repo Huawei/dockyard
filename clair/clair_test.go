@@ -17,8 +17,7 @@ func DemoConfig() ClairConfig {
 }
 
 func Test_ClairService(t *testing.T) {
-	conf := DemoConfig()
-	if err := ClairServiceInit(conf); err != nil {
+	if err := ClairServiceInit(); err != nil {
 		t.Log("Clair service init failed!")
 		return
 	} else {
@@ -26,6 +25,7 @@ func Test_ClairService(t *testing.T) {
 	}
 	id := "123"
 	parentID := ""
+	// Assume we have this layer file in the current directoy
 	Path := "123.tar"
 
 	if vulns, err := ClairGetVulns(id, parentID, Path); err != nil {
