@@ -1,86 +1,95 @@
 package analyzer
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/containerops/dockyard/analyzer/attr"
+)
 
 const (
 	channelSize = 200
 )
 
+type Input struct {
+	dockerURL string
+	filePath  string
+}
+
 type ShareChannel struct {
-	In         chan string
-	OutSuccess chan string
-	OutFailure chan string
+	In         chan Input
+	OutSuccess chan []attr.DockerImg_Attr
+	OutFailure chan error
 	ExitFlag   bool
 	waitGroup  *sync.WaitGroup
 }
 
 func NewShareChannel() *ShareChannel {
 	return &ShareChannel{
-		make(chan string, channelSize),
-		make(chan string, channelSize),
-		make(chan string, channelSize),
+		make(chan Input, channelSize),
+		make(chan []attr.DockerImg_Attr, channelSize),
+		make(chan error, channelSize),
 		false,
 		new(sync.WaitGroup),
 	}
 }
 
-func (sc *ShareChannel) PutIn(jsonObj string) {
-	sc.In <- jsonObj
+func (sc *ShareChannel) PutIn(in Input) {
+	sc.In <- in
 }
 
-func (sc *ShareChannel) getIn() (jsonObj string) {
+func (sc *ShareChannel) getIn() Input {
 	return <-sc.In
 }
 
-func (sc *ShareChannel) putOutSuccess(jsonObj string) {
-	sc.OutSuccess <- jsonObj
+func (sc *ShareChannel) putOutSuccess(attrs []attr.DockerImg_Attr) {
+	sc.OutSuccess <- attrs
 }
 
-func (sc *ShareChannel) GutOutSuccess() (jsonObj string) {
+func (sc *ShareChannel) GutOutSuccess() []attr.DockerImg_Attr {
 	return <-sc.OutSuccess
 }
 
-func (sc *ShareChannel) putOutFailure(jsonObj string) {
-	sc.OutFailure <- jsonObj
+func (sc *ShareChannel) putOutFailure(err error) {
+	sc.OutFailure <- err
 }
 
-func (sc *ShareChannel) GutOutFailure() (jsonObj string) {
+func (sc *ShareChannel) GutOutFailure() error {
 	return <-sc.OutFailure
 }
 
 func (sc *ShareChannel) Open() {
 	sc.waitGroup.Add(1)
-	/*go func() {
+	go func() {
 		for !sc.ExitFlag {
-			obj := sc.getIn()
-			outJson, err := Save(obj)
+			in := sc.getIn()
+			attrs, err := AnalyseLocal(in.dockerURL, in.filePath)
 			if nil != err {
-				sc.putOutFailure(obj)
+				sc.putOutFailure(err)
 			} else {
-				sc.putOutSuccess(outJson)
+				sc.putOutSuccess(attrs)
 			}
 		}
 		sc.waitGroup.Done()
-	}()*/
+	}()
 }
 
 func (sc *ShareChannel) Close() {
 	sc.ExitFlag = true
 	sc.waitGroup.Wait()
 
-	/*for f := true; f; {
+	for f := true; f; {
 		select {
 		case obj := <-sc.In:
-			outJson, err := Save(obj)
+			attrs, err := AnalyseLocal(obj.dockerURL, obj.filePath)
 			if nil != err {
-				sc.putOutFailure(obj)
+				sc.putOutFailure(err)
 			} else {
-				sc.putOutSuccess(outJson)
+				sc.putOutSuccess(attrs)
 			}
 		default:
 			f = false
 		}
-	}*/
+	}
 
 	close(sc.In)
 	close(sc.OutSuccess)
