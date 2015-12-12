@@ -8,8 +8,7 @@ import (
 	"github.com/containerops/dockyard/oss/api.v1/meta/mysqldriver"
 	"github.com/containerops/dockyard/oss/logs"
 	"github.com/containerops/dockyard/oss/utils"
-	// "github.com/gorilla/mux"
-	"gopkg.in/macaron.v1"
+	"github.com/gorilla/mux"
 	"io/ioutil"
 	"math"
 	"math/rand"
@@ -18,8 +17,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/containerops/dockyard/oss/api.v1/handler"
 )
 
 const (
@@ -40,6 +37,7 @@ type Server struct {
 	masterUrl         string
 	Ip                string
 	Port              int
+	router            *mux.Router
 	running           bool
 	mu                sync.Mutex
 	fids              *chunkserver.Fids                      //ChunkServerGoups
@@ -75,21 +73,31 @@ func NewServer(masterUrl, ip string, port int, num int, metadbIp string, metadbP
 	}
 }
 
-func SetRouters(m *macaron.Macaron) {
+func (s *Server) initApi() {
+	m := map[string]map[string]http.HandlerFunc{
+		"GET": {
+			"/v1/fileinfo":        s.getFileInfo,
+			"/v1/file":            s.downloadFile,
+			"/v1/list_directory":  s.getDirectoryInfo,
+			"/v1/list_descendant": s.getDescendant,
+		},
+		"POST": {
+			"/v1/file":  s.uploadFile,
+			"/v1/_ping": s.ping,
+			"/v1/move":  s.moveFile,
+		},
+		"DELETE": {
+			"/v1/file": s.deleteFile,
+		},
+	}
 
-	m.Group("/v1", func() {
-		m.Get("/fileInfof", handler.GetFileInfo)
-		m.Get("/file", handler.DownloadFile)
-		m.Get("/list_directory", handler.GetDirectoryInfo)
-		m.Get("/list_descendant", handler.GetDescendant)
-
-		m.Post("/file", handler.UploadFile)
-		m.Post("/_ping", handler.Ping)
-		m.Post("/move", handler.MoveFile)
-
-		m.Delete("/file", handler.DeleteFile)
-
-	})
+	s.router = mux.NewRouter()
+	for method, routes := range m {
+		for route, fct := range routes {
+			s.router.Path(route).Methods(method).HandlerFunc(fct)
+		}
+	}
+	s.router.NotFoundHandler = http.NotFoundHandler()
 }
 
 func (s *Server) responseResult(data []byte, statusCode int, err error, w http.ResponseWriter) {
@@ -931,7 +939,7 @@ func (s *Server) GetChunkServerInfoTicker() {
 	}
 }
 
-/*func (s *Server) Run() error {
+func (s *Server) Run() error {
 	s.initApi()
 	err := s.GetChunkServerInfo()
 	if err != nil {
@@ -956,38 +964,4 @@ func (s *Server) GetChunkServerInfoTicker() {
 	http.Handle("/", s.router)
 	log.Infof("listen: %s:%d", s.Ip, s.Port)
 	return http.ListenAndServe(s.Ip+":"+strconv.Itoa(s.Port), nil)
-}*/
-
-func (s *Server) Run() error {
-	m := macaron.New()
-	SetRouters(m)
-
-	err := s.GetChunkServerInfo()
-	if err != nil {
-		log.Fatalf("GetChunkServerInfof Fatalf: %v", err)
-	}
-
-	err = s.GetFidRange(false)
-	if err != nil {
-		log.Fatalf("GetFidRange Fatalf: %v", err)
-	}
-
-	go s.GetFidRangeTicker()
-	go s.GetChunkServerInfoTicker()
-
-	err = mysqldriver.InitMeta(s.metadbIp, s.metadbPort, s.metadbUser, s.metadbPassword, s.metaDatabase)
-	if err != nil {
-		log.Fatalf("Connect metadb Fatalf: %v", err)
-	}
-
-	s.metaDriver = new(mysqldriver.MysqlDriver)
-
-	listenaddr := fmt.Sprintf("%s:%d", s.Ip, s.Port)
-	if err := http.ListenAndServe(listenaddr, m); err != nil {
-		log.Fatalf("Start oss http service Fatalf: %v\n", err.Error())
-	}
-
-	log.Infof("Start oss http service sucessful\n")
-	return nil
-
 }

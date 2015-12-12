@@ -18,6 +18,38 @@ import (
 
 })*/
 
+func GetFileInfo(ctx *macaron.Context) {
+	path := r.Header.Get(headerPath)
+
+	log.Infof("[getFileInfo] Path: %s", path)
+
+	result, err := s.metaDriver.GetFileMetaInfo(path, false)
+	if err != nil {
+		log.Errorf("[getFileInfo] get metainfo error, key: %s, error: %s", path, err)
+		s.responseResult(nil, http.StatusInternalServerError, err, w)
+		return
+	}
+
+	if len(result) == 0 {
+		log.Infof("[getFileInfo] metainfo not exists, key: %s", path)
+		s.responseResult(nil, http.StatusNotFound, err, w)
+		return
+	}
+
+	resultMap := make(map[string]interface{})
+	resultMap["fragment-info"] = result
+	jsonResult, err := json.Marshal(resultMap)
+	if err != nil {
+		log.Errorf("json.Marshal error, key: %s, error: %s", path, err)
+		s.responseResult(nil, http.StatusInternalServerError, err, w)
+		return
+	}
+
+	log.Infof("[getFileInfo] success, path: %s, result: %s", path, string(jsonResult))
+
+	s.responseResult(jsonResult, http.StatusOK, nil, w)
+}
+
 func GetFileInfo() (ctx *macaron.Context) {
 	return
 }
