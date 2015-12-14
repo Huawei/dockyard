@@ -1,17 +1,30 @@
 package oss
 
 import (
+	"bytes"
 	"fmt"
+	"net/http"
+	"os"
+	"os/exec"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
+	"sync"
+
+	"github.com/gorilla/mux"
 
 	"github.com/containerops/dockyard/oss/chunkmaster/api"
 	"github.com/containerops/dockyard/oss/chunkmaster/metadata"
+	"github.com/containerops/dockyard/oss/logs"
+	"github.com/containerops/dockyard/oss/utils"
+
 	// "github.com/containerops/wrench/setting"
 )
 
-type OSS struct {
+var _instance *oss
+
+type oss struct {
 	cm chunkmaster
 	cs []metadata.Chunkserver
 }
@@ -26,9 +39,14 @@ type chunkmaster struct {
 	db         string
 }
 
-var OSSOBJ *OSS = new(OSS)
+func Instance() *oss {
+	if _instance == nil {
+		_instance = new(oss)
+	}
+	return _instance
+}
 
-func (this *OSS) StartOSS() error {
+func (this *oss) StartOSS() error {
 	fmt.Println("enter initoss")
 	var (
 		err error
@@ -39,19 +57,24 @@ func (this *OSS) StartOSS() error {
 	if err = this.Initdb(); err != nil {
 		return err
 	}
-	if err = this.Startmaster(); err != nil {
-		return err
-	}
-	if err = this.Registerservers(); err != nil {
-		return err
-	}
-	if err = this.Startservers(); err != nil {
-		return err
-	}
+	go func() {
+		if err = this.Startmaster(); err != nil {
+			fmt.Println(err.Error())
+		}
+	}()
+	runtime.Gosched()
+	go func() {
+		if err = this.Registerservers(); err != nil {
+			fmt.Println(err.Error())
+		}
+		if err = this.Startservers(); err != nil {
+			fmt.Println(err.Error())
+		}
+	}()
 	return nil
 }
 
-func (this *OSS) Loadconfig() error {
+func (this *oss) Loadconfig() error {
 	// load chunkmaster configs
 	// TODO load configs from config files
 	this.cm.metaHost = "10.229.40.121"
@@ -59,10 +82,11 @@ func (this *OSS) Loadconfig() error {
 	this.cm.user = "root"
 	this.cm.passwd = "wang"
 	this.cm.db = "speedy1"
-	// load chunkserver configs and conver to objs
+	this.cm.serverHost = "127.0.0.1"
+	this.cm.serverPort = 8099
+	// Load chunkserver configs and convert chunkserver string to  to objs
 	// TODO serverslist should come from config file
-	servers := "1_10.229.40.121:7657;1_10.229.40.121:7658;1_10.229.40.121:7659"
-	// servers string convert to Chunkservers
+	servers := "1_127.0.0.1:7657;1_127.0.0.1:7658;1_127.0.0.1:7659"
 	for _, server := range strings.Split(servers, ";") {
 		if isMatch, _ := regexp.MatchString("^\\d_((2[0-4]\\d|25[0-5]|[01]?\\d\\d?)\\.){3}(2[0-4]\\d|25[0-5]|[01]?\\d\\d?)\\:\\d{0,5}$", server); !isMatch {
 			return fmt.Errorf("chunkserver config format error : %s", server)
@@ -76,36 +100,99 @@ func (this *OSS) Loadconfig() error {
 		chunkserver.GroupId = uint16(groupiduint)
 		portint, _ := strconv.Atoi(port)
 		chunkserver.Port = portint
+		chunkserver.DataDir = fmt.Sprintf("/root/gopath/chunkserver/data/server_%v_%v", chunkserver.Ip, chunkserver.Port)
 		this.cs = append(this.cs, chunkserver)
 		fmt.Println(chunkserver)
 	}
 	return nil
 }
 
-func (this *OSS) Initdb() error {
+func (this *oss) Initdb() error {
 
 	return nil
 }
 
-func (this *OSS) Startmaster() error {
+func (this *oss) Startmaster() error {
 	api.InitAll(this.cm.metaHost, this.cm.metaPort, this.cm.user, this.cm.passwd, this.cm.db)
 	if err := api.LoadChunkserverInfo(); err != nil {
 		return fmt.Errorf("loadChunkserverInfo error: %v", err)
 	}
 	go api.MonitorTicker(5, 30)
+
+	router := initRouter()
+	http.Handle("/", router)
+	log.Infof("listen %s:%d", this.cm.serverHost, this.cm.serverPort)
+
+	if err := http.ListenAndServe(this.cm.serverHost+":"+strconv.Itoa(this.cm.serverPort), nil); err != nil {
+		log.Fatalf("listen error: %v", err)
+	}
+
 	return nil
 }
 
-func (this *OSS) Registerservers() error {
-	// NOTE: change the name of func oss/chunkmaster/api/batchAddChunkserver to BatchAddChunkserver
-	// TODO : check if the server ip  address and prot
+func (this *oss) Registerservers() error {
+	// NOTE: change the name of func oss/chunkmaster/api/6 to BatchAddChunkserver
+	// TODO : check if the server ip  address and port exsist
 	if err := api.BatchAddChunkserver(&this.cs); err != nil {
 		return fmt.Errorf("Registerservers err %v", err)
 	}
 	return nil
 }
 
-func (this *OSS) Startservers() error {
-
+func (this *oss) Startservers() error {
+	binpath := "./oss/chunkserver/spy_server"
+	errlogfolder := "/root/gopath/chunkserver/errlog"
+	// check if chunkserver binary exsist,if not ,create it
+	_, err := os.Stat(binpath)
+	if err != nil && os.IsNotExist(err) {
+		return fmt.Errorf("Cannot find chunkserver excution file")
+	}
+	// check if errlog folder exsist , if not ,create it
+	_, err = os.Stat(errlogfolder)
+	if err != nil || os.IsNotExist(err) {
+		os.MkdirAll(errlogfolder, 0777)
+	}
+	var wg sync.WaitGroup
+	for i := 0; i < len(this.cs); i++ {
+		go func() {
+			var stdout, stderr bytes.Buffer
+			wg.Add(1)
+			curcs := this.cs[i]
+			_, err := os.Stat(curcs.DataDir)
+			if err != nil || os.IsNotExist(err) {
+				os.MkdirAll(curcs.DataDir, 0777)
+			}
+			port := fmt.Sprintf("%v", curcs.Port)
+			masterport := fmt.Sprintf("%v", this.cm.serverPort)
+			errlogpath := fmt.Sprintf("%v/errlog_%v_%v.log", errlogfolder, curcs.Ip, curcs.Port)
+			groupid := fmt.Sprintf("%v", curcs.GroupId)
+			cmd := exec.Command("./oss/chunkserver/spy_server", "--ip", curcs.Ip, "--port", port, "--master_ip", this.cm.serverHost, "--master_port", masterport, "--group_id", groupid, "--chunks", "2", "--data_dir", curcs.DataDir, "--error_log", errlogpath)
+			cmd.Stdout = &stdout
+			cmd.Stderr = &stderr
+			err = cmd.Run()
+			if err != nil {
+				fmt.Println("start spy_server error ,stdout:" + stdout.String())
+				fmt.Println("start spy_server error ,stderr:" + stderr.String())
+				fmt.Println(err.Error())
+			}
+		}()
+		runtime.Gosched()
+	}
+	wg.Wait()
 	return nil
+}
+
+func initRouter() *mux.Router {
+	router := mux.NewRouter()
+	log.Debugf("initRouter")
+	for method, routes := range api.RouteMap {
+		for route, fct := range routes {
+			localRoute := route
+			localMethod := method
+			log.Debugf("route: %s, method: %v", route, method)
+			router.Path(localRoute).Methods(localMethod).HandlerFunc(fct)
+		}
+	}
+	router.NotFoundHandler = http.HandlerFunc(util.NotFoundHandle)
+	return router
 }
