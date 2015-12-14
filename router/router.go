@@ -47,20 +47,22 @@ func SetRouters(m *macaron.Macaron) {
 
 	//Rkt Registry & Hub API
 	//acis discovery responds endpoints
-	m.Get("/:imagename/?ac-discovery=1", handler.DiscoveryACIHandler)
+	m.Get("/:namespace/:aciname/?ac-discovery=1", handler.DiscoveryACIHandler)
 
 	//acis fetch
-	m.Get("/ac-image/:acname", handler.GetACIHandler)
-	m.Get("/ac-pubkeys/pubkeys.gpg", handler.GetPubkeysHandler)
+	m.Get("/:namespace/pubkeys.gpg", handler.GetPubkeysHandler)
+	m.Get("/ac-fetch/:namespace/:acifile", handler.GetACIHandler)
 
 	//acis push
-	m.Group("/ac-push", func() {
-		m.Get("/", handler.RenderListOfACIs)
-		m.Get("/pubkeys.gpg", handler.GetPubkeys)
-		m.Post("/:image/startupload", handler.InitiateUpload)
-		m.Put("/manifest/:num", handler.UploadManifest)
-		m.Put("/signature/:num", handler.ReceiveSignUpload)
-		m.Put("/aci/:num", handler.ReceiveAciUpload)
-		m.Post("/complete/:num", handler.CompleteUpload)
-	})
+	/*
+		m.Group("/ac-push", func() {
+			m.Get("/", handler.RenderListOfACIs)
+			m.Get("/pubkeys.gpg", handler.GetPubkeys)
+			m.Post("/:image/startupload", handler.InitiateUpload)
+			m.Put("/manifest/:num", handler.UploadManifest)
+			m.Put("/signature/:num", handler.ReceiveSignUpload)
+			m.Put("/aci/:num", handler.ReceiveAciUpload)
+			m.Post("/complete/:num", handler.CompleteUpload)
+		})
+	*/
 }

@@ -33,19 +33,19 @@ func SetDockyardMacaron(m *macaron.Macaron) {
 	//Setting Router
 	router.SetRouters(m)
 
-	//Create acpool to store aci/asc/pubkey
+	//Create acipool to store aci/asc/pubkey
 	err := func() error {
-		acpoolname := setting.ImagePath + "/acpool"
-		if _, err := os.Stat(acpoolname); err == nil {
+		acipoolname := setting.ImagePath + "/acipool"
+		if _, err := os.Stat(acipoolname); err == nil {
 			return nil
 		}
 
-		if err := os.Mkdir(acpoolname, 0755); err != nil {
+		if err := os.Mkdir(acipoolname, 0755); err != nil {
 			return err
 		}
 		return nil
 	}()
 	if err != nil {
-		fmt.Printf("Create acpool for rkt failed %s", err.Error())
+		fmt.Printf("Create acipool for rkt failed %s", err.Error())
 	}
 }
