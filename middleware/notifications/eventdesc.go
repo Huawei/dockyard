@@ -7,7 +7,7 @@ import (
 
 const (
 	ManifestMediaType = "application/vnd.docker.distribution.manifest.v1+json"
-	BlobMediaType     = "application/vnd.docker.distribution.manifest.v1+json" // TBD: to be confirm with reciever
+	BlobMediaType     = "application/vnd.docker.distribution.manifest.v1+json" // TODO: to be confirm with reciever
 	DefaultMedisType  = "application/octet-stream"
 	EventsMediaType   = "application/vnd.docker.distribution.events.v1+json"
 )
