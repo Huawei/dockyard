@@ -4,22 +4,14 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/astaxie/beego/config"
+	"github.com/containerops/wrench/setting"
 )
 
 func Test_upyunsave(t *testing.T) {
 	var err error
-	var conf config.ConfigContainer
 	var url string
 
-	conf, err = config.NewConfig("ini", "../../../conf/containerops.conf")
-	if err != nil {
-		t.Error(err)
-	}
-
-	d := new(UpyunDrv)
-	err = d.ReadConfig(conf)
-	if err != nil {
+	if err = setting.SetConfig("../../../conf/containerops.conf"); err != nil {
 		t.Error(err)
 	}
 
@@ -28,6 +20,7 @@ func Test_upyunsave(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+
 	_, err = http.Get(url)
 	if err != nil {
 		t.Error(err)
