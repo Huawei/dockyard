@@ -4,22 +4,14 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/astaxie/beego/config"
+	"github.com/containerops/wrench/setting"
 )
 
 func Test_qiniusave(t *testing.T) {
 	var err error
-	var conf config.ConfigContainer
 	var url string
 
-	conf, err = config.NewConfig("ini", "../../../conf/containerops.conf")
-	if err != nil {
-		t.Error(err)
-	}
-
-	d := new(QiniuDrv)
-	err = d.ReadConfig(conf)
-	if err != nil {
+	if err = setting.SetConfig("../../../conf/containerops.conf"); err != nil {
 		t.Error(err)
 	}
 
