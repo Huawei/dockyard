@@ -21,7 +21,7 @@ func TestRouterPostFile(t *testing.T) {
 	header["Bytes-Range"] = []string{"0-19"}
 	header["Is-Last"] = []string{"true"}
 
-	result, statusCode, err := util.Call("POST", "http://127.0.0.1:6788", "/v1/file", bytes.NewBuffer([]byte(s)), header)
+	result, statusCode, err := util.Call("POST", "http://0.0.0.0:6788", "/api/v1/file", bytes.NewBuffer([]byte(s)), header)
 	if statusCode != http.StatusOK {
 		t.Errorf("statusCode error: %d", statusCode, ", error: ", err)
 	}
@@ -30,7 +30,7 @@ func TestRouterPostFile(t *testing.T) {
 		t.Errorf("error: ", err)
 	}
 
-	t.Log("result: %s\n", string(result))
+	t.Log("result: %s \n", string(result))
 }
 
 func postFile(t *testing.T, w *sync.WaitGroup) {
@@ -44,16 +44,16 @@ func postFile(t *testing.T, w *sync.WaitGroup) {
 	header["Bytes-Range"] = []string{"0-19"} //length(s) == 19
 	header["Is-Last"] = []string{"true"}
 
-	result, statusCode, err := util.Call("POST", "http://127.0.0.1:6788", "/v1/file", bytes.NewBuffer([]byte(s)), header)
+	result, statusCode, err := util.Call("POST", "http://0.0.0.0:6788", "/api/v1/file", bytes.NewBuffer([]byte(s)), header)
 	if statusCode != http.StatusOK {
-		t.Errorf("statusCode error: %d", statusCode, ", error: %s", err)
+		t.Errorf("statusCode error: %v", statusCode, ", error: %v", err)
 	}
 
 	if err != nil {
 		t.Errorf("error: %v", err)
 	}
 
-	t.Log("result: %s\n", string(result))
+	t.Log("result: %v\n", string(result))
 }
 
 func TestRouterPostFileConcurrent(t *testing.T) {
@@ -72,7 +72,7 @@ func TestRouterGetFileInfo(t *testing.T) {
 	header := make(map[string][]string, 0)
 	header["Path"] = []string{path}
 
-	result, statusCode, err := util.Call("GET", "http://127.0.0.1:6788", "/v1/fileinfo", nil, header)
+	result, statusCode, err := util.Call("GET", "http://0.0.0.0:6788", "/api/v1/fileinfo", nil, header)
 	if statusCode != http.StatusOK {
 		t.Errorf("statusCode error: %d", statusCode, ", error: ", err)
 	}
@@ -88,7 +88,7 @@ func TestRouterGetDirectoryInfo(t *testing.T) {
 	header := make(map[string][]string, 0)
 	header["Path"] = []string{"repositories/username/ubuntu"}
 
-	result, statusCode, err := util.Call("GET", "http://127.0.0.1:6788", "/v1/list_directory", nil, header)
+	result, statusCode, err := util.Call("GET", "http://0.0.0.0:6788", "/api/v1/list_directory", nil, header)
 
 	if statusCode != http.StatusOK {
 		t.Errorf("statusCode error: %d", statusCode, ", error: ", err)
@@ -105,7 +105,7 @@ func TestRouterDeleteMetaInfo(t *testing.T) {
 	header := make(map[string][]string, 0)
 	header["Path"] = []string{"testpath"}
 
-	result, statusCode, err := util.Call("DELETE", "http://127.0.0.1:6788", "/v1/file", nil, header)
+	result, statusCode, err := util.Call("DELETE", "http://0.0.0.0:6788", "/api/v1/file", nil, header)
 
 	if statusCode != http.StatusNoContent {
 		t.Errorf("statusCode error: %d", statusCode, ", error: ", err)
@@ -126,7 +126,7 @@ func TestRouterGetFile(t *testing.T) {
 	header["Bytes-Range"] = []string{"0-19"} //length("hello world")
 	header["Is-Last"] = []string{"false"}
 
-	result, statusCode, err := util.Call("GET", "http://127.0.0.1:6788", "/v1/file", nil, header)
+	result, statusCode, err := util.Call("GET", "http://0.0.0.0:6788", "/api/v1/file", nil, header)
 
 	if statusCode != http.StatusOK {
 		t.Errorf("statusCode error: %d", statusCode, ", error: ", err)
@@ -162,7 +162,7 @@ func GetFileCurrent(t *testing.T, w *sync.WaitGroup) {
 
 	t.Log("GetFileCurrent === 2")
 
-	result, statusCode, err := util.Call("GET", "http://127.0.0.1:6788", "/v1/file", nil, header)
+	result, statusCode, err := util.Call("GET", "http://0.0.0.0:6788", "/api/v1/file", nil, header)
 
 	t.Log("GetFileCurrent === 3")
 

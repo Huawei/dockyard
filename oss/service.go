@@ -10,10 +10,10 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/gorilla/mux"
 
+	"github.com/containerops/dockyard/oss/api.v1/router"
 	"github.com/containerops/dockyard/oss/chunkmaster/api"
 	"github.com/containerops/dockyard/oss/chunkmaster/metadata"
 	"github.com/containerops/dockyard/oss/logs"
@@ -23,6 +23,7 @@ import (
 )
 
 var _instance *oss
+var c1 chan bool
 
 type oss struct {
 	cm chunkmaster
@@ -30,13 +31,15 @@ type oss struct {
 }
 
 type chunkmaster struct {
-	serverHost string
-	serverPort int
-	metaHost   string
-	metaPort   string
-	user       string
-	passwd     string
-	db         string
+	serverHost       string
+	serverPort       int
+	metaHost         string
+	metaPort         string
+	user             string
+	passwd           string
+	db               string
+	limitCSNum       int
+	connPoolCapacity int
 }
 
 func Instance() *oss {
@@ -47,7 +50,6 @@ func Instance() *oss {
 }
 
 func (this *oss) StartOSS() error {
-	fmt.Println("enter initoss")
 	var (
 		err error
 	)
@@ -57,20 +59,18 @@ func (this *oss) StartOSS() error {
 	if err = this.Initdb(); err != nil {
 		return err
 	}
-	go func() {
-		if err = this.Startmaster(); err != nil {
-			fmt.Println(err.Error())
-		}
-	}()
-	runtime.Gosched()
-	go func() {
-		if err = this.Registerservers(); err != nil {
-			fmt.Println(err.Error())
-		}
-		if err = this.Startservers(); err != nil {
-			fmt.Println(err.Error())
-		}
-	}()
+	if err = this.Startmaster(); err != nil {
+		fmt.Println(err.Error())
+	}
+	if err = this.Registerservers(); err != nil {
+		fmt.Println(err.Error())
+	}
+	if err = this.Startservers(); err != nil {
+		fmt.Println(err.Error())
+	}
+	if err = this.StartAPI(); err != nil {
+		fmt.Println(err.Error())
+	}
 	return nil
 }
 
@@ -84,6 +84,8 @@ func (this *oss) Loadconfig() error {
 	this.cm.db = "speedy1"
 	this.cm.serverHost = "127.0.0.1"
 	this.cm.serverPort = 8099
+	this.cm.limitCSNum = 1
+	this.cm.connPoolCapacity = 200
 	// Load chunkserver configs and convert chunkserver string to  to objs
 	// TODO serverslist should come from config file
 	servers := "1_127.0.0.1:7657;1_127.0.0.1:7658;1_127.0.0.1:7659"
@@ -102,7 +104,6 @@ func (this *oss) Loadconfig() error {
 		chunkserver.Port = portint
 		chunkserver.DataDir = fmt.Sprintf("/root/gopath/chunkserver/data/server_%v_%v", chunkserver.Ip, chunkserver.Port)
 		this.cs = append(this.cs, chunkserver)
-		fmt.Println(chunkserver)
 	}
 	return nil
 }
@@ -120,13 +121,14 @@ func (this *oss) Startmaster() error {
 	go api.MonitorTicker(5, 30)
 
 	router := initRouter()
-	http.Handle("/", router)
+	http.Handle("/cm/", router)
 	log.Infof("listen %s:%d", this.cm.serverHost, this.cm.serverPort)
-
-	if err := http.ListenAndServe(this.cm.serverHost+":"+strconv.Itoa(this.cm.serverPort), nil); err != nil {
-		log.Fatalf("listen error: %v", err)
-	}
-
+	go func() {
+		if err := http.ListenAndServe(this.cm.serverHost+":"+strconv.Itoa(this.cm.serverPort), nil); err != nil {
+			log.Fatalf("listen error: %v", err)
+		}
+	}()
+	runtime.Gosched()
 	return nil
 }
 
@@ -152,11 +154,9 @@ func (this *oss) Startservers() error {
 	if err != nil || os.IsNotExist(err) {
 		os.MkdirAll(errlogfolder, 0777)
 	}
-	var wg sync.WaitGroup
 	for i := 0; i < len(this.cs); i++ {
 		go func() {
 			var stdout, stderr bytes.Buffer
-			wg.Add(1)
 			curcs := this.cs[i]
 			_, err := os.Stat(curcs.DataDir)
 			if err != nil || os.IsNotExist(err) {
@@ -171,14 +171,26 @@ func (this *oss) Startservers() error {
 			cmd.Stderr = &stderr
 			err = cmd.Run()
 			if err != nil {
-				fmt.Println("start spy_server error ,stdout:" + stdout.String())
-				fmt.Println("start spy_server error ,stderr:" + stderr.String())
+				fmt.Println("start spy_server error,stdout:" + stdout.String() + "\n")
+				fmt.Println("start spy_server error,stderr:" + stderr.String() + "\n")
 				fmt.Println(err.Error())
 			}
 		}()
 		runtime.Gosched()
 	}
-	wg.Wait()
+	return nil
+}
+
+func (this *oss) StartAPI() error {
+	metaport, _ := strconv.Atoi(this.cm.metaPort)
+	server := router.NewServer(this.cm.serverHost, "0.0.0.0", 6788, this.cm.limitCSNum, this.cm.metaHost, metaport, this.cm.user, this.cm.passwd, "metadb", this.cm.connPoolCapacity)
+	log.Infof("imageserver start...")
+	go func() {
+		if err := server.Run(); err != nil {
+			fmt.Errorf("start error: %v", err)
+		}
+	}()
+
 	return nil
 }
 

@@ -35,6 +35,7 @@ const (
 
 type Server struct {
 	masterUrl         string
+	masterPort        string
 	Ip                string
 	Port              int
 	router            *mux.Router
@@ -76,18 +77,18 @@ func NewServer(masterUrl, ip string, port int, num int, metadbIp string, metadbP
 func (s *Server) initApi() {
 	m := map[string]map[string]http.HandlerFunc{
 		"GET": {
-			"/v1/fileinfo":        s.getFileInfo,
-			"/v1/file":            s.downloadFile,
-			"/v1/list_directory":  s.getDirectoryInfo,
-			"/v1/list_descendant": s.getDescendant,
+			"/api/v1/fileinfo":        s.getFileInfo,
+			"/api/v1/file":            s.downloadFile,
+			"/api/v1/list_directory":  s.getDirectoryInfo,
+			"/api/v1/list_descendant": s.getDescendant,
 		},
 		"POST": {
-			"/v1/file":  s.uploadFile,
-			"/v1/_ping": s.ping,
-			"/v1/move":  s.moveFile,
+			"/api/v1/file":  s.uploadFile,
+			"/api/v1/_ping": s.ping,
+			"/api/v1/move":  s.moveFile,
 		},
 		"DELETE": {
-			"/v1/file": s.deleteFile,
+			"/api/v1/file": s.deleteFile,
 		},
 	}
 
@@ -727,7 +728,7 @@ func (s *Server) selectChunkServerGroupComplex(size int64) ([]chunkserver.ChunkS
 }
 
 func (s *Server) GetChunkServerInfo() error {
-	byteData, statusCode, err := util.Call("GET", s.masterUrl, "/v1/chunkmaster/route", nil, nil)
+	byteData, statusCode, err := util.Call("GET", "http://"+s.masterUrl+":"+"8099", "/cm/v1/chunkmaster/route", nil, nil)
 	if err != nil {
 		log.Errorf("GetChunkServerInfo response code: %d, error: %v", statusCode, err)
 		return err
@@ -754,7 +755,7 @@ func (s *Server) GetFidRange(mergeWait bool) error {
 		return nil
 	}
 
-	byteData, statusCode, err := util.Call("GET", s.masterUrl, "/v1/chunkmaster/fid", nil, nil)
+	byteData, statusCode, err := util.Call("GET", "http://"+s.masterUrl+":8099", "/cm/v1/chunkmaster/fid", nil, nil)
 	if err != nil {
 		log.Errorf("GetChunkServerInfo response code: %d, err: %s", statusCode, err)
 		return err
@@ -961,7 +962,7 @@ func (s *Server) Run() error {
 
 	s.metaDriver = new(mysqldriver.MysqlDriver)
 
-	http.Handle("/", s.router)
+	http.Handle("/api/", s.router)
 	log.Infof("listen: %s:%d", s.Ip, s.Port)
 	return http.ListenAndServe(s.Ip+":"+strconv.Itoa(s.Port), nil)
 }
