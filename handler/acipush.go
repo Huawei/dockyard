@@ -3,15 +3,10 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-//	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
-//	"path"
-//	"strconv"
 	"strings"
-//	"sync"
-//	"time"
 
 	"github.com/astaxie/beego/logs"
 	"gopkg.in/macaron.v1"
@@ -21,84 +16,86 @@ import (
 	"github.com/containerops/wrench/utils"
 )
 
-var acideets *models.AciDetail
-
-
 func PutPubkeysHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {    
-    //TODO:check user`s uploaded pubkey is exist or not, save and append to files
+    //TODO:check user`s uploaded pubkey is existed or not, save file and append to keyring
 
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusCreated, result
 }
 
-func GetUploadDetailsHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {     
-	namespace := ctx.Params(":namespace")
+func GetUploadEndPointHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {     
 	servername := ctx.Params(":servername")
+	namespace := ctx.Params(":namespace")
 	acifilename := ctx.Params(":acifile")
 	imgname := strings.Trim(acifilename, ".aci")
 
-	var err error
+    //TODO:check aci is existed or not and handle that, need acpush clent`s cooperation
 
-    r := new(models.AciRepository)
-	if acideets, err = r.GetAciByName(namespace, imgname); err == nil {
-		log.Error("[ACI API] aci %v is existed in %v repository", acifilename, namespace)
-
-		result, _ := json.Marshal(map[string]string{"message": "aci is existed"})
-		return http.StatusInternalServerError, result
-	}
-
-    prefix := setting.ListenMode + "://" + servername
+    prefix := setting.ListenMode + "://" + servername + "/ac-push/" + namespace
      
-	deets := models.UploadDetails{
-		ACIPushVersion: "0.0.1",
+	endpoint := models.UploadDetails{
+		ACIPushVersion: setting.AcipushVersion,  
 		Multipart:      false,
-		ManifestURL:    prefix + "/manifest/" + acifilename,
-		SignatureURL:   prefix + "/sign/" + acifilename,
-		ACIURL:         prefix + "/aci/" + acifilename,
-		CompletedURL:   prefix + "/complete/",
+		ManifestURL:    prefix + "/manifest/" + imgname,
+		SignatureURL:   prefix + "/signature/" + imgname,
+		ACIURL:         prefix + "/aci/" + imgname,
+		CompletedURL:   prefix + "/complete/" + imgname,
 	}
 
-	result, _ := json.Marshal(deets)
+	result, _ := json.Marshal(endpoint)
 	return http.StatusOK, result
 }
 
 func PutManifestHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {    
- //   namespace := ctx.Params(":namespace")
- //	  acifilename := ctx.Params(":acifile")
- //	  imgname := strings.Trim(acifilename, ".aci")
+    namespace := ctx.Params(":namespace")
+ 	imgname := ctx.Params(":imgname")
 
-    //TODO:save manifest to repository
-    
+    data, _ := ctx.Req.Body().Bytes()
+    manifest := string(data)
+
+	r := new(models.AciRepository)
+    if err := r.PutManifest(namespace, imgname, manifest); err != nil {
+        log.Error("[ACI API] Save aci %v details to %v repository failed: %v", imgname, namespace, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"message": "Save aci details failed"})
+		return http.StatusNotFound, result
+    }
+
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
 
-func PutSignHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) { 
+func PutSignHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
     namespace := ctx.Params(":namespace")
-	acifilename := ctx.Params(":acifile")
-	imgname := strings.Trim(acifilename, ".aci")
+	imgname := ctx.Params(":imgname")
 	signfilename := imgname + ".aci.asc"
 
-	signPathTmp := fmt.Sprintf("%v/acpool/%v/%v", setting.ImagePath, namespace, imgname)
-	signfileTmp := fmt.Sprintf("%v/acpool/%v/%v/%v", setting.ImagePath, namespace, imgname, signfilename)
+	signpath := fmt.Sprintf("%v/acipool/%v/%v", setting.ImagePath, namespace, imgname)
+	signfile := fmt.Sprintf("%v/acipool/%v/%v/%v", setting.ImagePath, namespace, imgname, signfilename)
 
-	if !utils.IsDirExist(signPathTmp) {
-		os.MkdirAll(signPathTmp, os.ModePerm)
+	if !utils.IsDirExist(signpath) {
+		os.MkdirAll(signpath, os.ModePerm)
 	}
 
-	if _, err := os.Stat(signfileTmp); err == nil {
-		os.Remove(signfileTmp)
+	if _, err := os.Stat(signfile); err == nil {
+		os.Remove(signfile)
 	}
 
 	data, _ := ctx.Req.Body().Bytes()
-	if err := ioutil.WriteFile(signfileTmp, data, 0777); err != nil {
+	if err := ioutil.WriteFile(signfile, data, 0777); err != nil {
 		log.Error("[ACI API] Save signaturefile failed: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Save signaturefile failed"})
 		return http.StatusBadRequest, result
 	}	
 
-	acideets.SignPath = signPathTmp
+	r := new(models.AciRepository)
+    if err := r.PutSignpath(namespace, imgname, signpath); err != nil {
+        log.Error("[ACI API] Save aci %v details to %v repository failed: %v", imgname, namespace, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"message": "Save aci details failed"})
+		return http.StatusNotFound, result
+    }
 
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
@@ -106,46 +103,93 @@ func PutSignHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 func PutAciHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {    
     namespace := ctx.Params(":namespace")
-	acifilename := ctx.Params(":acifile")
-	imgname := strings.Trim(acifilename, ".aci")
+	imgname := ctx.Params(":imgname")
+	acifilename := imgname + ".aci"
 
-	aciPathTmp := fmt.Sprintf("%v/acpool/%v/%v", setting.ImagePath, namespace, imgname)
-	acifileTmp := fmt.Sprintf("%v/acpool/%v/%v/%v", setting.ImagePath, namespace, imgname, acifilename)
+	acipath := fmt.Sprintf("%v/acipool/%v/%v", setting.ImagePath, namespace, imgname)
+	acifile := fmt.Sprintf("%v/acipool/%v/%v/%v", setting.ImagePath, namespace, imgname, acifilename)
 
-	if !utils.IsDirExist(aciPathTmp) {
-		os.MkdirAll(aciPathTmp, os.ModePerm)
+	if !utils.IsDirExist(acipath) {
+		os.MkdirAll(acipath, os.ModePerm)
 	}
 
-	if _, err := os.Stat(acifileTmp); err == nil {
-		os.Remove(acifileTmp)
+	if _, err := os.Stat(acifile); err == nil {
+		os.Remove(acifile)
 	}
 
 	data, _ := ctx.Req.Body().Bytes()
-	if err := ioutil.WriteFile(acifileTmp, data, 0777); err != nil {
-		log.Error("[ACI API] Save signaturefile failed: %v", err.Error())
+	if err := ioutil.WriteFile(acifile, data, 0777); err != nil {
+		log.Error("[ACI API] Save acifile failed: %v", err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Save signaturefile failed"})
+		result, _ := json.Marshal(map[string]string{"message": "Save acifile failed"})
 		return http.StatusBadRequest, result
 	}	
 
-	acideets.AciPath = aciPathTmp
+	r := new(models.AciRepository)
+    if err := r.PutAcipath(namespace, imgname, acipath); err != nil {
+        log.Error("[ACI API] Save aci %v details to %v repository failed: %v", imgname, namespace, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"message": "Save aci details failed"})
+		return http.StatusNotFound, result
+    }
 
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
 
-func CompleteHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {    
+func CompleteHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {   
     namespace := ctx.Params(":namespace")
-    //TODO: image verification here
+	imgname := ctx.Params(":imgname")
 
-    r := new(models.AciRepository)
-    if err := r.PutAciByName(namespace, acideets.ImageName, acideets); err != nil {
-        log.Error("[ACI API] Save aci %v details to %v repository failed: %v", acideets.ImageName, namespace, err.Error())
+	var err error
+    aci := &models.AciDetail{}
+    
+	r := new(models.AciRepository)
+	if aci, err = r.GetAciByName(namespace, imgname); err != nil {
+		log.Error("[ACI API] Get aci %v details failed: %v", namespace, err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Get aci details failed"})
 		return http.StatusNotFound, result
-    }
-	result, _ := json.Marshal(map[string]string{})
+	}
+
+	//TODO: image verification here
+
+    //TODO: delete all uploaded files and redis records if verification fail
+
+	if aci.UpMan != true {
+        failmsg := models.CompleteMsg{
+			Success:      false,
+			Reason:       "",
+			ServerReason: "manifest wasn't uploaded",
+		}
+		result, _ := json.Marshal(failmsg)
+		return http.StatusInternalServerError, result
+	}
+
+	if aci.UpSig != true {
+        failmsg := models.CompleteMsg{
+			Success:      false,
+			Reason:       "",
+			ServerReason: "signaturen wasn't uploaded",
+		}
+		result, _ := json.Marshal(failmsg)
+		return http.StatusInternalServerError, result
+	}
+
+	if aci.UpAci != true {
+        failmsg := models.CompleteMsg{
+			Success:      false,
+			Reason:       "",
+			ServerReason: "aci wasn't uploaded",
+		}
+		result, _ := json.Marshal(failmsg)
+		return http.StatusInternalServerError, result
+	}
+     
+	succmsg := models.CompleteMsg{
+		Success: true,
+	}
+	result, _ := json.Marshal(succmsg)
 	return http.StatusOK, result
 }
 

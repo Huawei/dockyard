@@ -22,6 +22,9 @@ func GetPubkeysHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 		result, _ := json.Marshal(map[string]string{"message": "Get user details failed"})
 		return http.StatusNotFound, result
 	}
+    
+    //TODO:save and update interface for pubkeys source
+	r.PubKeysPath = "/home/gopath/src/github.com/containerops/dockyard/data/acipool/pzh"
 
 	files, err := ioutil.ReadDir(r.PubKeysPath)
 	if err != nil {
@@ -31,15 +34,22 @@ func GetPubkeysHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 		return http.StatusNotFound, result
 	}
 
-	// TODO: consider to deal with case that one user has mutiple pubkeys in the future
-	pubkey, err := ioutil.ReadFile(files[0].Name())
-	if err != nil {
-		log.Error("[ACI API] Read pubkey file failed: %v", err.Error())
+    var pubkey []byte
+	// TODO: considering that one user has multiple pubkeys
+    for _, file := range files {
+    	if b := strings.Contains(file.Name(), ".gpg"); b == true {
+    		filename := r.PubKeysPath + "/" + file.Name()
+			pubkey, err = ioutil.ReadFile(filename)
+			if err != nil {
+				log.Error("[ACI API] Read pubkey file failed: %v", err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Get pubkey file failed"})
-		return http.StatusNotFound, result
-	}
-
+				result, _ := json.Marshal(map[string]string{"message": "Get pubkey file failed"})
+				return http.StatusNotFound, result
+			} else {
+				break  
+			}		 		
+    	}
+    }
 	return http.StatusOK, pubkey
 }
 
@@ -51,8 +61,9 @@ func GetACIHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
     nameTemp := strings.Trim(acifilename, ".asc")
 	imgname := strings.Trim(nameTemp, ".aci")
 
-	var aci *models.AciDetail
+
 	var err error
+    aci := &models.AciDetail{}
 
 	r := new(models.AciRepository)
 	if aci, err = r.GetAciByName(namespace, imgname); err != nil {
@@ -64,11 +75,11 @@ func GetACIHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
     var imgpath string
 	if b := strings.Contains(acifilename, ".asc"); b == true {
-		imgpath = aci.SignPath
+		imgpath = aci.SignPath + "/" + acifilename
 	} else {
-		imgpath = aci.AciPath
+		imgpath = aci.AciPath+ "/" + acifilename
 	}
-
+    
 	//imgpath := setting.ImagePath + "/acipool/" + aciname
 	img, err := ioutil.ReadFile(imgpath)
 	if err != nil {
@@ -79,5 +90,4 @@ func GetACIHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	}
 
 	return http.StatusOK, img
-
 }
