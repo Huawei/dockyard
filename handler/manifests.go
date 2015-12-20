@@ -37,6 +37,7 @@ func PutManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 	if err := module.ParseManifest(ManifestCtx); err != nil {
 		log.Error("[REGISTRY API V2] Decode Manifest Error: %v", err.Error())
 
+		ManifestCtx = []byte{}
 		result, _ := json.Marshal(map[string]string{"message": "Manifest converted failed"})
 		return http.StatusBadRequest, result
 	}
@@ -45,6 +46,7 @@ func PutManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 	if err != nil {
 		log.Error("[REGISTRY API V2] Get manifest digest failed: %v", err.Error())
 
+		ManifestCtx = []byte{}
 		result, _ := json.Marshal(map[string]string{"message": "Get manifest digest failed"})
 		return http.StatusBadRequest, result
 	}
@@ -59,6 +61,7 @@ func PutManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 	ctx.Resp.Header().Set("Docker-Content-Digest", digest)
 	ctx.Resp.Header().Set("Location", random)
 
+	ManifestCtx = []byte{}
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusAccepted, result
 }
