@@ -53,6 +53,8 @@ func (r *AciRepository) GetRepository(namespace string) error {
 		return fmt.Errorf("Invalid repository key")
 	}
 
+	//TODO:repository is empry when acpush first time connect with server. need acpush`s coorpation.
+
 	if err := db.Get(r, key); err != nil {
 		return err
 	}
@@ -101,7 +103,7 @@ func (r *AciRepository) PutManifest(namespace string, imgname string, manifest s
 	if err := db.Get(r, key); err != nil {
 		return err
 	}
-	
+
     if b, _ := r.AciIsExisted(namespace, imgname); b == true { 
 		for i, aci := range r.Acis {
 		    if aci.ImageName == imgname {

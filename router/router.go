@@ -57,9 +57,9 @@ func SetRouters(m *macaron.Macaron) {
 	m.Group("/ac-push", func() {
 		//m.Put("/:namespace/pubkeys.gpg", handler.PutPubkeysHandler)
 		m.Post("/uploaded/:servername/:namespace/:acifile", handler.GetUploadEndPointHandler)
-		m.Put("/:namespace/manifest/:imgname", handler.PutManifestHandler)
-		m.Put("/:namespace/signature/:imgname", handler.PutSignHandler)
-		m.Put("/:namespace/aci/:imgname", handler.PutAciHandler)
-		m.Post("/:namespace/complete/:imgname", handler.CompleteHandler)
+		m.Put("/:namespace/manifest/:acifile", handler.PutManifestHandler)
+		m.Put("/:namespace/signature/:acifile", handler.PutSignHandler)
+		m.Put("/:namespace/aci/:acifile", handler.PutAciHandler)
+		m.Post("/:namespace/complete/:acifile", handler.CompleteHandler)
 	})
 }
