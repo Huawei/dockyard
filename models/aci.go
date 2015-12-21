@@ -101,8 +101,8 @@ func (r *AciRepository) PutManifest(namespace string, imgname string, manifest s
 	if err := db.Get(r, key); err != nil {
 		return err
 	}
-
-    if len(r.Acis) > 0 { 
+	
+    if b, _ := r.AciIsExisted(namespace, imgname); b == true { 
 		for i, aci := range r.Acis {
 		    if aci.ImageName == imgname {
 		        r.Acis[i].Manifest = manifest
