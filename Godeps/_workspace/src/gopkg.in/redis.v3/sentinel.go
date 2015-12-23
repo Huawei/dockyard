@@ -31,6 +31,8 @@ type FailoverOptions struct {
 	PoolSize    int
 	PoolTimeout time.Duration
 	IdleTimeout time.Duration
+
+	MaxRetries int
 }
 
 func (opt *FailoverOptions) options() *Options {
@@ -47,11 +49,14 @@ func (opt *FailoverOptions) options() *Options {
 		PoolSize:    opt.PoolSize,
 		PoolTimeout: opt.PoolTimeout,
 		IdleTimeout: opt.IdleTimeout,
+
+		MaxRetries: opt.MaxRetries,
 	}
 }
 
-// NewFailoverClient returns a Redis client with automatic failover
-// capabilities using Redis Sentinel.
+// NewFailoverClient returns a Redis client that uses Redis Sentinel
+// for automatic failover. It's safe for concurrent use by multiple
+// goroutines.
 func NewFailoverClient(failoverOpt *FailoverOptions) *Client {
 	opt := failoverOpt.options()
 	failover := &sentinelFailover{
@@ -85,7 +90,7 @@ func (c *sentinelClient) PubSub() *PubSub {
 	return &PubSub{
 		baseClient: &baseClient{
 			opt:      c.opt,
-			connPool: newSingleConnPool(c.connPool, false),
+			connPool: newStickyConnPool(c.connPool, false),
 		},
 	}
 }

@@ -44,4 +44,22 @@ func SetRouters(m *macaron.Macaron) {
 		m.Get("/:namespace/:repository/tags/list", handler.GetTagsListV2Handler)
 		m.Get("/:namespace/:repository/manifests/:tag", handler.GetManifestsV2Handler)
 	})
+
+	//Rkt Registry & Hub API
+	//acis discovery responds endpoints
+	m.Get("/:namespace/:aciname/?ac-discovery=1", handler.DiscoveryACIHandler)
+
+	//acis fetch
+	m.Get("/:namespace/pubkeys.gpg", handler.GetPubkeysHandler)
+	m.Get("/ac-fetch/:namespace/:acifile", handler.GetACIHandler)
+
+	//acis push
+	m.Group("/ac-push", func() {
+		//m.Put("/:namespace/pubkeys.gpg", handler.PutPubkeysHandler)
+		m.Post("/uploaded/:servername/:namespace/:acifile", handler.GetUploadEndPointHandler)
+		m.Put("/:namespace/manifest/:acifile", handler.PutManifestHandler)
+		m.Put("/:namespace/signature/:acifile", handler.PutSignHandler)
+		m.Put("/:namespace/aci/:acifile", handler.PutAciHandler)
+		m.Post("/:namespace/complete/:acifile", handler.CompleteHandler)
+	})
 }
