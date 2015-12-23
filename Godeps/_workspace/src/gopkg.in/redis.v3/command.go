@@ -1,12 +1,11 @@
 package redis
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
-
-	"gopkg.in/bufio.v1"
 )
 
 var (
@@ -28,8 +27,8 @@ var (
 )
 
 type Cmder interface {
-	args() []string
-	parseReply(*bufio.Reader) error
+	args() []interface{}
+	readReply(*conn) error
 	setErr(error)
 	reset()
 
@@ -38,7 +37,7 @@ type Cmder interface {
 	clusterKey() string
 
 	Err() error
-	String() string
+	fmt.Stringer
 }
 
 func setCmdsErr(cmds []Cmder, e error) {
@@ -54,12 +53,21 @@ func resetCmds(cmds []Cmder) {
 }
 
 func cmdString(cmd Cmder, val interface{}) string {
-	s := strings.Join(cmd.args(), " ")
+	var ss []string
+	for _, arg := range cmd.args() {
+		ss = append(ss, fmt.Sprint(arg))
+	}
+	s := strings.Join(ss, " ")
 	if err := cmd.Err(); err != nil {
 		return s + ": " + err.Error()
 	}
 	if val != nil {
-		return s + ": " + fmt.Sprint(val)
+		switch vv := val.(type) {
+		case []byte:
+			return s + ": " + string(vv)
+		default:
+			return s + ": " + fmt.Sprint(val)
+		}
 	}
 	return s
 
@@ -68,7 +76,7 @@ func cmdString(cmd Cmder, val interface{}) string {
 //------------------------------------------------------------------------------
 
 type baseCmd struct {
-	_args []string
+	_args []interface{}
 
 	err error
 
@@ -84,7 +92,7 @@ func (cmd *baseCmd) Err() error {
 	return nil
 }
 
-func (cmd *baseCmd) args() []string {
+func (cmd *baseCmd) args() []interface{} {
 	return cmd._args
 }
 
@@ -102,7 +110,7 @@ func (cmd *baseCmd) writeTimeout() *time.Duration {
 
 func (cmd *baseCmd) clusterKey() string {
 	if cmd._clusterKeyPos > 0 && cmd._clusterKeyPos < len(cmd._args) {
-		return cmd._args[cmd._clusterKeyPos]
+		return fmt.Sprint(cmd._args[cmd._clusterKeyPos])
 	}
 	return ""
 }
@@ -123,7 +131,7 @@ type Cmd struct {
 	val interface{}
 }
 
-func NewCmd(args ...string) *Cmd {
+func NewCmd(args ...interface{}) *Cmd {
 	return &Cmd{baseCmd: baseCmd{_args: args}}
 }
 
@@ -144,9 +152,20 @@ func (cmd *Cmd) String() string {
 	return cmdString(cmd, cmd.val)
 }
 
-func (cmd *Cmd) parseReply(rd *bufio.Reader) error {
-	cmd.val, cmd.err = parseReply(rd, parseSlice)
-	return cmd.err
+func (cmd *Cmd) readReply(cn *conn) error {
+	val, err := readReply(cn, sliceParser)
+	if err != nil {
+		cmd.err = err
+		return cmd.err
+	}
+	if v, ok := val.([]byte); ok {
+		// Convert to string to preserve old behaviour.
+		// TODO: remove in v4
+		cmd.val = string(v)
+	} else {
+		cmd.val = val
+	}
+	return nil
 }
 
 //------------------------------------------------------------------------------
@@ -157,7 +176,7 @@ type SliceCmd struct {
 	val []interface{}
 }
 
-func NewSliceCmd(args ...string) *SliceCmd {
+func NewSliceCmd(args ...interface{}) *SliceCmd {
 	return &SliceCmd{baseCmd: baseCmd{_args: args, _clusterKeyPos: 1}}
 }
 
@@ -178,8 +197,8 @@ func (cmd *SliceCmd) String() string {
 	return cmdString(cmd, cmd.val)
 }
 
-func (cmd *SliceCmd) parseReply(rd *bufio.Reader) error {
-	v, err := parseReply(rd, parseSlice)
+func (cmd *SliceCmd) readReply(cn *conn) error {
+	v, err := readArrayReply(cn, sliceParser)
 	if err != nil {
 		cmd.err = err
 		return err
@@ -196,11 +215,11 @@ type StatusCmd struct {
 	val string
 }
 
-func NewStatusCmd(args ...string) *StatusCmd {
+func NewStatusCmd(args ...interface{}) *StatusCmd {
 	return &StatusCmd{baseCmd: baseCmd{_args: args, _clusterKeyPos: 1}}
 }
 
-func newKeylessStatusCmd(args ...string) *StatusCmd {
+func newKeylessStatusCmd(args ...interface{}) *StatusCmd {
 	return &StatusCmd{baseCmd: baseCmd{_args: args}}
 }
 
@@ -221,14 +240,9 @@ func (cmd *StatusCmd) String() string {
 	return cmdString(cmd, cmd.val)
 }
 
-func (cmd *StatusCmd) parseReply(rd *bufio.Reader) error {
-	v, err := parseReply(rd, nil)
-	if err != nil {
-		cmd.err = err
-		return err
-	}
-	cmd.val = v.(string)
-	return nil
+func (cmd *StatusCmd) readReply(cn *conn) error {
+	cmd.val, cmd.err = readStringReply(cn)
+	return cmd.err
 }
 
 //------------------------------------------------------------------------------
@@ -239,7 +253,7 @@ type IntCmd struct {
 	val int64
 }
 
-func NewIntCmd(args ...string) *IntCmd {
+func NewIntCmd(args ...interface{}) *IntCmd {
 	return &IntCmd{baseCmd: baseCmd{_args: args, _clusterKeyPos: 1}}
 }
 
@@ -260,14 +274,9 @@ func (cmd *IntCmd) String() string {
 	return cmdString(cmd, cmd.val)
 }
 
-func (cmd *IntCmd) parseReply(rd *bufio.Reader) error {
-	v, err := parseReply(rd, nil)
-	if err != nil {
-		cmd.err = err
-		return err
-	}
-	cmd.val = v.(int64)
-	return nil
+func (cmd *IntCmd) readReply(cn *conn) error {
+	cmd.val, cmd.err = readIntReply(cn)
+	return cmd.err
 }
 
 //------------------------------------------------------------------------------
@@ -279,7 +288,7 @@ type DurationCmd struct {
 	precision time.Duration
 }
 
-func NewDurationCmd(precision time.Duration, args ...string) *DurationCmd {
+func NewDurationCmd(precision time.Duration, args ...interface{}) *DurationCmd {
 	return &DurationCmd{
 		precision: precision,
 		baseCmd:   baseCmd{_args: args, _clusterKeyPos: 1},
@@ -303,13 +312,13 @@ func (cmd *DurationCmd) String() string {
 	return cmdString(cmd, cmd.val)
 }
 
-func (cmd *DurationCmd) parseReply(rd *bufio.Reader) error {
-	v, err := parseReply(rd, nil)
+func (cmd *DurationCmd) readReply(cn *conn) error {
+	n, err := readIntReply(cn)
 	if err != nil {
 		cmd.err = err
 		return err
 	}
-	cmd.val = time.Duration(v.(int64)) * cmd.precision
+	cmd.val = time.Duration(n) * cmd.precision
 	return nil
 }
 
@@ -321,7 +330,7 @@ type BoolCmd struct {
 	val bool
 }
 
-func NewBoolCmd(args ...string) *BoolCmd {
+func NewBoolCmd(args ...interface{}) *BoolCmd {
 	return &BoolCmd{baseCmd: baseCmd{_args: args, _clusterKeyPos: 1}}
 }
 
@@ -342,9 +351,13 @@ func (cmd *BoolCmd) String() string {
 	return cmdString(cmd, cmd.val)
 }
 
-func (cmd *BoolCmd) parseReply(rd *bufio.Reader) error {
-	v, err := parseReply(rd, nil)
-	// `SET key value NX` returns nil when key already exists.
+var ok = []byte("OK")
+
+func (cmd *BoolCmd) readReply(cn *conn) error {
+	v, err := readReply(cn, nil)
+	// `SET key value NX` returns nil when key already exists. But
+	// `SETNX key value` returns bool (0/1). So convert nil to bool.
+	// TODO: is this okay?
 	if err == Nil {
 		cmd.val = false
 		return nil
@@ -357,11 +370,11 @@ func (cmd *BoolCmd) parseReply(rd *bufio.Reader) error {
 	case int64:
 		cmd.val = vv == 1
 		return nil
-	case string:
-		cmd.val = vv == "OK"
+	case []byte:
+		cmd.val = bytes.Equal(vv, ok)
 		return nil
 	default:
-		return fmt.Errorf("got %T, wanted int64 or string")
+		return fmt.Errorf("got %T, wanted int64 or string", v)
 	}
 }
 
@@ -370,23 +383,27 @@ func (cmd *BoolCmd) parseReply(rd *bufio.Reader) error {
 type StringCmd struct {
 	baseCmd
 
-	val string
+	val []byte
 }
 
-func NewStringCmd(args ...string) *StringCmd {
+func NewStringCmd(args ...interface{}) *StringCmd {
 	return &StringCmd{baseCmd: baseCmd{_args: args, _clusterKeyPos: 1}}
 }
 
 func (cmd *StringCmd) reset() {
-	cmd.val = ""
+	cmd.val = nil
 	cmd.err = nil
 }
 
 func (cmd *StringCmd) Val() string {
-	return cmd.val
+	return bytesToString(cmd.val)
 }
 
 func (cmd *StringCmd) Result() (string, error) {
+	return cmd.Val(), cmd.err
+}
+
+func (cmd *StringCmd) Bytes() ([]byte, error) {
 	return cmd.val, cmd.err
 }
 
@@ -394,34 +411,41 @@ func (cmd *StringCmd) Int64() (int64, error) {
 	if cmd.err != nil {
 		return 0, cmd.err
 	}
-	return strconv.ParseInt(cmd.val, 10, 64)
+	return strconv.ParseInt(cmd.Val(), 10, 64)
 }
 
 func (cmd *StringCmd) Uint64() (uint64, error) {
 	if cmd.err != nil {
 		return 0, cmd.err
 	}
-	return strconv.ParseUint(cmd.val, 10, 64)
+	return strconv.ParseUint(cmd.Val(), 10, 64)
 }
 
 func (cmd *StringCmd) Float64() (float64, error) {
 	if cmd.err != nil {
 		return 0, cmd.err
 	}
-	return strconv.ParseFloat(cmd.val, 64)
+	return strconv.ParseFloat(cmd.Val(), 64)
+}
+
+func (cmd *StringCmd) Scan(val interface{}) error {
+	if cmd.err != nil {
+		return cmd.err
+	}
+	return scan(cmd.val, val)
 }
 
 func (cmd *StringCmd) String() string {
 	return cmdString(cmd, cmd.val)
 }
 
-func (cmd *StringCmd) parseReply(rd *bufio.Reader) error {
-	v, err := parseReply(rd, nil)
+func (cmd *StringCmd) readReply(cn *conn) error {
+	b, err := readBytesReply(cn)
 	if err != nil {
 		cmd.err = err
 		return err
 	}
-	cmd.val = v.(string)
+	cmd.val = cn.copyBuf(b)
 	return nil
 }
 
@@ -433,7 +457,7 @@ type FloatCmd struct {
 	val float64
 }
 
-func NewFloatCmd(args ...string) *FloatCmd {
+func NewFloatCmd(args ...interface{}) *FloatCmd {
 	return &FloatCmd{baseCmd: baseCmd{_args: args, _clusterKeyPos: 1}}
 }
 
@@ -446,17 +470,16 @@ func (cmd *FloatCmd) Val() float64 {
 	return cmd.val
 }
 
+func (cmd *FloatCmd) Result() (float64, error) {
+	return cmd.Val(), cmd.Err()
+}
+
 func (cmd *FloatCmd) String() string {
 	return cmdString(cmd, cmd.val)
 }
 
-func (cmd *FloatCmd) parseReply(rd *bufio.Reader) error {
-	v, err := parseReply(rd, nil)
-	if err != nil {
-		cmd.err = err
-		return err
-	}
-	cmd.val, cmd.err = strconv.ParseFloat(v.(string), 64)
+func (cmd *FloatCmd) readReply(cn *conn) error {
+	cmd.val, cmd.err = readFloatReply(cn)
 	return cmd.err
 }
 
@@ -468,7 +491,7 @@ type StringSliceCmd struct {
 	val []string
 }
 
-func NewStringSliceCmd(args ...string) *StringSliceCmd {
+func NewStringSliceCmd(args ...interface{}) *StringSliceCmd {
 	return &StringSliceCmd{baseCmd: baseCmd{_args: args, _clusterKeyPos: 1}}
 }
 
@@ -489,8 +512,8 @@ func (cmd *StringSliceCmd) String() string {
 	return cmdString(cmd, cmd.val)
 }
 
-func (cmd *StringSliceCmd) parseReply(rd *bufio.Reader) error {
-	v, err := parseReply(rd, parseStringSlice)
+func (cmd *StringSliceCmd) readReply(cn *conn) error {
+	v, err := readArrayReply(cn, stringSliceParser)
 	if err != nil {
 		cmd.err = err
 		return err
@@ -507,7 +530,7 @@ type BoolSliceCmd struct {
 	val []bool
 }
 
-func NewBoolSliceCmd(args ...string) *BoolSliceCmd {
+func NewBoolSliceCmd(args ...interface{}) *BoolSliceCmd {
 	return &BoolSliceCmd{baseCmd: baseCmd{_args: args, _clusterKeyPos: 1}}
 }
 
@@ -528,8 +551,8 @@ func (cmd *BoolSliceCmd) String() string {
 	return cmdString(cmd, cmd.val)
 }
 
-func (cmd *BoolSliceCmd) parseReply(rd *bufio.Reader) error {
-	v, err := parseReply(rd, parseBoolSlice)
+func (cmd *BoolSliceCmd) readReply(cn *conn) error {
+	v, err := readArrayReply(cn, boolSliceParser)
 	if err != nil {
 		cmd.err = err
 		return err
@@ -546,7 +569,7 @@ type StringStringMapCmd struct {
 	val map[string]string
 }
 
-func NewStringStringMapCmd(args ...string) *StringStringMapCmd {
+func NewStringStringMapCmd(args ...interface{}) *StringStringMapCmd {
 	return &StringStringMapCmd{baseCmd: baseCmd{_args: args, _clusterKeyPos: 1}}
 }
 
@@ -567,8 +590,8 @@ func (cmd *StringStringMapCmd) String() string {
 	return cmdString(cmd, cmd.val)
 }
 
-func (cmd *StringStringMapCmd) parseReply(rd *bufio.Reader) error {
-	v, err := parseReply(rd, parseStringStringMap)
+func (cmd *StringStringMapCmd) readReply(cn *conn) error {
+	v, err := readArrayReply(cn, stringStringMapParser)
 	if err != nil {
 		cmd.err = err
 		return err
@@ -585,7 +608,7 @@ type StringIntMapCmd struct {
 	val map[string]int64
 }
 
-func NewStringIntMapCmd(args ...string) *StringIntMapCmd {
+func NewStringIntMapCmd(args ...interface{}) *StringIntMapCmd {
 	return &StringIntMapCmd{baseCmd: baseCmd{_args: args, _clusterKeyPos: 1}}
 }
 
@@ -606,8 +629,8 @@ func (cmd *StringIntMapCmd) reset() {
 	cmd.err = nil
 }
 
-func (cmd *StringIntMapCmd) parseReply(rd *bufio.Reader) error {
-	v, err := parseReply(rd, parseStringIntMap)
+func (cmd *StringIntMapCmd) readReply(cn *conn) error {
+	v, err := readArrayReply(cn, stringIntMapParser)
 	if err != nil {
 		cmd.err = err
 		return err
@@ -624,7 +647,7 @@ type ZSliceCmd struct {
 	val []Z
 }
 
-func NewZSliceCmd(args ...string) *ZSliceCmd {
+func NewZSliceCmd(args ...interface{}) *ZSliceCmd {
 	return &ZSliceCmd{baseCmd: baseCmd{_args: args, _clusterKeyPos: 1}}
 }
 
@@ -645,8 +668,8 @@ func (cmd *ZSliceCmd) String() string {
 	return cmdString(cmd, cmd.val)
 }
 
-func (cmd *ZSliceCmd) parseReply(rd *bufio.Reader) error {
-	v, err := parseReply(rd, parseZSlice)
+func (cmd *ZSliceCmd) readReply(cn *conn) error {
+	v, err := readArrayReply(cn, zSliceParser)
 	if err != nil {
 		cmd.err = err
 		return err
@@ -664,7 +687,7 @@ type ScanCmd struct {
 	keys   []string
 }
 
-func NewScanCmd(args ...string) *ScanCmd {
+func NewScanCmd(args ...interface{}) *ScanCmd {
 	return &ScanCmd{baseCmd: baseCmd{_args: args, _clusterKeyPos: 1}}
 }
 
@@ -673,6 +696,9 @@ func (cmd *ScanCmd) reset() {
 	cmd.keys = nil
 	cmd.err = nil
 }
+
+// TODO: cursor should be string to match redis type
+// TODO: swap return values
 
 func (cmd *ScanCmd) Val() (int64, []string) {
 	return cmd.cursor, cmd.keys
@@ -686,32 +712,23 @@ func (cmd *ScanCmd) String() string {
 	return cmdString(cmd, cmd.keys)
 }
 
-func (cmd *ScanCmd) parseReply(rd *bufio.Reader) error {
-	vi, err := parseReply(rd, parseSlice)
+func (cmd *ScanCmd) readReply(cn *conn) error {
+	keys, cursor, err := readScanReply(cn)
 	if err != nil {
 		cmd.err = err
 		return cmd.err
 	}
-	v := vi.([]interface{})
-
-	cmd.cursor, cmd.err = strconv.ParseInt(v[0].(string), 10, 64)
-	if cmd.err != nil {
-		return cmd.err
-	}
-
-	keys := v[1].([]interface{})
-	for _, keyi := range keys {
-		cmd.keys = append(cmd.keys, keyi.(string))
-	}
-
+	cmd.keys = keys
+	cmd.cursor = cursor
 	return nil
 }
 
 //------------------------------------------------------------------------------
 
 type ClusterSlotInfo struct {
-	Start, End int
-	Addrs      []string
+	Start int
+	End   int
+	Addrs []string
 }
 
 type ClusterSlotCmd struct {
@@ -720,7 +737,7 @@ type ClusterSlotCmd struct {
 	val []ClusterSlotInfo
 }
 
-func NewClusterSlotCmd(args ...string) *ClusterSlotCmd {
+func NewClusterSlotCmd(args ...interface{}) *ClusterSlotCmd {
 	return &ClusterSlotCmd{baseCmd: baseCmd{_args: args, _clusterKeyPos: 1}}
 }
 
@@ -741,12 +758,99 @@ func (cmd *ClusterSlotCmd) reset() {
 	cmd.err = nil
 }
 
-func (cmd *ClusterSlotCmd) parseReply(rd *bufio.Reader) error {
-	v, err := parseReply(rd, parseClusterSlotInfoSlice)
+func (cmd *ClusterSlotCmd) readReply(cn *conn) error {
+	v, err := readArrayReply(cn, clusterSlotInfoSliceParser)
 	if err != nil {
 		cmd.err = err
 		return err
 	}
 	cmd.val = v.([]ClusterSlotInfo)
+	return nil
+}
+
+//------------------------------------------------------------------------------
+
+// GeoLocation is used with GeoAdd to add geospatial location.
+type GeoLocation struct {
+	Name                      string
+	Longitude, Latitude, Dist float64
+	GeoHash                   int64
+}
+
+// GeoRadiusQuery is used with GeoRadius to query geospatial index.
+type GeoRadiusQuery struct {
+	Radius float64
+	// Can be m, km, ft, or mi. Default is km.
+	Unit        string
+	WithCoord   bool
+	WithDist    bool
+	WithGeoHash bool
+	Count       int
+	// Can be ASC or DESC. Default is no sort order.
+	Sort string
+}
+
+type GeoLocationCmd struct {
+	baseCmd
+
+	q         *GeoRadiusQuery
+	locations []GeoLocation
+}
+
+func NewGeoLocationCmd(q *GeoRadiusQuery, args ...interface{}) *GeoLocationCmd {
+	args = append(args, q.Radius)
+	if q.Unit != "" {
+		args = append(args, q.Unit)
+	} else {
+		args = append(args, "km")
+	}
+	if q.WithCoord {
+		args = append(args, "WITHCOORD")
+	}
+	if q.WithDist {
+		args = append(args, "WITHDIST")
+	}
+	if q.WithGeoHash {
+		args = append(args, "WITHHASH")
+	}
+	if q.Count > 0 {
+		args = append(args, "COUNT", q.Count)
+	}
+	if q.Sort != "" {
+		args = append(args, q.Sort)
+	}
+	return &GeoLocationCmd{
+		baseCmd: baseCmd{
+			_args:          args,
+			_clusterKeyPos: 1,
+		},
+		q: q,
+	}
+}
+
+func (cmd *GeoLocationCmd) reset() {
+	cmd.locations = nil
+	cmd.err = nil
+}
+
+func (cmd *GeoLocationCmd) Val() []GeoLocation {
+	return cmd.locations
+}
+
+func (cmd *GeoLocationCmd) Result() ([]GeoLocation, error) {
+	return cmd.locations, cmd.err
+}
+
+func (cmd *GeoLocationCmd) String() string {
+	return cmdString(cmd, cmd.locations)
+}
+
+func (cmd *GeoLocationCmd) readReply(cn *conn) error {
+	reply, err := readArrayReply(cn, newGeoLocationSliceParser(cmd.q))
+	if err != nil {
+		cmd.err = err
+		return err
+	}
+	cmd.locations = reply.([]GeoLocation)
 	return nil
 }

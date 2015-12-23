@@ -88,6 +88,12 @@ key, err := cfg.Section("").GetKey("key name")
 key := cfg.Section("").Key("key name")
 ```
 
+判断某个键是否存在：
+
+```go
+yes := cfg.Section("").HasKey("key name")
+```
+
 创建一个新的键：
 
 ```go
@@ -97,8 +103,8 @@ err := cfg.Section("").NewKey("name", "value")
 获取分区下的所有键或键名：
 
 ```go
-keys := cfg.Section().Keys()
-names := cfg.Section().KeyStrings()
+keys := cfg.Section("").Keys()
+names := cfg.Section("").KeyStrings()
 ```
 
 获取分区下的所有键值对的克隆：
@@ -115,6 +121,29 @@ hash := cfg.GetSection("").KeysHash()
 val := cfg.Section("").Key("key name").String()
 ```
 
+获取值的同时通过自定义函数进行处理验证：
+
+```go
+val := cfg.Section("").Key("key name").Validate(func(in string) string {
+	if len(in) == 0 {
+		return "default"
+	}
+	return in
+})
+```
+
+如果您不需要任何对值的自动转变功能（例如递归读取），可以直接获取原值（这种方式性能最佳）：
+
+```go
+val := cfg.Section("").Key("key name").Value()
+```
+
+判断某个原值是否存在：
+
+```go
+yes := cfg.Section("").HasValue("test value")
+```
+
 获取其它类型的值：
 
 ```go
@@ -125,6 +154,8 @@ v, err = cfg.Section("").Key("BOOL").Bool()
 v, err = cfg.Section("").Key("FLOAT64").Float64()
 v, err = cfg.Section("").Key("INT").Int()
 v, err = cfg.Section("").Key("INT64").Int64()
+v, err = cfg.Section("").Key("UINT").Uint()
+v, err = cfg.Section("").Key("UINT64").Uint64()
 v, err = cfg.Section("").Key("TIME").TimeFormat(time.RFC3339)
 v, err = cfg.Section("").Key("TIME").Time() // RFC3339
 
@@ -132,6 +163,8 @@ v = cfg.Section("").Key("BOOL").MustBool()
 v = cfg.Section("").Key("FLOAT64").MustFloat64()
 v = cfg.Section("").Key("INT").MustInt()
 v = cfg.Section("").Key("INT64").MustInt64()
+v = cfg.Section("").Key("UINT").MustUint()
+v = cfg.Section("").Key("UINT64").MustUint64()
 v = cfg.Section("").Key("TIME").MustTimeFormat(time.RFC3339)
 v = cfg.Section("").Key("TIME").MustTime() // RFC3339
 
@@ -144,6 +177,8 @@ v = cfg.Section("").Key("BOOL").MustBool(true)
 v = cfg.Section("").Key("FLOAT64").MustFloat64(1.25)
 v = cfg.Section("").Key("INT").MustInt(10)
 v = cfg.Section("").Key("INT64").MustInt64(99)
+v = cfg.Section("").Key("UINT").MustUint(3)
+v = cfg.Section("").Key("UINT64").MustUint64(6)
 v = cfg.Section("").Key("TIME").MustTimeFormat(time.RFC3339, time.Now())
 v = cfg.Section("").Key("TIME").MustTime(time.Now()) // RFC3339
 ```
@@ -169,6 +204,32 @@ Earth
 ------  end  --- */
 ```
 
+赞爆了！那要是我属于一行的内容写不下想要写到第二行怎么办？
+
+```ini
+[advance]
+two_lines = how about \
+	continuation lines?
+lots_of_lines = 1 \
+	2 \
+	3 \
+	4
+```
+
+简直是小菜一碟！
+
+```go
+cfg.Section("advance").Key("two_lines").String() // how about continuation lines?
+cfg.Section("advance").Key("lots_of_lines").String() // 1 2 3 4
+```
+
+需要注意的是，值两侧的单引号会被自动剔除：
+
+```ini
+foo = "some value" // foo: some value
+bar = 'some value' // bar: some value
+```
+
 这就是全部了？哈哈，当然不是。
 
 #### 操作键值的辅助方法
@@ -180,6 +241,8 @@ v = cfg.Section("").Key("STRING").In("default", []string{"str", "arr", "types"})
 v = cfg.Section("").Key("FLOAT64").InFloat64(1.1, []float64{1.25, 2.5, 3.75})
 v = cfg.Section("").Key("INT").InInt(5, []int{10, 20, 30})
 v = cfg.Section("").Key("INT64").InInt64(10, []int64{10, 20, 30})
+v = cfg.Section("").Key("UINT").InUint(4, []int{3, 6, 9})
+v = cfg.Section("").Key("UINT64").InUint64(8, []int64{3, 6, 9})
 v = cfg.Section("").Key("TIME").InTimeFormat(time.RFC3339, time.Now(), []time.Time{time1, time2, time3})
 v = cfg.Section("").Key("TIME").InTime(time.Now(), []time.Time{time1, time2, time3}) // RFC3339
 ```
@@ -192,6 +255,8 @@ v = cfg.Section("").Key("TIME").InTime(time.Now(), []time.Time{time1, time2, tim
 vals = cfg.Section("").Key("FLOAT64").RangeFloat64(0.0, 1.1, 2.2)
 vals = cfg.Section("").Key("INT").RangeInt(0, 10, 20)
 vals = cfg.Section("").Key("INT64").RangeInt64(0, 10, 20)
+vals = cfg.Section("").Key("UINT").RangeUint(0, 3, 9)
+vals = cfg.Section("").Key("UINT64").RangeUint64(0, 3, 9)
 vals = cfg.Section("").Key("TIME").RangeTimeFormat(time.RFC3339, time.Now(), minTime, maxTime)
 vals = cfg.Section("").Key("TIME").RangeTime(time.Now(), minTime, maxTime) // RFC3339
 ```
@@ -203,7 +268,29 @@ vals = cfg.Section("").Key("STRINGS").Strings(",")
 vals = cfg.Section("").Key("FLOAT64S").Float64s(",")
 vals = cfg.Section("").Key("INTS").Ints(",")
 vals = cfg.Section("").Key("INT64S").Int64s(",")
+vals = cfg.Section("").Key("UINTS").Uints(",")
+vals = cfg.Section("").Key("UINT64S").Uint64s(",")
 vals = cfg.Section("").Key("TIMES").Times(",")
+```
+
+### 保存配置
+
+终于到了这个时刻，是时候保存一下配置了。
+
+比较原始的做法是输出配置到某个文件：
+
+```go
+// ...
+err = cfg.SaveTo("my.ini")
+err = cfg.SaveToIndent("my.ini", "\t")
+```
+
+另一个比较高级的做法是写入到任何实现 `io.Writer` 接口的对象中：
+
+```go
+// ...
+cfg.WriteTo(writer)
+cfg.WriteToIndent(writer, "\t")
 ```
 
 ### 高级用法
@@ -320,6 +407,55 @@ p := &Person{
 // ...
 ```
 
+这样玩 INI 真的好酷啊！然而，如果不能还给我原来的配置文件，有什么卵用？
+
+### 从结构反射
+
+可是，我有说不能吗？
+
+```go
+type Embeded struct {
+	Dates  []time.Time `delim:"|"`
+	Places []string
+	None   []int
+}
+
+type Author struct {
+	Name      string `ini:"NAME"`
+	Male      bool
+	Age       int
+	GPA       float64
+	NeverMind string `ini:"-"`
+	*Embeded
+}
+
+func main() {
+	a := &Author{"Unknwon", true, 21, 2.8, "",
+		&Embeded{
+			[]time.Time{time.Now(), time.Now()},
+			[]string{"HangZhou", "Boston"},
+			[]int{},
+		}}
+	cfg := ini.Empty()
+	err = ini.ReflectFrom(cfg, a)
+	// ...
+}
+```
+
+瞧瞧，奇迹发生了。
+
+```ini
+NAME = Unknwon
+Male = true
+Age = 21
+GPA = 2.8
+
+[Embeded]
+Dates = 2015-08-07T22:14:22+08:00|2015-08-07T22:14:22+08:00
+Places = HangZhou,Boston
+None =
+```
+
 #### 名称映射器（Name Mapper）
 
 为了节省您的时间并简化代码，本库支持类型为 [`NameMapper`](https://gowalker.org/gopkg.in/ini.v1#NameMapper) 的名称映射器，该映射器负责结构字段名与分区名和键名之间的映射。
@@ -337,16 +473,78 @@ type Info struct{
 }
 
 func main() {
-	err = ini.MapToWithMapper(&Info{}, ini.TitleUnderscore, []byte("packag_name=ini"))
+	err = ini.MapToWithMapper(&Info{}, ini.TitleUnderscore, []byte("package_name=ini"))
 	// ...
 
-	cfg, err := ini.Load("PACKAGE_NAME=ini")
+	cfg, err := ini.Load([]byte("PACKAGE_NAME=ini"))
 	// ...
 	info := new(Info)
 	cfg.NameMapper = ini.AllCapsUnderscore
 	err = cfg.MapTo(info)
 	// ...
 }
+```
+
+使用函数 `ini.ReflectFromWithMapper` 时也可应用相同的规则。
+
+#### 映射/反射的其它说明
+
+任何嵌入的结构都会被默认认作一个不同的分区，并且不会自动产生所谓的父子分区关联：
+
+```go
+type Child struct {
+	Age string
+}
+
+type Parent struct {
+	Name string
+	Child
+}
+
+type Config struct {
+	City string
+	Parent
+}
+```
+
+示例配置文件：
+
+```ini
+City = Boston
+
+[Parent]
+Name = Unknwon
+
+[Child]
+Age = 21
+```
+
+很好，但是，我就是要嵌入结构也在同一个分区。好吧，你爹是李刚！
+
+```go
+type Child struct {
+	Age string
+}
+
+type Parent struct {
+	Name string
+	Child `ini:"Parent"`
+}
+
+type Config struct {
+	City string
+	Parent
+}
+```
+
+示例配置文件：
+
+```ini
+City = Boston
+
+[Parent]
+Name = Unknwon
+Age = 21
 ```
 
 ## 获取帮助
