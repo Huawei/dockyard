@@ -3,11 +3,13 @@ package web
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/dockyard/backend"
 	"github.com/containerops/dockyard/middleware"
+	"github.com/containerops/dockyard/oss"
 	"github.com/containerops/dockyard/router"
 	"github.com/containerops/wrench/db"
 	"github.com/containerops/wrench/setting"
@@ -32,6 +34,12 @@ func SetDockyardMacaron(m *macaron.Macaron) {
 
 	//Setting Router
 	router.SetRouters(m)
+
+	//Start Object Storage Service if sets in conf
+	if strings.EqualFold(setting.BackendDriver, "oss") {
+		ossobj := oss.Instance()
+		ossobj.StartOSS()
+	}
 
 	//Create acpool to store aci/asc/pubkey
 	err := func() error {

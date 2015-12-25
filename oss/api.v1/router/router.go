@@ -3,12 +3,6 @@ package router
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/containerops/dockyard/oss/api.v1/chunkserver"
-	"github.com/containerops/dockyard/oss/api.v1/meta"
-	"github.com/containerops/dockyard/oss/api.v1/meta/mysqldriver"
-	"github.com/containerops/dockyard/oss/logs"
-	"github.com/containerops/dockyard/oss/utils"
-	"github.com/gorilla/mux"
 	"io/ioutil"
 	"math"
 	"math/rand"
@@ -17,6 +11,14 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/gorilla/mux"
+
+	"github.com/containerops/dockyard/oss/api.v1/chunkserver"
+	"github.com/containerops/dockyard/oss/api.v1/meta"
+	"github.com/containerops/dockyard/oss/api.v1/meta/mysqldriver"
+	"github.com/containerops/dockyard/oss/logs"
+	"github.com/containerops/dockyard/oss/utils"
 )
 
 const (
@@ -641,7 +643,6 @@ func (s *Server) selectChunkServerGroupSimple(size int64, meta *meta.MetaInfoVal
 	return nil, fmt.Errorf("can not find an available chunkserver")
 }
 
-//func (s *Server) selectChunkServerGroupComplex(size int64, meta *meta.MetaInfoValue) ([]chunkserver.ChunkServer, error) {
 func (s *Server) selectChunkServerGroupComplex(size int64) ([]chunkserver.ChunkServer, error) {
 	if size <= 0 {
 		log.Errorf("data size: %d <= 0")
@@ -651,6 +652,7 @@ func (s *Server) selectChunkServerGroupComplex(size int64) ([]chunkserver.ChunkS
 	groups := s.GetChunkServerGroups()
 	var totalNum int = len(groups.GroupMap)
 	var selectNum int = totalNum/10 + 3
+	fmt.Printf("totalnum=%v,selectnum=%v \n", totalNum, selectNum)
 	minHeap := chunkserver.NewMinHeap(selectNum)
 
 	for groupId, servers := range groups.GroupMap {
@@ -661,7 +663,7 @@ func (s *Server) selectChunkServerGroupComplex(size int64) ([]chunkserver.ChunkS
 		var writingCount = 0
 
 		length := len(servers)
-
+		fmt.Println(servers)
 		// skip empty group and transfering... group
 		if length == 0 || servers[0].GlobalStatus != chunkserver.GLOBAL_NORMAL_STATUS {
 			continue
@@ -700,7 +702,8 @@ func (s *Server) selectChunkServerGroupComplex(size int64) ([]chunkserver.ChunkS
 			minHeap.AddElement(groupId, minMaxFreeSpace, pendingWrites, writingCount)
 		}
 	}
-
+	fmt.Printf("selectNum=%v \n", selectNum)
+	fmt.Printf("minheap=%v \n", minHeap.GetSize())
 	if minHeap.GetSize() < selectNum {
 		selectNum = minHeap.GetSize()
 	}
@@ -933,6 +936,7 @@ func (s *Server) GetChunkServerInfoTicker() {
 		select {
 		case <-timer.C:
 			err := s.GetChunkServerInfo()
+			// fmt.Println(s.chunkServerGroups)
 			if err != nil {
 				log.Errorf("GetChunkServerInfoTicker error: %s", err)
 			}

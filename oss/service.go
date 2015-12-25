@@ -18,12 +18,10 @@ import (
 	"github.com/containerops/dockyard/oss/chunkmaster/metadata"
 	"github.com/containerops/dockyard/oss/logs"
 	"github.com/containerops/dockyard/oss/utils"
-
-	// "github.com/containerops/wrench/setting"
+	"github.com/containerops/wrench/setting"
 )
 
 var _instance *oss
-var c1 chan bool
 
 type oss struct {
 	cm chunkmaster
@@ -76,19 +74,17 @@ func (this *oss) StartOSS() error {
 
 func (this *oss) Loadconfig() error {
 	// load chunkmaster configs
-	// TODO load configs from config files
-	this.cm.metaHost = "10.229.40.121"
-	this.cm.metaPort = "3306"
-	this.cm.user = "root"
-	this.cm.passwd = "wang"
-	this.cm.db = "speedy1"
-	this.cm.serverHost = "127.0.0.1"
-	this.cm.serverPort = 8099
-	this.cm.limitCSNum = 1
-	this.cm.connPoolCapacity = 200
+	this.cm.metaHost = setting.MetaHost
+	this.cm.metaPort = setting.MetaPort
+	this.cm.user = setting.DbUser
+	this.cm.passwd = setting.DbPasswd
+	this.cm.db = setting.Db
+	this.cm.serverHost = setting.MasterHost
+	this.cm.serverPort = setting.MasterPort
+	this.cm.limitCSNum = setting.LimitCSNum
+	this.cm.connPoolCapacity = setting.ConnPoolCapacity
 	// Load chunkserver configs and convert chunkserver string to  to objs
-	// TODO serverslist should come from config file
-	servers := "1_127.0.0.1:7657;1_127.0.0.1:7658;1_127.0.0.1:7659"
+	servers := setting.Servers
 	for _, server := range strings.Split(servers, ";") {
 		if isMatch, _ := regexp.MatchString("^\\d_((2[0-4]\\d|25[0-5]|[01]?\\d\\d?)\\.){3}(2[0-4]\\d|25[0-5]|[01]?\\d\\d?)\\:\\d{0,5}$", server); !isMatch {
 			return fmt.Errorf("chunkserver config format error : %s", server)
@@ -102,7 +98,7 @@ func (this *oss) Loadconfig() error {
 		chunkserver.GroupId = uint16(groupiduint)
 		portint, _ := strconv.Atoi(port)
 		chunkserver.Port = portint
-		chunkserver.DataDir = fmt.Sprintf("/root/gopath/chunkserver/data/server_%v_%v", chunkserver.Ip, chunkserver.Port)
+		chunkserver.DataDir = fmt.Sprintf("%v/server_%v_%v", setting.DataPath, chunkserver.Ip, chunkserver.Port)
 		this.cs = append(this.cs, chunkserver)
 	}
 	return nil
@@ -133,8 +129,6 @@ func (this *oss) Startmaster() error {
 }
 
 func (this *oss) Registerservers() error {
-	// NOTE: change the name of func oss/chunkmaster/api/6 to BatchAddChunkserver
-	// TODO : check if the server ip  address and port exsist
 	if err := api.BatchAddChunkserver(&this.cs); err != nil {
 		return fmt.Errorf("Registerservers err %v", err)
 	}
@@ -143,7 +137,7 @@ func (this *oss) Registerservers() error {
 
 func (this *oss) Startservers() error {
 	binpath := "./oss/chunkserver/spy_server"
-	errlogfolder := "/root/gopath/chunkserver/errlog"
+	errlogfolder := setting.ErrLogPath
 	// check if chunkserver binary exsist,if not ,create it
 	_, err := os.Stat(binpath)
 	if err != nil && os.IsNotExist(err) {
@@ -171,8 +165,6 @@ func (this *oss) Startservers() error {
 			cmd.Stderr = &stderr
 			err = cmd.Run()
 			if err != nil {
-				fmt.Println("start spy_server error,stdout:" + stdout.String() + "\n")
-				fmt.Println("start spy_server error,stderr:" + stderr.String() + "\n")
 				fmt.Println(err.Error())
 			}
 		}()
@@ -183,7 +175,7 @@ func (this *oss) Startservers() error {
 
 func (this *oss) StartAPI() error {
 	metaport, _ := strconv.Atoi(this.cm.metaPort)
-	server := router.NewServer(this.cm.serverHost, "0.0.0.0", 6788, this.cm.limitCSNum, this.cm.metaHost, metaport, this.cm.user, this.cm.passwd, "metadb", this.cm.connPoolCapacity)
+	server := router.NewServer(this.cm.serverHost, "0.0.0.0", setting.APIPort, this.cm.limitCSNum, this.cm.metaHost, metaport, this.cm.user, this.cm.passwd, "metadb", this.cm.connPoolCapacity)
 	log.Infof("imageserver start...")
 	go func() {
 		if err := server.Run(); err != nil {
