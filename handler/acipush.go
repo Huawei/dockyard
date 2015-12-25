@@ -36,9 +36,6 @@ func GetUploadEndPointHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, [
 	signfilename := acifilename + ".asc"
 	imgname := strings.Trim(acifilename, ".aci")
 
-    //TODO:check aci is existed or not and considering add router to handle that, need acpush client`s cooperation
-
-    //create acitemppath to save file as a temp status
     acitmpdir := path.Join(setting.ImagePath, "acipool", namespace, "tmp")
 
 	os.RemoveAll(acitmpdir)
@@ -75,14 +72,14 @@ func GetUploadEndPointHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, [
 func PutManifestHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {    
     namespace := ctx.Params(":namespace")
 
-    acitmpdir := path.Join(setting.ImagePath, "acipool", namespace, "tmp")
-    manifile := path.Join(acitmpdir, "manifest")
+    acitmppath := path.Join(setting.ImagePath, "acipool", namespace, "tmp")
+    manifile := path.Join(acitmppath, "manifest")
 
    	data, _ := ctx.Req.Body().Bytes()
 	if err := ioutil.WriteFile(manifile, data, 0777); err != nil {
-		log.Error("[ACI API] Save signaturefile failed: %v", err.Error())
+		log.Error("[ACI API] Save manifile failed: %v", err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Save signaturefile failed"})
+		result, _ := json.Marshal(map[string]string{"message": "Save manifile failed"})
 		return http.StatusBadRequest, result
 	}
 
@@ -150,7 +147,7 @@ func CompleteHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 	httpstatus, checkresult, err := UploadCheck(namespace, imgname, log)
 	if err != nil {
-  		log.Error("[ACI API] UploadFinished failed: %v", err.Error())
+  		log.Error("[ACI API] UploadCheck failed: %v", err.Error())
 
         result, _ = ReturnFail(msg.Reason, string(checkresult), body)
 	} else {
@@ -180,23 +177,23 @@ func ReturnSuccuss() ([]byte, error) {
 
 func UploadCheck(namespace string, imgname string, log *logs.BeeLogger) (int, []byte, error) {
 	acidir   := path.Join(setting.ImagePath, "acipool", namespace, imgname)
-	signpath := path.Join(acidir, imgname, ".aci.asc")
-	acipath  := path.Join(acidir, imgname, ".aci")	
+	signpath := path.Join(acidir, imgname) + ".aci.asc"
+	acipath  := path.Join(acidir, imgname) + ".aci"	
 
     acitmpdir := path.Join(setting.ImagePath, "acipool", namespace, "tmp")
     manitmppath := path.Join(acitmpdir, "manifest")
-	signtmppath := path.Join(acitmpdir, imgname, ".aci.asc")
-	acitmppath  := path.Join(acitmpdir, imgname, ".aci")	
+	signtmppath := path.Join(acitmpdir, imgname) + ".aci.asc"
+	acitmppath  := path.Join(acitmpdir, imgname) + ".aci"
 
-	manitmpfile, err := ioutil.ReadFile(manitmppath)
+    manifile, err := ioutil.ReadFile(manitmppath)
 	if err != nil {
-		log.Error("[ACI API] Read manitmpfile failed: %v", err.Error())
+		log.Error("[ACI API] opening manifile file failed: %v", err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Read manitmpfile failed"})
+		result, _ := json.Marshal(map[string]string{"message": "Read manifile failed"})
 		return http.StatusNotFound, result, err
 	}
 
-    signtmpfile, err := ioutil.ReadFile(signtmppath)
+    signtmpfile, err := os.Open(signtmppath)
 	if err != nil {
 		log.Error("[ACI API] Read signtmpfile failed: %v", err.Error())
 		
@@ -204,7 +201,7 @@ func UploadCheck(namespace string, imgname string, log *logs.BeeLogger) (int, []
 		return http.StatusNotFound, result, err
 	}
 
-	acitmpfile, err := ioutil.ReadFile(acitmppath)
+    acitmpfile, err := os.Open(acitmppath)
 	if err != nil {
 		log.Error("[ACI API] Read acitmpfile failed: %v", err.Error())
 		
@@ -214,11 +211,10 @@ func UploadCheck(namespace string, imgname string, log *logs.BeeLogger) (int, []
 
 	keyspath := "/home/gopath/src/github.com/containerops/dockyard/data/acipool/pzh/pubkeys/pubkeys.gpg"
 
-    Entity, err := AciVerification(keyspath, manitmpfile, signtmpfile, acitmpfile)
-    if err != nil {
-	     log.Error("[ACI API] Aci Verification failed: %v", err.Error())
+    if _, err := AciVerification(keyspath, manifile, signtmpfile, acitmpfile); err != nil {
+	    log.Error("[ACI API] Aci Verification failed: %v", err.Error())
 
-		 if err := os.RemoveAll(acitmpdir); err != nil {
+		if err := os.RemoveAll(acitmpdir); err != nil {
 			log.Error("[ACI API] Remove acitmpdir failed: %v", err.Error())
 
 			result, _ := json.Marshal(map[string]string{"message": "Remove acitmpdir failed"})
@@ -231,14 +227,14 @@ func UploadCheck(namespace string, imgname string, log *logs.BeeLogger) (int, []
 
 	//save to redis
 	r := new(models.AciRepository)
-    if err := r.PutAciByName(namespace, imgname, string(manitmpfile), signpath, acipath); err != nil {
+    if err := r.PutAciByName(namespace, imgname, string(manifile), signpath, acipath); err != nil {
         log.Error("[ACI API] Save aci %v details to %v repository failed: %v", imgname, namespace, err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Save aci details failed"})
 		return http.StatusNotFound, result, err
     }
 
-	//delete acidir, delte manifest and rename acitmpdir
+	//delete acidir and manifest and then rename acitmpdir to right dir name
     if err := os.RemoveAll(acidir); err != nil {
 		log.Error("[ACI API] Remove acidir failed: %v", err.Error())
 
@@ -264,27 +260,40 @@ func UploadCheck(namespace string, imgname string, log *logs.BeeLogger) (int, []
 	return http.StatusOK, result, nil
 }  
 
-func AciVerification(keypath string, manitmpfile []byte, signtmpfile []byte, acitmpfile []byte) (*openpgp.Entity, error) {
-	var manifest models.ImageManifest
-
-	err := manifest.UnmarshalJSON(manitmpfile) 
-    if err != nil {
+func AciVerification(keypath string, manifile []byte, signtmpfile *os.File, acitmpfile *os.File) (*openpgp.Entity, error) {
+    //check validity of manifest
+	manifest := &models.ImageManifest{}
+	err := json.Unmarshal(manifile, manifest)
+	if err != nil {
 		return nil, err
 	}
 
-    //check aciname and manifest
-	if appName != "" && manifest.Name.String() != appName {
-		return nil, fmt.Errorf("error when reading the app name: %q expected but %q found",
-				appName, manifest.Name.String())
+	version := models.Version{}
+
+	if manifest.ACKind != "ImageManifestKind" {
+		return nil, fmt.Errorf("missing or bad ACKind (must be %v)", "ImageManifestKind")
 	}
-/*
+	if manifest.ACVersion == version {
+		return nil, fmt.Errorf("acVersion must be set")
+	}
+	if string(manifest.Name) == "" {
+		return nil, fmt.Errorf("name must be set")
+	}
+
+    appName := "containerops.me/pzh/etcd"
+
+	if appName != "" && string(manifest.Name) != appName {
+		return nil, fmt.Errorf("error when reading the app name: %q expected but %q found",
+				appName, string(manifest.Name))
+	}
+
 	if _, err := signtmpfile.Seek(0, 0); err != nil {
 		return nil, fmt.Errorf("error seeking ACI file: %v", err)
 	}
 	if _, err := acitmpfile.Seek(0, 0); err != nil {
 		return nil, fmt.Errorf("error seeking signature file: %v", err)
 	}
-*/
+
     //load keyring
     var keyring openpgp.EntityList
 	trustedKeys := make(map[string]*openpgp.Entity)
