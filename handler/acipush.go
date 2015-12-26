@@ -13,7 +13,7 @@ import (
 
 	"github.com/astaxie/beego/logs"
 	"gopkg.in/macaron.v1"
-	"gopkg.in/golang.org/x/crypto/openpgp"
+	"golang.org/x/crypto/openpgp"
 
 	"github.com/containerops/wrench/setting"
 	"github.com/containerops/dockyard/models"
@@ -110,7 +110,7 @@ func PutAciHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	acifilename := ctx.Params(":acifile")
 
     acitmppath := path.Join(setting.ImagePath, "acipool", namespace, "tmp")
-	acifile := path.Join(acitmppath, acifilename)
+	acifile := fmt.Sprintf("%v/%v", acitmppath, acifilename)
 
 	data, _ := ctx.Req.Body().Bytes()   
 	if err := ioutil.WriteFile(acifile, data, 0777); err != nil {
@@ -139,8 +139,6 @@ func CompleteHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 		result, _ := json.Marshal(map[string]string{"message": "Unmarshal failed"})
 		return http.StatusBadRequest, result
 	}
-
-	fmt.Fprintf(os.Stderr, "body: %s\n", string(body))
     
     var result []byte
 
@@ -184,6 +182,8 @@ func UploadCheck(namespace string, imgname string, log *logs.BeeLogger) (int, []
 	signtmppath := path.Join(acitmpdir, imgname) + ".aci.asc"
 	acitmppath  := path.Join(acitmpdir, imgname) + ".aci"
 
+	imagefullname := fmt.Sprintf("%v/%v/%v", setting.Domains, namespace, strings.Split(imgname, "-")[0])
+
     manifile, err := ioutil.ReadFile(manitmppath)
 	if err != nil {
 		log.Error("[ACI API] opening manifile file failed: %v", err.Error())
@@ -208,9 +208,9 @@ func UploadCheck(namespace string, imgname string, log *logs.BeeLogger) (int, []
 		return http.StatusNotFound, result, err
 	}
 
-	keyspath := "/home/gopath/src/github.com/containerops/dockyard/data/acipool/pzh/pubkeys/32d9a2b796e8496197f761b10a81dd80f8bdd769"
+	keyspath := "/home/gopath/src/github.com/containerops/dockyard/data/acipool/pzh/pubkeys/c04fc081e47bf07ef67b3f00ccd7a3a7cca47d20"
 
-    if _, err := AciVerification(keyspath, manifile, signtmpfile, acitmpfile); err != nil {
+    if _, err := AciVerification(keyspath, manifile, acitmpfile, signtmpfile, imagefullname); err != nil {
 	    log.Error("[ACI API] Aci Verification failed : %v", err.Error())
 
 		if err := os.RemoveAll(acitmpdir); err != nil {
@@ -259,7 +259,7 @@ func UploadCheck(namespace string, imgname string, log *logs.BeeLogger) (int, []
 	return http.StatusOK, result, nil
 }  
 
-func AciVerification(keypath string, manifile []byte, signtmpfile *os.File, acitmpfile *os.File) (*openpgp.Entity, error) {
+func AciVerification(keypath string, manifile []byte, acitmpfile *os.File, signtmpfile *os.File, imagefullname string) (*openpgp.Entity, error) {
     //check validity of manifest
 	manifest := &models.ImageManifest{}
 	err := json.Unmarshal(manifile, manifest)
@@ -277,11 +277,9 @@ func AciVerification(keypath string, manifile []byte, signtmpfile *os.File, acit
 		return nil, fmt.Errorf("name must be set")
 	}
 
-    appName := "containerops.me/etcd"
-
-	if appName != "" && string(manifest.Name) != appName {
+	if imagefullname != "" && string(manifest.Name) != imagefullname {
 		return nil, fmt.Errorf("error when reading the app name: %q expected but %q found",
-				appName, string(manifest.Name))
+				imagefullname, string(manifest.Name))
 	}
 
 	if _, err := signtmpfile.Seek(0, 0); err != nil {
@@ -318,12 +316,11 @@ func AciVerification(keypath string, manifile []byte, signtmpfile *os.File, acit
 	trustedKeys[fingerprintToFilename(entityList[0].PrimaryKey.Fingerprint)] = entityList[0]
 
 	for _, v := range trustedKeys {
-	    fmt.Printf("######### loadKeyring v:%v ######### \r\n", v)
 		keyring = append(keyring, v)
 	}
 
     //check keyring asc aci
-	entity, err := openpgp.CheckArmoredDetachedSignature(keyring, signtmpfile, acitmpfile)
+	entity, err := openpgp.CheckArmoredDetachedSignature(keyring, acitmpfile, signtmpfile)
 	if err == io.EOF {
 		// When the signature is binary instead of armored, the error is io.EOF.
 		// Let's try with binary signatures as well
@@ -333,7 +330,7 @@ func AciVerification(keypath string, manifile []byte, signtmpfile *os.File, acit
 		if _, err := acitmpfile.Seek(0, 0); err != nil {
 			return nil, fmt.Errorf("error seeking signature file: %v", err)
 		}
-		entity, err = openpgp.CheckDetachedSignature(keyring, signtmpfile, acitmpfile)
+		entity, err = openpgp.CheckDetachedSignature(keyring, acitmpfile, signtmpfile)
 	}
 	if err == io.EOF {
 		// otherwise, the client failure is just "EOF", which is not helpful
