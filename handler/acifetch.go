@@ -23,9 +23,6 @@ func GetPubkeysHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 		return http.StatusNotFound, result
 	}
     
-    //TODO:design save and update interface for pubkeys source
-	r.PubKeysPath = "/home/gopath/src/github.com/containerops/dockyard/data/acipool/pzh/pubkeys"
-
 	files, err := ioutil.ReadDir(r.PubKeysPath)
 	if err != nil {
 		log.Error("[ACI API] Search pubkey file failed: %v", err.Error())
@@ -34,8 +31,8 @@ func GetPubkeysHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 		return http.StatusNotFound, result
 	}
 
-    var pubkey []byte
 	// TODO: considering that one user has multiple pubkeys
+    var pubkey []byte
     if len(files) > 0 {
 		filename := r.PubKeysPath + "/" + files[0].Name()
 		pubkey, err = ioutil.ReadFile(filename)
@@ -79,7 +76,6 @@ func GetACIHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 		imgpath = aci.AciPath
 	}
     
-	//imgpath := setting.ImagePath + "/acipool/" + aciname
 	img, err := ioutil.ReadFile(imgpath)
 	if err != nil {
 		log.Error("[ACI API] Read ACI file failed: %v", err.Error())

@@ -40,11 +40,11 @@ type CompleteMsg struct {
 
 type ImageManifest struct {
 	ACKind        string             `json:"acKind"`
-	ACVersion     string            `json:"acVersion"`
+	ACVersion     string             `json:"acVersion"`
 	Name          string             `json:"name"`
 	Labels        []Label            `json:"labels,omitempty"`
 	App           *App               `json:"app,omitempty"`
-	Annotations   []Annotation        `json:"annotations,omitempty"`
+	Annotations   []Annotation       `json:"annotations,omitempty"`
 	Dependencies  []Dependency       `json:"dependencies,omitempty"`
 	PathWhitelist []string           `json:"pathWhitelist,omitempty"`
 }
@@ -69,14 +69,14 @@ type App struct {
 	Group             string         `json:"group"`
 	SupplementaryGIDs []int          `json:"supplementaryGIDs,omitempty"`
 	WorkingDirectory  string         `json:"workingDirectory,omitempty"`
-	Environment       []EnvironmentVariable    `json:"environment,omitempty"`
+	Environment       []EnvironmentVariable  `json:"environment,omitempty"`
 	MountPoints       []MountPoint   `json:"mountPoints,omitempty"`
 	Ports             []Port         `json:"ports,omitempty"`
 	Isolators         []Isolator     `json:"isolators,omitempty"`
 }
 
 type EventHandler struct {
-	Name string `json:"name"`
+	Name string     `json:"name"`
 	Exec []string   `json:"exec"`
 }
 
@@ -123,10 +123,10 @@ type Annotation struct {
 }
 
 type Dependency struct {
-	ImageName string  `json:"imageName"`
-	ImageID   *Hash        `json:"imageID,omitempty"`
-	Labels    []Label       `json:"labels,omitempty"`
-	Size      uint         `json:"size,omitempty"`
+	ImageName string    `json:"imageName"`
+	ImageID   *Hash     `json:"imageID,omitempty"`
+	Labels    []Label   `json:"labels,omitempty"`
+	Size      uint      `json:"size,omitempty"`
 }
 
 type Hash struct {
@@ -205,7 +205,7 @@ func (r *AciRepository) GetAciByName(namespace string, imgname string) (*AciDeta
 	return nil, fmt.Errorf("can`t get currect aci in %v repository by name:%v ", namespace, imgname)
 }
 
-func (r *AciRepository) PutAciByName(namespace string, imgname string, manifest string, signpath string, acipath string) error {
+func (r *AciRepository) PutAciByName(namespace string, imgname string, signpath string, acipath string, keyspath string) error {
 	key := db.Key("repository", namespace, "")
 	if len(key) <= 0 {
 		return fmt.Errorf("Invalid repository key")
@@ -220,8 +220,7 @@ func (r *AciRepository) PutAciByName(namespace string, imgname string, manifest 
 
     if b, _ := r.AciIsExisted(namespace, imgname); b == true { 
 		for i, aci := range r.Acis {
-		    if aci.ImageName == imgname {
-		        r.Acis[i].Manifest = manifest		    		
+		    if aci.ImageName == imgname {	    		
 		        r.Acis[i].SignPath = signpath
 		        r.Acis[i].AciPath  = acipath
 		    }
@@ -229,11 +228,11 @@ func (r *AciRepository) PutAciByName(namespace string, imgname string, manifest 
 	} else {
     	r.Acis = append(r.Acis, AciDetail{
 			ImageName: imgname,	
-			Manifest : manifest,
 			SignPath : signpath,
 			AciPath  : acipath,
 		    })
 	}
+	r.PubKeysPath = keyspath
 
 	if err := db.Save(r, key); err != nil {
 		return err

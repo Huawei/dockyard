@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"path"
-	"path/filepath"
 
 	"github.com/astaxie/beego/logs"
 	"gopkg.in/macaron.v1"
@@ -32,29 +30,40 @@ func PutPubkeysHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 func GetUploadEndPointHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {     
 	servername := ctx.Params(":servername")
 	namespace := ctx.Params(":namespace")
+
 	acifilename := ctx.Params(":acifile")
-
-	signfilename := acifilename + ".asc"
+	signfilename :=  fmt.Sprintf("%v%v", acifilename, ".asc")
 	imgname := strings.Trim(acifilename, ".aci")
-    acitmpdir := path.Join(setting.ImagePath, "acipool", namespace, "tmp")
 
-	os.RemoveAll(acitmpdir)
-	if err := os.MkdirAll(acitmpdir, os.ModePerm); err != nil {
-		fmt.Fprintf(os.Stderr, "%v", err)
-		result, _ := json.Marshal(map[string]string{})
+	aciPathTmp := fmt.Sprintf("%v/acipool/%v/tmp", setting.ImagePath, namespace)
+	aciPath := fmt.Sprintf("%v/acipool/%v/%v", setting.ImagePath, namespace, imgname)
+
+    //handle tmp dir
+	if err := os.RemoveAll(aciPathTmp); err != nil {
+		log.Error("[ACI API] Remove aciPathTmp failed: %v", err.Error())
+
+		result, _ := json.Marshal(map[string]string{"message": "Remove aciPathTmp failed"})
+		return http.StatusInternalServerError, result
+	} 	
+
+	if err := os.MkdirAll(aciPathTmp, os.ModePerm); err != nil {
+		log.Error("[ACI API] Make aciPathTmp failed: %v", err.Error())
+
+		result, _ := json.Marshal(map[string]string{"message": "Make aciPathTmp failed"})
 		return http.StatusInternalServerError, result
 	}
 
-    acidir := path.Join(setting.ImagePath, "acipool", namespace, imgname)
-	if !utils.IsDirExist(acidir) {
-	    if err := os.MkdirAll(acidir, os.ModePerm); err != nil {
-			fmt.Fprintf(os.Stderr, "%v", err)
-			result, _ := json.Marshal(map[string]string{})
+    //handle user dir
+	if !utils.IsDirExist(aciPath) {
+	    if err := os.MkdirAll(aciPath, os.ModePerm); err != nil {
+			log.Error("[ACI API] Make aciPath failed: %v", err.Error())
+
+			result, _ := json.Marshal(map[string]string{"message": "Make aciPath failed"})
 			return http.StatusInternalServerError, result
 		}
 	}
 
-    prefix := setting.ListenMode + "://" + servername + "/ac-push/" + namespace
+    prefix := fmt.Sprintf("%v://%v/ac-push/%v", setting.ListenMode, servername, namespace)
      
 	endpoint := models.UploadDetails{
 		ACIPushVersion: setting.AcipushVersion,  
@@ -71,14 +80,14 @@ func GetUploadEndPointHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, [
 
 func PutManifestHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {    
     namespace := ctx.Params(":namespace")
-    acitmppath := path.Join(setting.ImagePath, "acipool", namespace, "tmp")
-    manifile := path.Join(acitmppath, "manifest")
+	aciPathTmp := fmt.Sprintf("%v/acipool/%v/tmp", setting.ImagePath, namespace)
+    maniFullnameTmp := fmt.Sprintf("%v/manifest", aciPathTmp)
 
    	data, _ := ctx.Req.Body().Bytes()
-	if err := ioutil.WriteFile(manifile, data, 0777); err != nil {
-		log.Error("[ACI API] Save manifile failed: %v", err.Error())
+	if err := ioutil.WriteFile(maniFullnameTmp, data, 0777); err != nil {
+		log.Error("[ACI API] Save manifileTmp failed: %v", err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Save manifile failed"})
+		result, _ := json.Marshal(map[string]string{"message": "Save manifileTmp failed"})
 		return http.StatusBadRequest, result
 	}
 
@@ -90,14 +99,14 @@ func PutSignHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
     namespace := ctx.Params(":namespace")
 	signfilename := ctx.Params(":acifile")
 
-    acitmppath := path.Join(setting.ImagePath, "acipool", namespace, "tmp")
-	signfile := path.Join(acitmppath, signfilename)
+	aciPathTmp := fmt.Sprintf("%v/acipool/%v/tmp", setting.ImagePath, namespace)
+    signFullnameTmp := fmt.Sprintf("%v/%v", aciPathTmp, signfilename)
 
 	data, _ := ctx.Req.Body().Bytes()
-	if err := ioutil.WriteFile(signfile, data, 0777); err != nil {
-		log.Error("[ACI API] Save signaturefile failed: %v", err.Error())
+	if err := ioutil.WriteFile(signFullnameTmp, data, 0777); err != nil {
+		log.Error("[ACI API] Save signaturefileTmp failed: %v", err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Save signaturefile failed"})
+		result, _ := json.Marshal(map[string]string{"message": "Save signaturefileTmp failed"})
 		return http.StatusBadRequest, result
 	}
 
@@ -109,14 +118,14 @@ func PutAciHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
     namespace := ctx.Params(":namespace")
 	acifilename := ctx.Params(":acifile")
 
-    acitmppath := path.Join(setting.ImagePath, "acipool", namespace, "tmp")
-	acifile := fmt.Sprintf("%v/%v", acitmppath, acifilename)
+	aciPathTmp := fmt.Sprintf("%v/acipool/%v/tmp", setting.ImagePath, namespace)
+	aciFullnameTmp := fmt.Sprintf("%v/%v", aciPathTmp, acifilename)
 
 	data, _ := ctx.Req.Body().Bytes()   
-	if err := ioutil.WriteFile(acifile, data, 0777); err != nil {
-		log.Error("[ACI API] Save acifile failed: %v", err.Error())
+	if err := ioutil.WriteFile(aciFullnameTmp, data, 0777); err != nil {
+		log.Error("[ACI API] Save acifileTmp failed: %v", err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Save acifile failed"})
+		result, _ := json.Marshal(map[string]string{"message": "Save acifileTmp failed"})
 		return http.StatusBadRequest, result
 	}
 
@@ -140,21 +149,23 @@ func CompleteHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 		return http.StatusBadRequest, result
 	}
     
-    var result []byte
-
-	httpstatus, checkresult, err := UploadCheck(namespace, imgname, log)
+    //aci image check
+	httpstatus, checkresult, err := ImageCheck(namespace, imgname, log)
 	if err != nil {
-  		log.Error("[ACI API] UploadCheck failed: %v", err.Error())
+  		log.Error("[ACI API] Aci image check failed: %v", err.Error())
 
-        result, _ = ReturnFail(msg.Reason, string(checkresult), body)
+        result, _ := FailMsg(msg.Reason, string(checkresult), body)
+        return httpstatus, result
 	} else {
-        result, _ = ReturnSuccuss()   
+        result, _ := SuccMsg()   
+        return httpstatus, result
 	} 
 
-	return httpstatus, result
+ 	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
 }
 
-func ReturnFail(Reason string, checkresult string, body []byte) ([]byte, error) {  
+func FailMsg(Reason string, checkresult string, body []byte) ([]byte, error) {  
     failmsg := models.CompleteMsg{
 		Success:      false,
 		Reason:       Reason,
@@ -164,7 +175,7 @@ func ReturnFail(Reason string, checkresult string, body []byte) ([]byte, error) 
 	return result, nil
 }
 
-func ReturnSuccuss() ([]byte, error) {  
+func SuccMsg() ([]byte, error) {  
 	succmsg := models.CompleteMsg{
 		Success: true,
 	}
@@ -172,173 +183,194 @@ func ReturnSuccuss() ([]byte, error) {
 	return result, nil
 }
 
-func UploadCheck(namespace string, imgname string, log *logs.BeeLogger) (int, []byte, error) {
-	acidir   := path.Join(setting.ImagePath, "acipool", namespace, imgname)
-	signpath := path.Join(acidir, imgname) + ".aci.asc"
-	acipath  := path.Join(acidir, imgname) + ".aci"	
+func ImageCheck(namespace string, imgname string, log *logs.BeeLogger) (int, []byte, error) {
+	aciPathTmp := fmt.Sprintf("%v/acipool/%v/tmp", setting.ImagePath, namespace)
+	aciPath := fmt.Sprintf("%v/acipool/%v/%v", setting.ImagePath, namespace, imgname)
 
-    acitmpdir := path.Join(setting.ImagePath, "acipool", namespace, "tmp")
-    manitmppath := path.Join(acitmpdir, "manifest")
-	signtmppath := path.Join(acitmpdir, imgname) + ".aci.asc"
-	acitmppath  := path.Join(acitmpdir, imgname) + ".aci"
+    maniFullnameTmp := fmt.Sprintf("%v/manifest", aciPathTmp)
+	signFullnameTmp := fmt.Sprintf("%v/%v%v", aciPathTmp, imgname, ".aci.asc")
+	aciFullnameTmp  := fmt.Sprintf("%v/%v%v", aciPathTmp, imgname, ".aci")
 
-	imagefullname := fmt.Sprintf("%v/%v/%v", setting.Domains, namespace, strings.Split(imgname, "-")[0])
+	signFullname := fmt.Sprintf("%v/%v%v", aciPath, imgname, ".aci.asc")
+	aciFullname  := fmt.Sprintf("%v/%v%v", aciPath, imgname, ".aci")
+	acifromPushname := fmt.Sprintf("%v/%v/%v", setting.Domains, namespace, strings.Split(imgname, "-")[0])
 
-    manifile, err := ioutil.ReadFile(manitmppath)
-	if err != nil {
-		log.Error("[ACI API] opening manifile file failed: %v", err.Error())
+	keyspath := fmt.Sprintf("%v/acipool/%v/pubkeys", setting.ImagePath, namespace)
 
-		result, _ := json.Marshal(map[string]string{"message": "Read manifile failed"})
-		return http.StatusNotFound, result, err
-	}
+    //image verification
+    if err := ImageVerification(maniFullnameTmp, signFullnameTmp, aciFullnameTmp, acifromPushname, keyspath); err != nil {
+		if err := os.RemoveAll(aciPathTmp); err != nil {
+			log.Error("[ACI API] Remove aciPathTmp failed: %v", err.Error())
 
-    signtmpfile, err := os.Open(signtmppath)
-	if err != nil {
-		log.Error("[ACI API] Read signtmpfile failed: %v", err.Error())
-		
-		result, _ := json.Marshal(map[string]string{"message": "Read signtmpfile failed"})
-		return http.StatusNotFound, result, err
-	}
-
-    acitmpfile, err := os.Open(acitmppath)
-	if err != nil {
-		log.Error("[ACI API] Read acitmpfile failed: %v", err.Error())
-		
-		result, _ := json.Marshal(map[string]string{"message": "Read acitmpfile failed"})
-		return http.StatusNotFound, result, err
-	}
-
-	keyspath := "/home/gopath/src/github.com/containerops/dockyard/data/acipool/pzh/pubkeys/c04fc081e47bf07ef67b3f00ccd7a3a7cca47d20"
-
-    if _, err := AciVerification(keyspath, manifile, acitmpfile, signtmpfile, imagefullname); err != nil {
-	    log.Error("[ACI API] Aci Verification failed : %v", err.Error())
-
-		if err := os.RemoveAll(acitmpdir); err != nil {
-			log.Error("[ACI API] Remove acitmpdir failed: %v", err.Error())
-
-			result, _ := json.Marshal(map[string]string{"message": "Remove acitmpdir failed"})
+			result, _ := json.Marshal(map[string]string{"message": "Remove aciPathTmp failed"})
 			return http.StatusBadRequest, result, err
 		} 	
+
+	    log.Error("[ACI API] Aci Verification failed : %v", err.Error())
 
 	    result, _ := json.Marshal(map[string]string{"message": "Aci Verification failed"})
 		return http.StatusBadRequest, result, err		
     } 
 
-	//save to redis
+	//save to db
 	r := new(models.AciRepository)
-    if err := r.PutAciByName(namespace, imgname, string(manifile), signpath, acipath); err != nil {
+    if err := r.PutAciByName(namespace, imgname, signFullname, aciFullname, keyspath); err != nil {
         log.Error("[ACI API] Save aci %v details to %v repository failed: %v", imgname, namespace, err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Save aci details failed"})
 		return http.StatusNotFound, result, err
     }
 
-	//delete acidir and manifest and then rename acitmpdir to right dir name
-    if err := os.RemoveAll(acidir); err != nil {
-		log.Error("[ACI API] Remove acidir failed: %v", err.Error())
+    if err := MoveAcifiles(signFullname, aciFullname, signFullnameTmp, aciFullnameTmp); err != nil {
+ 		log.Error("[ACI API] Move Acifiles failed: %v", err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Remove acidir failed"})
+		result, _ := json.Marshal(map[string]string{"message": "Move Acifiles failed"})
+		return http.StatusBadRequest, result, err   	
+    }
+ 
+    //remove aci tmp dir
+    if err := os.RemoveAll(aciPathTmp); err != nil {
+		log.Error("[ACI API] Remove aciPathTmp failed: %v", err.Error())
+
+		result, _ := json.Marshal(map[string]string{"message": "Remove aciPathTmp failed"})
 		return http.StatusBadRequest, result, err
 	}  
 
-    if err := os.Remove(manitmppath); err != nil {
-		log.Error("[ACI API] Remove manitmppath failed: %v", err.Error())
-
-		result, _ := json.Marshal(map[string]string{"message": "Remove manitmppath failed"})
-		return http.StatusBadRequest, result, err
-	}  	
-
-	if err := os.Rename(acitmpdir, acidir); err != nil {
-		log.Error("[ACI API] Read manifest failed: %v", err.Error())
-
-		result, _ := json.Marshal(map[string]string{"message": "Remove acidir failed"})
-		return http.StatusBadRequest, result, err
-	}
-
- 	result, _ := json.Marshal(map[string]string{})
+	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result, nil
 }  
 
-func AciVerification(keypath string, manifile []byte, acitmpfile *os.File, signtmpfile *os.File, imagefullname string) (*openpgp.Entity, error) {
+func ImageVerification(maniFullnameTmp string, signFullnameTmp string, aciFullnameTmp string, acifromPushname string, keyspath string) error {
+    manifileTmp, err := ioutil.ReadFile(maniFullnameTmp)
+	if err != nil {
+		return fmt.Errorf("opening manifileTmp file failed: %v", err.Error())
+	}
+
+    signfileTmp, err := os.Open(signFullnameTmp)
+	if err != nil {
+		return fmt.Errorf("opening signfileTmp file failed: %v", err.Error())
+	}
+	defer signfileTmp.Close()
+
+    acifileTmp, err := os.Open(aciFullnameTmp)
+	if err != nil {
+		return fmt.Errorf("opening acifileTmp file failed: %v", err.Error())
+	}
+	defer acifileTmp.Close()
+
     //check validity of manifest
 	manifest := &models.ImageManifest{}
-	err := json.Unmarshal(manifile, manifest)
-	if err != nil {
-		return nil, err
+	if err := json.Unmarshal(manifileTmp, manifest); err != nil {
+		return err
 	}
 
 	if manifest.ACKind != "ImageManifest" {
-		return nil, fmt.Errorf("missing or bad ACKind (must be %v)", "ImageManifest")
+		return fmt.Errorf("missing or bad ACKind, must be %v", "ImageManifest")
 	}
 	if manifest.ACVersion == "" {
-		return nil, fmt.Errorf("acVersion must be set")
+		return fmt.Errorf("acVersion must be set")
 	}
 	if string(manifest.Name) == "" {
-		return nil, fmt.Errorf("name must be set")
+		return fmt.Errorf("name must be set")
 	}
 
-	if imagefullname != "" && string(manifest.Name) != imagefullname {
-		return nil, fmt.Errorf("error when reading the app name: %q expected but %q found",
-				imagefullname, string(manifest.Name))
-	}
-
-	if _, err := signtmpfile.Seek(0, 0); err != nil {
-		return nil, fmt.Errorf("error seeking ACI file: %v", err)
-	}
-	if _, err := acitmpfile.Seek(0, 0); err != nil {
-		return nil, fmt.Errorf("error seeking signature file: %v", err)
+	if acifromPushname != "" && string(manifest.Name) != acifromPushname {
+		return fmt.Errorf("error when reading the app name: %q expected but %q found",
+				acifromPushname, string(manifest.Name))
 	}
 
     //load keyring
-    var keyring openpgp.EntityList
+	files, err := ioutil.ReadDir(keyspath)
+	if err != nil {
+		return fmt.Errorf("Search pubkey file failed: %v", err.Error())
+	}
+
+	var keyring openpgp.EntityList
 	trustedKeys := make(map[string]*openpgp.Entity)
 
-	trustedKey, err := os.Open(keypath)
-	if err != nil {
-		return nil, err
-	}
+    for _, file := range files {        
+        keypath :=  fmt.Sprintf("%v/%v", keyspath, file.Name())
+		pubKeyfile, err := os.Open(keypath)
+		if err != nil {
+			return err
+		}
+		defer pubKeyfile.Close()
+		keyList, err := openpgp.ReadArmoredKeyRing(pubKeyfile)
+		if err != nil {
+			return err
+		}
+		if len(keyList) < 1 {
+			return fmt.Errorf("missing opengpg entity")
+		}
 
-	defer trustedKey.Close()
+		fingerprint := fmt.Sprintf("%x", keyList[0].PrimaryKey.Fingerprint)
+		if fingerprint != file.Name() {
+			return fmt.Errorf("fingerprint mismatch: %q:%q", file.Name(), fingerprint)
+		}
 
-	entityList, err := openpgp.ReadArmoredKeyRing(trustedKey)
-	if err != nil {
-		return nil, err
-	}
-	if len(entityList) < 1 {
-		return nil, fmt.Errorf("missing opengpg entity")
-	}
-	fingerprint := fingerprintToFilename(entityList[0].PrimaryKey.Fingerprint)
-	keyFile := filepath.Base(trustedKey.Name())
-	if fingerprint != keyFile {
-		return nil, fmt.Errorf("fingerprint mismatch: %q:%q", keyFile, fingerprint)
-	}
-
-	trustedKeys[fingerprintToFilename(entityList[0].PrimaryKey.Fingerprint)] = entityList[0]
+		trustedKeys[fingerprint] = keyList[0]    	
+    }
 
 	for _, v := range trustedKeys {
 		keyring = append(keyring, v)
 	}
 
-    //check keyring asc aci
-	entity, err := openpgp.CheckArmoredDetachedSignature(keyring, acitmpfile, signtmpfile)
+	//check keyring asc aci
+	if _, err := signfileTmp.Seek(0, 0); err != nil {
+		return fmt.Errorf("error seeking ACI file: %v", err)
+	}
+	if _, err := acifileTmp.Seek(0, 0); err != nil {
+		return fmt.Errorf("error seeking signature file: %v", err)
+	}
+
+	_, err = openpgp.CheckArmoredDetachedSignature(keyring, acifileTmp, signfileTmp)
 	if err == io.EOF {
-		// When the signature is binary instead of armored, the error is io.EOF.
-		// Let's try with binary signatures as well
-		if _, err := signtmpfile.Seek(0, 0); err != nil {
-			return nil, fmt.Errorf("error seeking ACI file: %v", err)
+		if _, err := signfileTmp.Seek(0, 0); err != nil {
+			return fmt.Errorf("error seeking ACI file: %v", err)
 		}
-		if _, err := acitmpfile.Seek(0, 0); err != nil {
-			return nil, fmt.Errorf("error seeking signature file: %v", err)
+		if _, err := acifileTmp.Seek(0, 0); err != nil {
+			return fmt.Errorf("error seeking signature file: %v", err)
 		}
-		entity, err = openpgp.CheckDetachedSignature(keyring, acitmpfile, signtmpfile)
+
+		_, err = openpgp.CheckDetachedSignature(keyring, acifileTmp, signfileTmp)
 	}
 	if err == io.EOF {
-		// otherwise, the client failure is just "EOF", which is not helpful
-		return nil, fmt.Errorf("keystore: no valid signatures found in signature file")
+		return fmt.Errorf("no valid signatures found in signature file")
 	}
-    return entity, err
+    return nil
 }
 
-func fingerprintToFilename(fp [20]byte) string {
-	return fmt.Sprintf("%x", fp)
+func MoveAcifiles(signFullname string, aciFullname string, signFullnameTmp string, aciFullnameTmp string) error {
+    //orverride signfile
+	signfile, err := os.OpenFile(signFullname, os.O_WRONLY|os.O_CREATE, os.ModePerm); 
+	if err != nil {
+		return fmt.Errorf("opening signfile failed: %v", err.Error())
+	}  
+
+    signfileTmp, err := os.Open(signFullnameTmp); 
+    if err != nil {
+		return fmt.Errorf("opening signfileTmp failed: %v", err.Error())
+	}
+	defer signfileTmp.Close()
+
+    if _, err := io.Copy(signfile, signfileTmp); err != nil {
+		return fmt.Errorf("orverride signfile failed: %v", err.Error())
+    }
+
+   //orverride acifile
+	acifile, err := os.OpenFile(aciFullname, os.O_WRONLY|os.O_CREATE, os.ModePerm); 
+	if err != nil {
+		return fmt.Errorf("opening signfile failed: %v", err.Error())
+	}  
+
+    acifileTmp, err := os.Open(aciFullnameTmp); 
+    if err != nil {
+		return fmt.Errorf("opening acifileTmp failed: %v", err.Error())
+	}
+	defer acifileTmp.Close()
+    
+    if _, err := io.Copy(acifile, acifileTmp); err != nil {
+		return fmt.Errorf("opening acifile failed: %v", err.Error())  
+    }
+    return nil
 }
