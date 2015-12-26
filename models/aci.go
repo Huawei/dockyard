@@ -40,7 +40,7 @@ type CompleteMsg struct {
 
 type ImageManifest struct {
 	ACKind        string             `json:"acKind"`
-	ACVersion     Version            `json:"acVersion"`
+	ACVersion     string            `json:"acVersion"`
 	Name          string             `json:"name"`
 	Labels        []Label            `json:"labels,omitempty"`
 	App           *App               `json:"app,omitempty"`

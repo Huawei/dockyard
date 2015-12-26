@@ -33,9 +33,9 @@ func GetUploadEndPointHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, [
 	servername := ctx.Params(":servername")
 	namespace := ctx.Params(":namespace")
 	acifilename := ctx.Params(":acifile")
+
 	signfilename := acifilename + ".asc"
 	imgname := strings.Trim(acifilename, ".aci")
-
     acitmpdir := path.Join(setting.ImagePath, "acipool", namespace, "tmp")
 
 	os.RemoveAll(acitmpdir)
@@ -71,7 +71,6 @@ func GetUploadEndPointHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, [
 
 func PutManifestHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {    
     namespace := ctx.Params(":namespace")
-
     acitmppath := path.Join(setting.ImagePath, "acipool", namespace, "tmp")
     manifile := path.Join(acitmppath, "manifest")
 
@@ -209,10 +208,10 @@ func UploadCheck(namespace string, imgname string, log *logs.BeeLogger) (int, []
 		return http.StatusNotFound, result, err
 	}
 
-	keyspath := "/home/gopath/src/github.com/containerops/dockyard/data/acipool/pzh/pubkeys/pubkeys.gpg"
+	keyspath := "/home/gopath/src/github.com/containerops/dockyard/data/acipool/pzh/pubkeys/32d9a2b796e8496197f761b10a81dd80f8bdd769"
 
     if _, err := AciVerification(keyspath, manifile, signtmpfile, acitmpfile); err != nil {
-	    log.Error("[ACI API] Aci Verification failed: %v", err.Error())
+	    log.Error("[ACI API] Aci Verification failed : %v", err.Error())
 
 		if err := os.RemoveAll(acitmpdir); err != nil {
 			log.Error("[ACI API] Remove acitmpdir failed: %v", err.Error())
@@ -268,19 +267,17 @@ func AciVerification(keypath string, manifile []byte, signtmpfile *os.File, acit
 		return nil, err
 	}
 
-	version := models.Version{}
-
-	if manifest.ACKind != "ImageManifestKind" {
-		return nil, fmt.Errorf("missing or bad ACKind (must be %v)", "ImageManifestKind")
+	if manifest.ACKind != "ImageManifest" {
+		return nil, fmt.Errorf("missing or bad ACKind (must be %v)", "ImageManifest")
 	}
-	if manifest.ACVersion == version {
+	if manifest.ACVersion == "" {
 		return nil, fmt.Errorf("acVersion must be set")
 	}
 	if string(manifest.Name) == "" {
 		return nil, fmt.Errorf("name must be set")
 	}
 
-    appName := "containerops.me/pzh/etcd"
+    appName := "containerops.me/etcd"
 
 	if appName != "" && string(manifest.Name) != appName {
 		return nil, fmt.Errorf("error when reading the app name: %q expected but %q found",
@@ -302,7 +299,9 @@ func AciVerification(keypath string, manifile []byte, signtmpfile *os.File, acit
 	if err != nil {
 		return nil, err
 	}
+
 	defer trustedKey.Close()
+
 	entityList, err := openpgp.ReadArmoredKeyRing(trustedKey)
 	if err != nil {
 		return nil, err
