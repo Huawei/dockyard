@@ -2,10 +2,11 @@ package mysqldriver
 
 import (
 	"fmt"
-	. "github.com/containerops/dockyard/oss/api.v1/meta"
 	"sync"
 	"testing"
 	"time"
+
+	. "github.com/containerops/dockyard/oss/api.v1/meta"
 )
 
 var metaDriver MetaDriver

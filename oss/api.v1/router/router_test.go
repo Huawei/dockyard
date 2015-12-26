@@ -2,10 +2,11 @@ package router
 
 import (
 	"bytes"
-	"github.com/containerops/dockyard/oss/utils"
 	"net/http"
 	"sync"
 	"testing"
+
+	"github.com/containerops/dockyard/oss/utils"
 )
 
 var (

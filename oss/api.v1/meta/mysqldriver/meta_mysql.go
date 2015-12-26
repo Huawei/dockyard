@@ -5,11 +5,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	. "github.com/containerops/dockyard/oss/api.v1/meta"
-	"github.com/containerops/dockyard/oss/logs"
-	_ "github.com/go-sql-driver/mysql"
 	"strings"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql"
+
+	. "github.com/containerops/dockyard/oss/api.v1/meta"
+	"github.com/containerops/dockyard/oss/logs"
 )
 
 const (

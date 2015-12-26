@@ -2,9 +2,10 @@ package chunkserver
 
 import (
 	"fmt"
-	"github.com/containerops/dockyard/oss/logs"
 	"sync"
 	"time"
+
+	"github.com/containerops/dockyard/oss/logs"
 )
 
 type ChunkServerConnectionPool struct {

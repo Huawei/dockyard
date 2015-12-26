@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"io"
+
 	"github.com/containerops/dockyard/oss/api.v1/meta"
 	"github.com/containerops/dockyard/oss/logs"
-	"io"
 )
 
 const (

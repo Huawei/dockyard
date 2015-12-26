@@ -2,10 +2,11 @@ package chunkserver
 
 import (
 	"errors"
-	"github.com/containerops/dockyard/oss/api.v1/pools"
-	"github.com/containerops/dockyard/oss/logs"
 	"sync"
 	"time"
+
+	"github.com/containerops/dockyard/oss/api.v1/pools"
+	"github.com/containerops/dockyard/oss/logs"
 )
 
 var (
