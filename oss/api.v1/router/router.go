@@ -19,6 +19,7 @@ import (
 	"github.com/containerops/dockyard/oss/api.v1/meta/mysqldriver"
 	"github.com/containerops/dockyard/oss/logs"
 	"github.com/containerops/dockyard/oss/utils"
+	"github.com/containerops/wrench/setting"
 )
 
 const (
@@ -40,6 +41,7 @@ type Server struct {
 	masterPort        string
 	Ip                string
 	Port              int
+	HttpsPort         int
 	router            *mux.Router
 	running           bool
 	mu                sync.Mutex
@@ -57,11 +59,12 @@ type Server struct {
 	metaDatabase      string
 }
 
-func NewServer(masterUrl, ip string, port int, num int, metadbIp string, metadbPort int, metadbUser, metadbPassword, metaDatabase string, connPoolCapacity int) *Server {
+func NewServer(masterUrl, ip string, port int, httpsport int, num int, metadbIp string, metadbPort int, metadbUser, metadbPassword, metaDatabase string, connPoolCapacity int) *Server {
 	return &Server{
 		masterUrl:         masterUrl,
 		Ip:                ip,
 		Port:              port,
+		HttpsPort:         httpsport,
 		fids:              chunkserver.NewFids(),
 		chunkServerGroups: nil,
 		connectionPools:   nil,
@@ -967,6 +970,13 @@ func (s *Server) Run() error {
 	s.metaDriver = new(mysqldriver.MysqlDriver)
 
 	http.Handle("/api/", s.router)
-	log.Infof("listen: %s:%d", s.Ip, s.Port)
-	return http.ListenAndServe(s.Ip+":"+strconv.Itoa(s.Port), nil)
+
+	switch setting.ListenMode {
+	case "https":
+		log.Infof("API listen HTTPS: %s:%d", s.Ip, s.HttpsPort)
+		return http.ListenAndServeTLS(s.Ip+":"+strconv.Itoa(s.HttpsPort), setting.HttpsCertFile, setting.HttpsKeyFile, nil)
+	default:
+		log.Infof("API listen HTTP: %s:%d", s.Ip, s.Port)
+		return http.ListenAndServe(s.Ip+":"+strconv.Itoa(s.Port), nil)
+	}
 }

@@ -3,6 +3,7 @@ package oss
 import (
 	"bytes"
 	"crypto/md5"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,6 +15,10 @@ import (
 
 	"github.com/containerops/dockyard/backend/drivers"
 	"github.com/containerops/wrench/setting"
+)
+
+const (
+	APIaddress = "0.0.0.0"
 )
 
 type Fileinfo struct {
@@ -109,7 +114,13 @@ func osssave(filepath string) error {
 }
 
 func ossgetfileinfo(filepath string) error {
-	apiserveraddr := fmt.Sprintf("http://0.0.0.0:%v", setting.APIPort)
+	var apiserveraddr string
+	switch setting.ListenMode {
+	case "https":
+		apiserveraddr = fmt.Sprintf("https://%v:%v", APIaddress, setting.APIHttpsPort)
+	default:
+		apiserveraddr = fmt.Sprintf("http://%v:%v", APIaddress, setting.APIPort)
+	}
 	header := make(map[string][]string, 0)
 	header["Path"] = []string{filepath}
 	result, statusCode, err := call("GET", apiserveraddr, "/api/v1/fileinfo", nil, header)
@@ -124,7 +135,13 @@ func ossgetfileinfo(filepath string) error {
 }
 
 func ossdownload(tag string, path string) error {
-	apiserveraddr := fmt.Sprintf("http://0.0.0.0:%v", setting.APIPort)
+	var apiserveraddr string
+	switch setting.ListenMode {
+	case "https":
+		apiserveraddr = fmt.Sprintf("https://%v:%v", APIaddress, setting.APIHttpsPort)
+	default:
+		apiserveraddr = fmt.Sprintf("http://%v:%v", APIaddress, setting.APIPort)
+	}
 	// get file information
 	header := make(map[string][]string, 0)
 	header["Path"] = []string{tag}
@@ -180,7 +197,13 @@ func ossdownload(tag string, path string) error {
 }
 
 func ossdel(filepath string) error {
-	apiserveraddr := fmt.Sprintf("http://0.0.0.0:%v", setting.APIPort)
+	var apiserveraddr string
+	switch setting.ListenMode {
+	case "https":
+		apiserveraddr = fmt.Sprintf("https://%v:%v", APIaddress, setting.APIHttpsPort)
+	default:
+		apiserveraddr = fmt.Sprintf("http://%v:%v", APIaddress, setting.APIPort)
+	}
 	header := make(map[string][]string, 0)
 	header["Path"] = []string{filepath}
 
@@ -198,6 +221,15 @@ func ossdel(filepath string) error {
 // Call func for http request
 func call(method, baseUrl, path string, body io.Reader, headers map[string][]string) ([]byte, int, error) {
 	client := &http.Client{}
+	switch setting.ListenMode {
+	case "https":
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client = &http.Client{Transport: tr}
+	default:
+	}
+
 	req, err := http.NewRequest(method, baseUrl+path, body)
 	if err != nil {
 		return nil, 408, err
@@ -228,7 +260,13 @@ func call(method, baseUrl, path string, body io.Reader, headers map[string][]str
 }
 
 func postFile(path string, data []byte, index int, begin int64, end int64, isLast bool) error {
-	apiserveraddr := fmt.Sprintf("http://0.0.0.0:%v", setting.APIPort)
+	var apiserveraddr string
+	switch setting.ListenMode {
+	case "https":
+		apiserveraddr = fmt.Sprintf("https://%v:%v", APIaddress, setting.APIHttpsPort)
+	default:
+		apiserveraddr = fmt.Sprintf("http://%v:%v", APIaddress, setting.APIPort)
+	}
 	header := make(map[string][]string)
 	header["Path"] = []string{path}
 	header["Fragment-Index"] = []string{fmt.Sprintf("%v", index)}

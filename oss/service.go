@@ -175,7 +175,7 @@ func (this *oss) Startservers() error {
 
 func (this *oss) StartAPI() error {
 	metaport, _ := strconv.Atoi(this.cm.metaPort)
-	server := router.NewServer(this.cm.serverHost, "0.0.0.0", setting.APIPort, this.cm.limitCSNum, this.cm.metaHost, metaport, this.cm.user, this.cm.passwd, "metadb", this.cm.connPoolCapacity)
+	server := router.NewServer(this.cm.serverHost, "0.0.0.0", setting.APIPort, setting.APIHttpsPort, this.cm.limitCSNum, this.cm.metaHost, metaport, this.cm.user, this.cm.passwd, "metadb", this.cm.connPoolCapacity)
 	log.Infof("imageserver start...")
 	go func() {
 		if err := server.Run(); err != nil {
