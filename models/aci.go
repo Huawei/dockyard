@@ -36,8 +36,7 @@ type CompleteMsg struct {
 	ServerReason string `json:"server_reason,omitempty"`
 }
 
-
-
+//aci manifest struct
 type ImageManifest struct {
 	ACKind        string             `json:"acKind"`
 	ACVersion     string             `json:"acVersion"`
@@ -134,7 +133,6 @@ type Hash struct {
 	Val string
 }
 
-
 type TemplateDesc struct {
 	NameSpace  string
 	AciName    string
@@ -143,6 +141,7 @@ type TemplateDesc struct {
 }
 
 var TemplatePath string = "views/aci/index.html"
+var AcipathExist bool = true
 
 func (r *AciRepository) GetRepository(namespace string) error {
 	key := db.Key("repository", namespace, "")

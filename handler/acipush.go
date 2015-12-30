@@ -37,29 +37,42 @@ func GetUploadEndPointHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, [
 
 	aciPathTmp := fmt.Sprintf("%v/acipool/%v/tmp", setting.ImagePath, namespace)
 	aciPath := fmt.Sprintf("%v/acipool/%v/%v", setting.ImagePath, namespace, imgname)
+	pubkeysPath := fmt.Sprintf("%v/acipool/%v/pubkeys", setting.ImagePath, namespace)
 
     //handle tmp dir
 	if err := os.RemoveAll(aciPathTmp); err != nil {
 		log.Error("[ACI API] Remove aciPathTmp failed: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Remove aciPathTmp failed"})
-		return http.StatusInternalServerError, result
+		return http.StatusBadRequest, result
 	} 	
 
 	if err := os.MkdirAll(aciPathTmp, os.ModePerm); err != nil {
 		log.Error("[ACI API] Make aciPathTmp failed: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Make aciPathTmp failed"})
-		return http.StatusInternalServerError, result
+		return http.StatusBadRequest, result
 	}
 
-    //handle user dir
+    //handle aci dir
 	if !utils.IsDirExist(aciPath) {
 	    if err := os.MkdirAll(aciPath, os.ModePerm); err != nil {
 			log.Error("[ACI API] Make aciPath failed: %v", err.Error())
 
 			result, _ := json.Marshal(map[string]string{"message": "Make aciPath failed"})
-			return http.StatusInternalServerError, result
+			return http.StatusBadRequest, result
+		}
+		//acipath will be deleted in the end by this mark, default true
+		models.AcipathExist = false
+	}
+
+    //handle pubkeys dir
+	if !utils.IsDirExist(pubkeysPath) {
+	    if err := os.MkdirAll(pubkeysPath, os.ModePerm); err != nil {
+			log.Error("[ACI API] Make pubkeysPath failed: %v", err.Error())
+
+			result, _ := json.Marshal(map[string]string{"message": "Make pubkeysPath failed"})
+			return http.StatusBadRequest, result
 		}
 	}
 
@@ -140,7 +153,7 @@ func CompleteHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
     body, err := ctx.Req.Body().Bytes()
     if err != nil {
 		result, _ := json.Marshal(map[string]string{})
-		return http.StatusInternalServerError, result
+		return http.StatusBadRequest, result
 	}
 
 	msg := models.CompleteMsg{}
@@ -199,12 +212,13 @@ func ImageCheck(namespace string, imgname string, log *logs.BeeLogger) (int, []b
 
     //image verification
     if err := ImageVerification(maniFullnameTmp, signFullnameTmp, aciFullnameTmp, acifromPushname, keyspath); err != nil {
-		if err := os.RemoveAll(aciPathTmp); err != nil {
-			log.Error("[ACI API] Remove aciPathTmp failed: %v", err.Error())
+	    //remove aci tmp and new created dir
+	    if err := RemoveDir(aciPathTmp, aciPath); err != nil {
+	 		log.Error("[ACI API] Remove Aci dir failed: %v", err.Error())
 
-			result, _ := json.Marshal(map[string]string{"message": "Remove aciPathTmp failed"})
-			return http.StatusBadRequest, result, err
-		} 	
+			result, _ := json.Marshal(map[string]string{"message": "Remove Aci dir failed"})
+			return http.StatusBadRequest, result, err   	
+	    }
 
 	    log.Error("[ACI API] Aci Verification failed : %v", err.Error())
 
@@ -221,19 +235,20 @@ func ImageCheck(namespace string, imgname string, log *logs.BeeLogger) (int, []b
 		return http.StatusNotFound, result, err
     }
 
+    //copy aci files
     if err := MoveAcifiles(signFullname, aciFullname, signFullnameTmp, aciFullnameTmp); err != nil {
  		log.Error("[ACI API] Move Acifiles failed: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Move Acifiles failed"})
 		return http.StatusBadRequest, result, err   	
     }
- 
-    //remove aci tmp dir
+
+	//remove aci tmp dir
     if err := os.RemoveAll(aciPathTmp); err != nil {
-		log.Error("[ACI API] Remove aciPathTmp failed: %v", err.Error())
+ 		log.Error("[ACI API] Remove aciPathTmp failed: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Remove aciPathTmp failed"})
-		return http.StatusBadRequest, result, err
+		return http.StatusBadRequest, result, err   
 	}  
 
 	result, _ := json.Marshal(map[string]string{})
@@ -371,6 +386,23 @@ func MoveAcifiles(signFullname string, aciFullname string, signFullnameTmp strin
     
     if _, err := io.Copy(acifile, acifileTmp); err != nil {
 		return fmt.Errorf("override acifile failed: %v", err.Error())  
+    }
+    return nil
+}
+
+func RemoveDir(aciPathTmp string, aciPath string) error {
+	//remove aci tmp dir
+    if err := os.RemoveAll(aciPathTmp); err != nil {
+		return fmt.Errorf("Remove aciPathTmp failed: %v", err.Error())  
+	}  
+
+    //remove new created aci dir
+    if !models.AcipathExist {
+    	//refresh mark to default
+        models.AcipathExist = true
+	    if err := os.RemoveAll(aciPath); err != nil {
+		    return fmt.Errorf("Remove new created aciPath failed: %v", err.Error())  
+		}  	    	
     }
     return nil
 }
