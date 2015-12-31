@@ -2,8 +2,8 @@
 <html lang="en">
     <head>
         <meta charset="utf-8"/>
-        <meta name="ac-discovery" content="{{.ServerName}} {{.ListenMode}}://{{.ServerName}}/ac-fetch/{{.NameSpace}}/{{.AciName}}-{version}-{os}-{arch}.{ext}"/>
-        <meta name="ac-discovery-pubkeys" content="{{.ServerName}} {{.ListenMode}}://{{.ServerName}}/{{.NameSpace}}/pubkeys.gpg">
-        <meta name="ac-push-discovery" content="{{.ServerName}} {{.ListenMode}}://{{.ServerName}}/ac-push/uploaded/{name}-{version}-{os}-{arch}.{ext}"/>
+        <meta name="ac-discovery" content="{{.Domains}} {{.ListenMode}}://{{.Domains}}/ac-fetch/{{.NameSpace}}/{{.AciName}}-{version}-{os}-{arch}.{ext}"/>
+        <meta name="ac-discovery-pubkeys" content="{{.Domains}} {{.ListenMode}}://{{.Domains}}/{{.NameSpace}}/pubkeys.gpg">
+        <meta name="ac-push-discovery" content="{{.Domains}} {{.ListenMode}}://{{.Domains}}/ac-push/uploaded/{name}-{version}-{os}-{arch}.{ext}"/>
     </head>
 </html>
