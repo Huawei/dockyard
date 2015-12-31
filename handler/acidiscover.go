@@ -27,7 +27,7 @@ func DiscoveryACIHandler(ctx *macaron.Context, log *logs.BeeLogger) {
 	err = t.Execute(ctx.Resp, models.TemplateDesc{
 		NameSpace:  namespace,
 		AciName:    aciname,
-		ServerName: setting.Domains,
+		Domains:    setting.Domains,
 		ListenMode: setting.ListenMode,
 	})
 	if err != nil {
