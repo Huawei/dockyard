@@ -32,14 +32,14 @@ func SetDockyardMacaron(m *macaron.Macaron) {
 	//Setting Middleware
 	middleware.SetMiddlewares(m)
 
-	//Setting Router
-	router.SetRouters(m)
-
 	//Start Object Storage Service if sets in conf
 	if strings.EqualFold(setting.BackendDriver, "oss") {
 		ossobj := oss.Instance()
 		ossobj.StartOSS()
 	}
+
+	//Setting Router
+	router.SetRouters(m)
 
 	//Create acpool to store aci/asc/pubkey
 	err := func() error {

@@ -123,7 +123,7 @@ func ossgetfileinfo(filepath string) error {
 	}
 	header := make(map[string][]string, 0)
 	header["Path"] = []string{filepath}
-	result, statusCode, err := call("GET", apiserveraddr, "/api/v1/fileinfo", nil, header)
+	result, statusCode, err := call("GET", apiserveraddr, "/oss/api/fileinfo", nil, header)
 	if statusCode != http.StatusOK {
 		return fmt.Errorf("statusCode error: %d", statusCode, ", error: ", err)
 	}
@@ -145,7 +145,7 @@ func ossdownload(tag string, path string) error {
 	// get file information
 	header := make(map[string][]string, 0)
 	header["Path"] = []string{tag}
-	result, statusCode, err := call("GET", apiserveraddr, "/api/v1/fileinfo", nil, header)
+	result, statusCode, err := call("GET", apiserveraddr, "/oss/api/fileinfo", nil, header)
 	if statusCode != http.StatusOK {
 		return fmt.Errorf("statusCode error: %d", statusCode, ", error: ", err)
 	}
@@ -169,7 +169,7 @@ func ossdownload(tag string, path string) error {
 		islast := fmt.Sprintf("%v", file.Islast)
 		headerfile["Is-Last"] = []string{islast}
 		// sent http request and get data
-		data, statusCode, err := call("GET", apiserveraddr, "/api/v1/file", nil, headerfile)
+		data, statusCode, err := call("GET", apiserveraddr, "/oss/api/file", nil, headerfile)
 		if statusCode != http.StatusOK {
 			return fmt.Errorf("statusCode error: %d", statusCode, ", error: ", err)
 		}
@@ -207,7 +207,7 @@ func ossdel(filepath string) error {
 	header := make(map[string][]string, 0)
 	header["Path"] = []string{filepath}
 
-	_, statusCode, err := call("DELETE", apiserveraddr, "/api/v1/file", nil, header)
+	_, statusCode, err := call("DELETE", apiserveraddr, "/oss/api/file", nil, header)
 
 	if statusCode != http.StatusNoContent {
 		return fmt.Errorf("statusCode error: %d", statusCode, ", error: ", err)
@@ -273,7 +273,7 @@ func postFile(path string, data []byte, index int, begin int64, end int64, isLas
 	header["Bytes-Range"] = []string{fmt.Sprintf("%v-%v", begin, end)}
 	header["Is-Last"] = []string{fmt.Sprintf("%v", isLast)}
 
-	_, statusCode, err := call("POST", apiserveraddr, "/api/v1/file", bytes.NewBuffer(data), header)
+	_, statusCode, err := call("POST", apiserveraddr, "/oss/api/file", bytes.NewBuffer(data), header)
 	if err != nil || statusCode != http.StatusOK {
 		return fmt.Errorf("[postFile] failed, path: %s, error: %v, statusCode: %v", path, err, statusCode)
 	}

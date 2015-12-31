@@ -13,7 +13,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/containerops/dockyard/oss/api.v1/router"
+	"github.com/containerops/dockyard/handler"
 	"github.com/containerops/dockyard/oss/chunkmaster/api"
 	"github.com/containerops/dockyard/oss/chunkmaster/metadata"
 	"github.com/containerops/dockyard/oss/logs"
@@ -66,7 +66,7 @@ func (this *oss) StartOSS() error {
 	if err = this.Startservers(); err != nil {
 		fmt.Println(err.Error())
 	}
-	if err = this.StartAPI(); err != nil {
+	if err = handler.InitAPI(); err != nil {
 		fmt.Println(err.Error())
 	}
 	return nil
@@ -105,7 +105,6 @@ func (this *oss) Loadconfig() error {
 }
 
 func (this *oss) Initdb() error {
-
 	return nil
 }
 
@@ -170,19 +169,6 @@ func (this *oss) Startservers() error {
 		}()
 		runtime.Gosched()
 	}
-	return nil
-}
-
-func (this *oss) StartAPI() error {
-	metaport, _ := strconv.Atoi(this.cm.metaPort)
-	server := router.NewServer(this.cm.serverHost, "0.0.0.0", setting.APIPort, setting.APIHttpsPort, this.cm.limitCSNum, this.cm.metaHost, metaport, this.cm.user, this.cm.passwd, "metadb", this.cm.connPoolCapacity)
-	log.Infof("imageserver start...")
-	go func() {
-		if err := server.Run(); err != nil {
-			fmt.Errorf("start error: %v", err)
-		}
-	}()
-
 	return nil
 }
 
