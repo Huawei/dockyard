@@ -3,6 +3,7 @@ package module
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -12,13 +13,14 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"golang.org/x/crypto/openpgp"
 
 	"github.com/containerops/dockyard/models"
+	"github.com/containerops/wrench/setting"
 	"github.com/containerops/wrench/utils"
 )
 
 func ParseManifest(data []byte) error {
-
 	var manifest map[string]interface{}
 	if err := json.Unmarshal(data, &manifest); err != nil {
 		return err
@@ -84,7 +86,7 @@ func CopyImgLayer(srcPath, srcFile, dstPath, dstFile string, reqbody []byte) (in
 	return len(data), nil
 }
 
-//all as below are ported to support for docker to parse request URL,and it would be update soon
+//codes as below are ported to support for docker to parse request URL,and it would be update soon
 func parseIP(ipStr string) net.IP {
 	ip := net.ParseIP(ipStr)
 	if ip == nil {
@@ -276,4 +278,106 @@ func (cr clonedRoute) URL(pairs ...string) (*url.URL, error) {
 	}
 
 	return cr.root.ResolveReference(routeURL), nil
+}
+
+//codes as below are implemented to support ACI storage
+func CheckAciSignature(acipath, signpath, pubkeyspath string) error {
+	files, err := ioutil.ReadDir(pubkeyspath)
+	if err != nil {
+		return fmt.Errorf("Get pubkey file failed: %v", err.Error())
+	}
+
+	if len(files) <= 0 {
+		return fmt.Errorf("Get pubkey file failed: pubkey is empty")
+	}
+
+	var keyring openpgp.EntityList
+	//trustedKeys := make(map[string]*openpgp.Entity)
+
+	for _, file := range files {
+		pubkeyfile, err := os.Open(pubkeyspath + "/" + file.Name())
+		if err != nil {
+			return err
+		}
+		defer pubkeyfile.Close()
+
+		keyList, err := openpgp.ReadArmoredKeyRing(pubkeyfile)
+		if err != nil {
+			return err
+		}
+
+		if len(keyList) < 1 {
+			return fmt.Errorf("Missing opengpg entity")
+		}
+
+		fingerprint := fmt.Sprintf("%x", keyList[0].PrimaryKey.Fingerprint)
+		if fingerprint != file.Name() {
+			return fmt.Errorf("fingerprint mismatch: %v:%v", file.Name(), fingerprint)
+		}
+
+		keyring = append(keyring, keyList[0])
+	}
+
+	acifile, err := os.Open(acipath)
+	if err != nil {
+		return fmt.Errorf("Open sign file failed: %v", err.Error())
+	}
+	defer acifile.Close()
+
+	signfile, err := os.Open(signpath)
+	if err != nil {
+		return fmt.Errorf("Open signature file failed: %v", err.Error())
+	}
+	defer signfile.Close()
+
+	if _, err := acifile.Seek(0, 0); err != nil {
+		return fmt.Errorf("Seek ACI file failed: %v", err)
+	}
+	if _, err := signfile.Seek(0, 0); err != nil {
+		return fmt.Errorf("Seek signature file: %v", err)
+	}
+
+	_, err = openpgp.CheckArmoredDetachedSignature(keyring, acifile, signfile)
+	if err == io.EOF {
+		if _, err := acifile.Seek(0, 0); err != nil {
+			return fmt.Errorf("Seek ACI file failed: %v", err)
+		}
+		if _, err := signfile.Seek(0, 0); err != nil {
+			return fmt.Errorf("Seek signature file: %v", err)
+		}
+
+		_, err = openpgp.CheckDetachedSignature(keyring, acifile, signfile)
+	}
+	if err == io.EOF {
+		return fmt.Errorf("No valid signatures found in signature file")
+	}
+
+	return nil
+}
+
+func CheckClientStatus(reqbody []byte) error {
+	clientmsg := new(models.CompleteMsg)
+	if err := json.Unmarshal(reqbody, &clientmsg); err != nil {
+		return fmt.Errorf("%v", err.Error())
+	}
+
+	if !clientmsg.Success {
+		return fmt.Errorf("%v", clientmsg.Reason)
+	}
+
+	return nil
+}
+
+func FillRespMsg(result bool, clientreason, serverreason string) models.CompleteMsg {
+	msg := models.CompleteMsg{
+		Success:      result,
+		Reason:       clientreason,
+		ServerReason: serverreason,
+	}
+	return msg
+}
+
+func CleanCache(aciid string) {
+	acipath := fmt.Sprintf("%v/acis/%v", setting.ImagePath, aciid)
+	os.RemoveAll(acipath)
 }
