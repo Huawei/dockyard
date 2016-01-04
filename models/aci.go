@@ -1,24 +1,8 @@
 package models
 
 import (
-	"fmt"
-
-	"github.com/containerops/wrench/db"
+	"github.com/containerops/wrench/setting"
 )
-
-type AciRepository struct {
-	NameSpace   string      `json:"namesapce"`
-	Acis        []AciDetail `json:"acis"`
-	PubKeysPath string      `json:"pubKeyspath"`
-}
-
-type AciDetail struct {
-	AciID     string `json:"aciid"`
-	ImageName string `json:"imagename"`
-	ManiPath  string `json:"manipath"`
-	SignPath  string `json:"signpath"`
-	AciPath   string `json:"acipath"`
-}
 
 type UploadDetails struct {
 	ACIPushVersion string `json:"aci_push_version"`
@@ -32,7 +16,7 @@ type UploadDetails struct {
 type CompleteMsg struct {
 	Success      bool   `json:"success"`
 	Reason       string `json:"reason,omitempty"`
-	ServerReason string `json:"server_reason,omitempty"`
+	ServerReason string `json:"serverreason,omitempty"`
 }
 
 type TemplateDesc struct {
@@ -45,6 +29,29 @@ type TemplateDesc struct {
 var TemplatePath string = "views/aci/index.html"
 var AcipathExist bool = true
 
+func (r *Repository) Update(namespace, aciname, aciid, maniPath, signPath, aciPath string) error {
+	has, _, err := r.Has(namespace, aciname)
+	if err != nil {
+		return err
+	}
+
+	r.Aci.AciID, r.Aci.AciName, r.Aci.ManiPath, r.Aci.SignPath, r.Aci.AciPath =
+		aciid, aciname, maniPath, signPath, aciPath
+
+	if has == true {
+		if err := r.Save(); err != nil {
+			return err
+		}
+	} else {
+		if err := r.Put(namespace, aciname, "", "", setting.APIVERSION_ACI); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+/*
 func (r *AciRepository) GetRepository(namespace string) error {
 	key := db.Key("repository", namespace, "")
 	if len(key) <= 0 {
@@ -140,3 +147,4 @@ func (r *AciRepository) PutAciByName(namespace string, imgname string, signpath 
 	}
 	return nil
 }
+*/

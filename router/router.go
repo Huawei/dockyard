@@ -56,9 +56,9 @@ func SetRouters(m *macaron.Macaron) {
 	//acis push
 	m.Group("/ac-push", func() {
 		m.Post("/uploaded/:domains/:namespace/:acifile", handler.PostUploadHandler)
-		m.Put("/:namespace/manifest/:acifile", handler.PutManifestHandler)
-		m.Put("/:namespace/signature/:acifile", handler.PutSignHandler)
-		m.Put("/:namespace/aci/:acifile", handler.PutAciHandler)
-		m.Post("/:namespace/complete/:acifile", handler.PostCompleteHandler)
+		m.Put("/:namespace/:aciid/manifest", handler.PutManifestHandler)
+		m.Put("/:namespace/:aciid/signature/:signfile", handler.PutSignHandler)
+		m.Put("/:namespace/:aciid/aci/:acifile", handler.PutAciHandler)
+		m.Post("/:namespace/:aciid/complete/:acifile/:signfile", handler.PostCompleteHandler)
 	})
 }
