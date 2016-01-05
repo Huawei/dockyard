@@ -17,7 +17,7 @@
 #include "spy_agent.h"
 #include "spy_log.h"
 
-char *master_report_uri = "/v1/chunkserver/reportinfo";
+char *master_report_uri = "/cm/v1/chunkserver/reportinfo";
 
 char *http_text = "POST %s HTTP/1.1\r\n"
 	"Host: %s:%d\r\n"

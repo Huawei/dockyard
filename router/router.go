@@ -63,4 +63,14 @@ func SetRouters(m *macaron.Macaron) {
 		m.Put("/aci/:num", handler.ReceiveAciUpload)
 		m.Post("/complete/:num", handler.CompleteUpload)
 	})
+
+	m.Group("/oss", func() {
+		m.Get("/", handler.RenderListOfACIs)
+		m.Group("/api", func() {
+			m.Get("/fileinfo", handler.GetFileInfo)
+			m.Get("/file", handler.DownloadFile)
+			m.Post("/file", handler.UploadFile)
+			m.Delete("/file", handler.DeleteFile)
+		})
+	})
 }

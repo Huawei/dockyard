@@ -225,7 +225,7 @@ func batchInitChunkserverHandler(resp http.ResponseWriter, req *http.Request) {
 	}
 	log.Infof("[batchInitserverHandler] change json to arr %v", chunkserverList)
 
-	err = batchAddChunkserver(&chunkserverList)
+	err = BatchAddChunkserver(&chunkserverList)
 	if err != nil {
 		util.HandleError(resp, "", err, http.StatusInternalServerError)
 		return
@@ -328,7 +328,7 @@ func addChunkserver(chunkserver *metadata.Chunkserver) error {
 	return nil
 }
 
-func batchAddChunkserver(chunkserverList *[]metadata.Chunkserver) error {
+func BatchAddChunkserver(chunkserverList *[]metadata.Chunkserver) error {
 	for _, chunkserver := range *chunkserverList {
 		err := addChunkserver(&chunkserver)
 		if err != nil {
