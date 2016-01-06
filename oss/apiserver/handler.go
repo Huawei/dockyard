@@ -1,4 +1,4 @@
-package handler
+package apiserver
 
 import (
 	"encoding/json"
@@ -37,45 +37,37 @@ const (
 )
 
 var (
-	masterUrl         string
-	masterPort        string
+	MasterUrl         string
+	MasterPort        string
 	Ip                string
 	Port              int
 	HttpsPort         int
-	router            *mux.Router
-	running           bool
-	mu                sync.Mutex
+	Router            *mux.Router
+	Running           bool
+	Mu                sync.Mutex
 	fids              *chunkserver.Fids                      //ChunkServerGoups
 	chunkServerGroups *chunkserver.ChunkServerGroups         //groupId <> []ChunkServer
 	connectionPools   *chunkserver.ChunkServerConnectionPool //{"host:port":connectionPool}
 	metaDriver        meta.MetaDriver
-	limitNum          int
-	connPoolCapacity  int
+	LimitNum          int
+	ConnPoolCapacity  int
 	getFidRetryCount  int32
-	metadbIp          string
-	metadbPort        int
-	metadbUser        string
-	metadbPassword    string
-	metaDatabase      string
+	MetadbIp          string
+	MetadbPort        int
+	MetadbUser        string
+	MetadbPassword    string
+	MetaDatabase      string
 )
 
 func InitAPI() error {
-	masterUrl = setting.MasterHost
-	masterPort = strconv.Itoa(setting.MasterPort)
 	Ip = "0.0.0.0"
 	Port = setting.APIPort
 	HttpsPort = setting.APIHttpsPort
 	fids = chunkserver.NewFids()
 	chunkServerGroups = nil
 	connectionPools = nil
-	limitNum = setting.LimitCSNum
-	connPoolCapacity = setting.ConnPoolCapacity
 	getFidRetryCount = 0
-	metadbIp = setting.MetaHost
-	metadbPort, _ = strconv.Atoi(setting.MetaPort)
-	metadbUser = setting.DbUser
-	metadbPassword = setting.DbPasswd
-	metaDatabase = "metadb"
+	MetaDatabase = "metadb"
 	err := GetChunkServerInfo()
 	if err != nil {
 		return fmt.Errorf("GetChunkServerInfo error: %v  \n", err)
@@ -89,7 +81,7 @@ func InitAPI() error {
 	go GetFidRangeTicker()
 	go GetChunkServerInfoTicker()
 
-	err = mysqldriver.InitMeta(metadbIp, metadbPort, metadbUser, metadbPassword, metaDatabase)
+	err = mysqldriver.InitMeta(MetadbIp, MetadbPort, MetadbUser, MetadbPassword, MetaDatabase)
 	if err != nil {
 		return fmt.Errorf("Connect metadb error: %v \n", err)
 	}
@@ -295,9 +287,9 @@ func getOneNormalChunkServer(mi *meta.MetaInfo) (*chunkserver.ChunkServer, error
 }
 
 func GetConnectionPools() *chunkserver.ChunkServerConnectionPool {
-	mu.Lock()
+	Mu.Lock()
 	connectionPool := connectionPools
-	mu.Unlock()
+	Mu.Unlock()
 	return connectionPool
 }
 
@@ -311,9 +303,9 @@ func checkErrorAndConnPool(err error, chunkServer *chunkserver.ChunkServer, conn
 }
 
 func GetChunkServerGroups() *chunkserver.ChunkServerGroups {
-	mu.Lock()
+	Mu.Lock()
 	groups := chunkServerGroups
-	mu.Unlock()
+	Mu.Unlock()
 	return groups
 }
 
@@ -459,7 +451,7 @@ func selectChunkServerGroupComplex(size int64) ([]chunkserver.ChunkServer, error
 			}
 		}
 
-		if avilable && minMaxFreeSpace > size && normalNum >= limitNum {
+		if avilable && minMaxFreeSpace > size && normalNum >= LimitNum {
 			minHeap.AddElement(groupId, minMaxFreeSpace, pendingWrites, writingCount)
 		}
 	}
@@ -573,7 +565,7 @@ func GetFidRange(mergeWait bool) error {
 		return nil
 	}
 
-	byteData, statusCode, err := util.Call("GET", "http://"+masterUrl+":"+masterPort, "/cm/v1/chunkmaster/fid", nil, nil)
+	byteData, statusCode, err := util.Call("GET", "http://"+MasterUrl+":"+MasterPort, "/cm/v1/chunkmaster/fid", nil, nil)
 	if err != nil {
 		fmt.Errorf("[OSS]GetChunkServerInfo response code: %d, err: %s \n", statusCode, err)
 		return err
@@ -598,7 +590,7 @@ func GetFidRange(mergeWait bool) error {
 }
 
 func GetChunkServerInfo() error {
-	byteData, statusCode, err := util.Call("GET", "http://"+masterUrl+":"+masterPort, "/cm/v1/chunkmaster/route", nil, nil)
+	byteData, statusCode, err := util.Call("GET", "http://"+MasterUrl+":"+MasterPort, "/cm/v1/chunkmaster/route", nil, nil)
 	if err != nil {
 		fmt.Errorf("[OSS]GetChunkServerInfo response code: %d, error: %v \n", statusCode, err)
 		return err
@@ -663,7 +655,7 @@ func handleChunkServerInfo(infos map[string][]chunkserver.ChunkServer) {
 		fmt.Printf("len(addServers): %d \n", len(addServers))
 		for index := 0; index < len(addServers); index++ {
 			fmt.Printf("add chunkserver: %v \n", addServers[index])
-			newConnectionPool.AddPool(addServers[index], connPoolCapacity)
+			newConnectionPool.AddPool(addServers[index], ConnPoolCapacity)
 		}
 	}
 
@@ -723,16 +715,16 @@ func infoDiff(info1, info2 map[string][]chunkserver.ChunkServer) []*chunkserver.
 }
 
 func ReplaceChunkServerGroups(newGroups *chunkserver.ChunkServerGroups) {
-	mu.Lock()
+	Mu.Lock()
 	chunkServerGroups = newGroups
-	mu.Unlock()
+	Mu.Unlock()
 }
 
 func ReplaceConnPoolsAndChunkServerGroups(newConnectionPool *chunkserver.ChunkServerConnectionPool, newGroups *chunkserver.ChunkServerGroups) {
-	mu.Lock()
+	Mu.Lock()
 	connectionPools = newConnectionPool
 	chunkServerGroups = newGroups
-	mu.Unlock()
+	Mu.Unlock()
 }
 
 func GetFidRangeTicker() {
