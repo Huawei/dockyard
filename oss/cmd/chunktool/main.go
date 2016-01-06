@@ -25,7 +25,7 @@ const (
 	opcodeQueryIoStatus = 31
 	opcodeQeuryDetails  = 32
 
-	opcodeDumpChunk     = 40
+	opcodeDumpChunk = 40
 )
 
 /*
@@ -297,7 +297,7 @@ func (c *SpyClient) dumpChunk(name string, target string) {
 	}
 
 	output := new(bytes.Buffer)
-	
+
 	binary.Write(output, binary.BigEndian, uint8(opcodeDumpChunk))
 	binary.Write(output, binary.BigEndian, uint32(len(name)))
 
@@ -342,20 +342,20 @@ func (c *SpyClient) dumpChunk(name string, target string) {
 			if err != io.EOF {
 				fmt.Println("socket read error\n")
 			}
-			break;
+			break
 		}
 
 		_, err = f.Write(data[:n])
 
 		if err != nil {
 			fmt.Println("Error writing file\n")
-			break;
+			break
 		}
-		
+
 		bodyLen -= uint32(n)
 		if bodyLen == 0 {
-			break;
-		}		
+			break
+		}
 	}
 }
 
