@@ -15,9 +15,8 @@ import (
 	"strings"
 	"time"
 
-
 	"github.com/containerops/dockyard/backend/drivers"
-   	"github.com/containerops/wrench/setting"
+	"github.com/containerops/wrench/setting"
 )
 
 func init() {
@@ -28,10 +27,9 @@ func InitFunc() {
 	drivers.InjectReflect.Bind("aliyunsave", aliyunsave)
 }
 
-
 func aliyunsave(file string) (url string, err error) {
 
-	client := NewClient(setting.AccessKeyID,setting.AccessKeysecret)
+	client := NewClient(setting.AccessKeyID, setting.AccessKeysecret)
 	bucket := NewBucket(setting.Bucket, setting.Endpoint, client)
 
 	var key string

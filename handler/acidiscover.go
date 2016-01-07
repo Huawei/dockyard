@@ -8,14 +8,15 @@ import (
 	"github.com/astaxie/beego/logs"
 	"gopkg.in/macaron.v1"
 
+	"github.com/containerops/dockyard/models"
 	"github.com/containerops/wrench/setting"
 )
 
-// TBD: discovery template should be updated to keep in line with ACI
 func DiscoveryACIHandler(ctx *macaron.Context, log *logs.BeeLogger) {
-	img := ctx.Params(":imagename")
+	namespace := ctx.Params(":namespace")
+	aciname := ctx.Params(":aciname")
 
-	t, err := template.ParseFiles("conf/acifetchtemplate.html")
+	t, err := template.ParseFiles(models.TemplatePath)
 	if err != nil {
 		log.Error("[ACI API] Discovery parse template file failed: %v", err.Error())
 		ctx.Resp.WriteHeader(http.StatusInternalServerError)
@@ -23,13 +24,10 @@ func DiscoveryACIHandler(ctx *macaron.Context, log *logs.BeeLogger) {
 		return
 	}
 
-	err = t.Execute(ctx.Resp, struct {
-		Name       string
-		ServerName string
-		ListenMode string
-	}{
-		Name:       img,
-		ServerName: setting.Domains,
+	err = t.Execute(ctx.Resp, models.TemplateDesc{
+		NameSpace:  namespace,
+		AciName:    aciname,
+		Domains:    setting.Domains,
 		ListenMode: setting.ListenMode,
 	})
 	if err != nil {
