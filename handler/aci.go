@@ -18,9 +18,12 @@ import (
 	"github.com/containerops/wrench/utils"
 )
 
+//Support to fetch acis
 func GetPubkeysHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	namespace := ctx.Params(":namespace")
-	pubkeysPath := fmt.Sprintf("%v/acis/pubkeys/%v", setting.ImagePath, namespace)
+	repository := ctx.Params(":repository")
+
+	pubkeysPath := module.GetPubkeysPath(namespace, repository)
 	if _, err := os.Stat(pubkeysPath); err != nil {
 		log.Error("[ACI API] Search pubkeys path failed: %v", err.Error())
 
@@ -36,7 +39,6 @@ func GetPubkeysHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 		return http.StatusInternalServerError, result
 	}
 
-	// TODO: considering that one user has multiple pubkeys
 	var pubkey []byte
 	if len(files) <= 0 {
 		log.Error("[ACI API] Not found pubkey")
@@ -45,6 +47,7 @@ func GetPubkeysHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 		return http.StatusNotFound, result
 	}
 
+	// TODO: support single pubkey per user now, to consider whether to support multiple pubkeys per user in the future
 	filename := pubkeysPath + "/" + files[0].Name()
 	pubkey, err = ioutil.ReadFile(filename)
 	if err != nil {
@@ -59,30 +62,34 @@ func GetPubkeysHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 
 func GetACIHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	namespace := ctx.Params(":namespace")
-	acifilename := ctx.Params(":acifile")
+	repository := ctx.Params(":repository")
+	acifilename := ctx.Params(":acifilename")
 
 	acifile := strings.Trim(acifilename, ".asc")
-	imagename := strings.Trim(acifile, ".aci")
+	tag := strings.Trim(acifile, ".aci")
 
-	r := new(models.Repository)
-	if has, _, err := r.Has(namespace, imagename); err != nil {
-		log.Error("[ACI API] Read ACI %v/%v detail error: %v", namespace, imagename, err.Error())
-		result, _ := json.Marshal(map[string]string{"message": "Read ACI detail error"})
-		return http.StatusInternalServerError, result
-	} else if has == false {
-		log.Error("[ACI API] Not found ACI %v/%v", namespace, imagename)
+	t := new(models.Tag)
+	if err := t.Get(namespace, repository, tag); err != nil {
+		log.Error("[ACI API] Not found ACI %v/%v/%v", namespace, repository, acifilename)
 		result, _ := json.Marshal(map[string]string{"message": "Not found ACI"})
 		return http.StatusNotFound, result
 	}
 
-	var imagepath string
-	if b := strings.Contains(acifilename, ".asc"); b == true {
-		imagepath = r.Aci.SignPath
-	} else {
-		imagepath = r.Aci.AciPath
+	i := new(models.Image)
+	if has, _, err := i.Has(t.ImageId); err != nil || has != true {
+		log.Error("[ACI API] Not found ACI %v/%v/%v", namespace, repository, acifilename)
+		result, _ := json.Marshal(map[string]string{"message": "Not found ACI"})
+		return http.StatusNotFound, result
 	}
 
-	img, err := ioutil.ReadFile(imagepath)
+	var filepath string
+	if b := strings.Contains(acifilename, ".asc"); b == true {
+		filepath = i.SignPath
+	} else {
+		filepath = i.AciPath
+	}
+
+	content, err := ioutil.ReadFile(filepath)
 	if err != nil {
 		log.Error("[ACI API] Get ACI file failed: %v", err.Error())
 
@@ -90,19 +97,19 @@ func GetACIHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 		return http.StatusInternalServerError, result
 	}
 
-	return http.StatusOK, img
+	return http.StatusOK, content
 }
 
+//Support to push acis
 func PostUploadHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	domains := ctx.Params(":domains")
 	namespace := ctx.Params(":namespace")
-	acifile := ctx.Params(":acifile")
+	repository := ctx.Params(":repository")
 
+	acifile := ctx.Params(":acifile")
 	signfile := fmt.Sprintf("%v%v", acifile, ".asc")
-	//aciname := strings.Trim(acifile, ".aci")
 
 	//TODO: only for testing,pubkey will be read and saved via user management module
-	pubkeyspath := fmt.Sprintf("%v/acis/pubkeys/%v", setting.ImagePath, namespace)
+	pubkeyspath := module.GetPubkeysPath(namespace, repository)
 	if _, err := os.Stat(pubkeyspath); err != nil {
 		if err := os.MkdirAll(pubkeyspath, os.ModePerm); err != nil {
 			log.Error("[ACI API] Create pubkeys path failed: %v", err.Error())
@@ -112,8 +119,8 @@ func PostUploadHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 		}
 	}
 
-	aciid := utils.MD5(uuid.NewV4().String())
-	imagepath := fmt.Sprintf("%v/acis/%v", setting.ImagePath, aciid)
+	imageId := utils.MD5(uuid.NewV4().String())
+	imagepath := module.GetImagePath(imageId)
 	if err := os.MkdirAll(imagepath, os.ModePerm); err != nil {
 		log.Error("[ACI API] Create aci path failed: %v", err.Error())
 
@@ -121,14 +128,14 @@ func PostUploadHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 		return http.StatusInternalServerError, result
 	}
 
-	prefix := fmt.Sprintf("%v://%v/ac-push/%v/", setting.ListenMode, domains, namespace)
+	prefix := fmt.Sprintf("%v://%v/ac-push/%v/%v/", setting.ListenMode, setting.Domains, namespace, repository)
 	endpoint := models.UploadDetails{
-		ACIPushVersion: "0.0.1", //TODO:It would follow APPC spec
+		ACIPushVersion: "0.0.1", //TODO: follow ACI push spec
 		Multipart:      false,
-		ManifestURL:    prefix + aciid + "/manifest",
-		SignatureURL:   prefix + aciid + "/signature/" + signfile,
-		ACIURL:         prefix + aciid + "/aci/" + acifile,
-		CompletedURL:   prefix + aciid + "/complete/" + acifile + "/" + signfile,
+		ManifestURL:    prefix + imageId + "/manifest",
+		SignatureURL:   prefix + imageId + "/signature/" + signfile,
+		ACIURL:         prefix + imageId + "/aci/" + acifile,
+		CompletedURL:   prefix + imageId + "/complete/" + acifile + "/" + signfile,
 	}
 
 	result, _ := json.Marshal(endpoint)
@@ -136,9 +143,9 @@ func PostUploadHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 }
 
 func PutManifestHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	aciid := ctx.Params(":aciid")
+	imageId := ctx.Params(":imageId")
 
-	manipath := fmt.Sprintf("%v/acis/%v/manifest", setting.ImagePath, aciid)
+	manipath := module.GetManifestPath(imageId)
 
 	data, _ := ctx.Req.Body().Bytes()
 	if err := ioutil.WriteFile(manipath, data, 0777); err != nil {
@@ -153,10 +160,10 @@ func PutManifestHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte)
 }
 
 func PutSignHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
+	imageId := ctx.Params(":imageId")
 	signfile := ctx.Params(":signfile")
-	aciid := ctx.Params(":aciid")
 
-	signpath := fmt.Sprintf("%v/acis/%v/%v", setting.ImagePath, aciid, signfile)
+	signpath := module.GetSignaturePath(imageId, signfile)
 
 	data, _ := ctx.Req.Body().Bytes()
 	if err := ioutil.WriteFile(signpath, data, 0777); err != nil {
@@ -171,10 +178,10 @@ func PutSignHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 }
 
 func PutAciHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
+	imageId := ctx.Params(":imageId")
 	acifile := ctx.Params(":acifile")
-	aciid := ctx.Params(":aciid")
 
-	acipath := fmt.Sprintf("%v/acis/%v/%v", setting.ImagePath, aciid, acifile)
+	acipath := module.GetAciPath(imageId, acifile)
 
 	data, _ := ctx.Req.Body().Bytes()
 	if err := ioutil.WriteFile(acipath, data, 0777); err != nil {
@@ -189,13 +196,14 @@ func PutAciHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 }
 
 func PostCompleteHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	aciid := ctx.Params(":aciid")
+	imageId := ctx.Params(":imageId")
+	repository := ctx.Params(":repository")
 
 	body, _ := ctx.Req.Body().Bytes()
 	if err := module.CheckClientStatus(body); err != nil {
-		module.CleanCache(aciid)
-
+		module.CleanCache(imageId)
 		log.Error("[ACI API] Push aci failed: %v", err.Error())
+
 		failmsg := module.FillRespMsg(false, err.Error(), "")
 		result, _ := json.Marshal(failmsg)
 		return http.StatusInternalServerError, result
@@ -206,50 +214,40 @@ func PostCompleteHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte
 	signfile := ctx.Params(":signfile")
 
 	//TODO: only for testing,pubkey will be read and saved via user management module
-	pubkeyspath := fmt.Sprintf("%v/acis/pubkeys/%v", setting.ImagePath, namespace)
+	pubkeyspath := module.GetPubkeysPath(namespace, repository)
+	acipath := module.GetAciPath(imageId, acifile)
+	signpath := module.GetSignaturePath(imageId, signfile)
+	manipath := module.GetManifestPath(imageId)
+	if err := module.VerifyAciSignature(acipath, signpath, pubkeyspath); err != nil {
+		module.CleanCache(imageId)
+		log.Error("[ACI API] Aci verified failed: %v", err.Error())
 
-	acipath := fmt.Sprintf("%v/acis/%v/%v", setting.ImagePath, aciid, acifile)
-	signpath := fmt.Sprintf("%v/acis/%v/%v", setting.ImagePath, aciid, signfile)
-	manipath := fmt.Sprintf("%v/acis/%v/manifest", setting.ImagePath, aciid)
-	if err := module.CheckAciSignature(acipath, signpath, pubkeyspath); err != nil {
-		module.CleanCache(aciid)
-
-		log.Error("[ACI API] Aci check failed: %v", err.Error())
 		failmsg := module.FillRespMsg(false, "", err.Error())
 		result, _ := json.Marshal(failmsg)
 		return http.StatusInternalServerError, result
 	}
 
-	aciname := strings.Trim(acifile, ".aci")
-	r := new(models.Repository)
-	has, _, err := r.Has(namespace, aciname)
-	if err != nil {
-		module.CleanCache(aciid)
-
-		log.Error("[ACI API] Get %v/%v failed: %v", namespace, aciname, err.Error())
-		failmsg := module.FillRespMsg(false, "", err.Error())
-		result, _ := json.Marshal(failmsg)
-		return http.StatusInternalServerError, result
+	//If aci image is existent,it should update the db and delete the old image after executed successfully
+	var oldimageId = ""
+	tag := strings.Trim(acifile, ".aci")
+	t := new(models.Tag)
+	if err := t.Get(namespace, repository, tag); err == nil {
+		oldimageId = t.ImageId
 	}
 
-	//The old aci directory should be deleted soon
-	var oldaciid = ""
-	if has == true {
-		oldaciid = r.Aci.AciID
-	}
+	a := new(models.Aci)
+	if err := a.Update(namespace, repository, tag, imageId, manipath, signpath, acipath); err != nil {
+		module.CleanCache(imageId)
+		log.Error("[ACI API] Update %v/%v failed: %v", namespace, repository, err.Error())
 
-	if err := r.Update(namespace, aciname, aciid, manipath, signpath, acipath); err != nil {
-		module.CleanCache(aciid)
-
-		log.Error("[ACI API] Update %v/%v failed: %v", namespace, aciname, err.Error())
 		failmsg := module.FillRespMsg(false, "", err.Error())
 		result, _ := json.Marshal(failmsg)
 		return http.StatusInternalServerError, result
 	}
 
 	//Delete old aci directory after redis is updated
-	if oldaciid != "" {
-		module.CleanCache(oldaciid)
+	if oldimageId != "" {
+		module.CleanCache(oldimageId)
 	}
 
 	successmsg := module.FillRespMsg(true, "", "")

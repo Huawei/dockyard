@@ -281,18 +281,17 @@ func (cr clonedRoute) URL(pairs ...string) (*url.URL, error) {
 }
 
 //codes as below are implemented to support ACI storage
-func CheckAciSignature(acipath, signpath, pubkeyspath string) error {
+func VerifyAciSignature(acipath, signpath, pubkeyspath string) error {
 	files, err := ioutil.ReadDir(pubkeyspath)
 	if err != nil {
-		return fmt.Errorf("Get pubkey file failed: %v", err.Error())
+		return fmt.Errorf("Read pubkeys directory failed: %v", err.Error())
 	}
 
 	if len(files) <= 0 {
-		return fmt.Errorf("Get pubkey file failed: pubkey is empty")
+		return fmt.Errorf("No pubkey file found in %v", pubkeyspath)
 	}
 
 	var keyring openpgp.EntityList
-
 	for _, file := range files {
 		pubkeyfile, err := os.Open(pubkeyspath + "/" + file.Name())
 		if err != nil {
@@ -314,7 +313,7 @@ func CheckAciSignature(acipath, signpath, pubkeyspath string) error {
 
 	acifile, err := os.Open(acipath)
 	if err != nil {
-		return fmt.Errorf("Open sign file failed: %v", err.Error())
+		return fmt.Errorf("Open ACI file failed: %v", err.Error())
 	}
 	defer acifile.Close()
 
@@ -331,28 +330,24 @@ func CheckAciSignature(acipath, signpath, pubkeyspath string) error {
 		return fmt.Errorf("Seek signature file: %v", err)
 	}
 
-	//check detached signature which default is ASCII format
-	if _, err = openpgp.CheckArmoredDetachedSignature(keyring, acifile, signfile); err != nil {
-		if err == io.EOF {
-			if _, err := acifile.Seek(0, 0); err != nil {
-				return fmt.Errorf("Seek ACI file failed: %v", err)
-			}
-			if _, err := signfile.Seek(0, 0); err != nil {
-				return fmt.Errorf("Seek signature file: %v", err)
-			}
-
-			//try to check detached signature with binary format
-			if _, err = openpgp.CheckDetachedSignature(keyring, acifile, signfile); err != nil {
-				return fmt.Errorf("No valid signatures found in signature file")
-			} else {
-				return nil
-			}
+	//Verify detached signature which default is ASCII format
+	_, err = openpgp.CheckArmoredDetachedSignature(keyring, acifile, signfile)
+	if err == io.EOF {
+		if _, err := acifile.Seek(0, 0); err != nil {
+			return fmt.Errorf("Seek ACI file failed: %v", err)
+		}
+		if _, err := signfile.Seek(0, 0); err != nil {
+			return fmt.Errorf("Seek signature file: %v", err)
 		}
 
-		return err
+		//try to verify detached signature with binary format
+		_, err = openpgp.CheckDetachedSignature(keyring, acifile, signfile)
+	}
+	if err == io.EOF {
+		return fmt.Errorf("Signature format is invalid")
 	}
 
-	return nil
+	return err
 }
 
 func CheckClientStatus(reqbody []byte) error {
@@ -377,7 +372,27 @@ func FillRespMsg(result bool, clientreason, serverreason string) models.Complete
 	return msg
 }
 
-func CleanCache(aciid string) {
-	acipath := fmt.Sprintf("%v/acis/%v", setting.ImagePath, aciid)
+func CleanCache(imageId string) {
+	acipath := fmt.Sprintf("%v/acis/%v", setting.ImagePath, imageId)
 	os.RemoveAll(acipath)
+}
+
+func GetPubkeysPath(namespace, repository string) string {
+	return fmt.Sprintf("%v/acis/pubkeys/%v/%v", setting.ImagePath, namespace, repository)
+}
+
+func GetImagePath(imageId string) string {
+	return fmt.Sprintf("%v/acis/%v", setting.ImagePath, imageId)
+}
+
+func GetManifestPath(imageId string) string {
+	return fmt.Sprintf("%v/acis/%v/manifest", setting.ImagePath, imageId)
+}
+
+func GetSignaturePath(imageId, signfile string) string {
+	return fmt.Sprintf("%v/acis/%v/%v", setting.ImagePath, imageId, signfile)
+}
+
+func GetAciPath(imageId, acifile string) string {
+	return fmt.Sprintf("%v/acis/%v/%v", setting.ImagePath, imageId, acifile)
 }
