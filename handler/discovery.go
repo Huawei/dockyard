@@ -14,7 +14,7 @@ import (
 
 func DiscoveryACIHandler(ctx *macaron.Context, log *logs.BeeLogger) {
 	namespace := ctx.Params(":namespace")
-	aciname := ctx.Params(":aciname")
+	repository := ctx.Params(":repository")
 
 	t, err := template.ParseFiles(models.TemplatePath)
 	if err != nil {
@@ -26,7 +26,7 @@ func DiscoveryACIHandler(ctx *macaron.Context, log *logs.BeeLogger) {
 
 	err = t.Execute(ctx.Resp, models.TemplateDesc{
 		NameSpace:  namespace,
-		AciName:    aciname,
+		Repository: repository,
 		Domains:    setting.Domains,
 		ListenMode: setting.ListenMode,
 	})

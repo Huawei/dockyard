@@ -21,130 +21,34 @@ type CompleteMsg struct {
 
 type TemplateDesc struct {
 	NameSpace  string
-	AciName    string
+	Repository string
 	Domains    string
 	ListenMode string
 }
 
+type Aci struct{}
+
 var TemplatePath string = "views/aci/index.html"
-var AcipathExist bool = true
 
-func (r *Repository) Update(namespace, aciname, aciid, maniPath, signPath, aciPath string) error {
-	has, _, err := r.Has(namespace, aciname)
-	if err != nil {
+//TODO: to consider the situation that new ACI repository instead Docker repository
+func (a *Aci) Update(namespace, repository, tag, imageId, manipath, signpath, acipath string) error {
+	r := new(Repository)
+	r.Namespace, r.Repository, r.Version = namespace, repository, setting.APIVERSION_ACI
+	if err := r.Save(); err != nil {
 		return err
 	}
 
-	r.Aci.AciID, r.Aci.AciName, r.Aci.ManiPath, r.Aci.SignPath, r.Aci.AciPath =
-		aciid, aciname, maniPath, signPath, aciPath
-
-	if has == true {
-		if err := r.Save(); err != nil {
-			return err
-		}
-	} else {
-		if err := r.Put(namespace, aciname, "", "", setting.APIVERSION_ACI); err != nil {
-			return err
-		}
+	i := new(Image)
+	i.ImageId, i.ManiPath, i.SignPath, i.AciPath = imageId, manipath, signpath, acipath
+	if err := i.Save(); err != nil {
+		return err
 	}
 
-	return nil
-}
-
-/*
-func (r *AciRepository) GetRepository(namespace string) error {
-	key := db.Key("repository", namespace, "")
-	if len(key) <= 0 {
-		return fmt.Errorf("Invalid repository key")
-	}
-
-	if err := db.Get(r, key); err != nil {
+	t := new(Tag)
+	t.Name, t.Namespace, t.Repository, t.ImageId = tag, namespace, repository, imageId
+	if err := t.Save(); err != nil {
 		return err
 	}
 
 	return nil
 }
-
-func (r *AciRepository) CreateRepository(namespace string) error {
-	key := db.Key("repository", namespace, "")
-	if len(key) <= 0 {
-		return fmt.Errorf("Invalid repository key")
-	}
-
-	r = &AciRepository{
-		NameSpace: namespace,
-	}
-
-	if err := db.Save(r, key); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *AciRepository) AciIsExisted(namespace string, imgname string) (bool, error) {
-	if err := r.GetRepository(namespace); err != nil {
-		return false, err
-	}
-
-	for _, aci := range r.Acis {
-		if aci.ImageName == imgname {
-			return true, nil
-		}
-	}
-
-	return false, fmt.Errorf("Invalid repository key")
-}
-
-func (r *AciRepository) GetAciByName(namespace string, imgname string) (*AciDetail, error) {
-	if err := r.GetRepository(namespace); err != nil {
-		return nil, err
-	}
-
-	if len(r.Acis) > 0 {
-		for _, aciDst := range r.Acis {
-			if aciDst.ImageName == imgname {
-				return &aciDst, nil
-			}
-		}
-	} else {
-		return nil, fmt.Errorf("Acis of repository is empty")
-	}
-
-	return nil, fmt.Errorf("can`t get currect aci in %v repository by name:%v ", namespace, imgname)
-}
-
-func (r *AciRepository) PutAciByName(namespace string, imgname string, signpath string, acipath string, keyspath string) error {
-	key := db.Key("repository", namespace, "")
-	if len(key) <= 0 {
-		return fmt.Errorf("Invalid repository key")
-	}
-
-	//create a new repository and load it when user pushs acis at first time
-	if err := db.Get(r, key); err != nil {
-		if err := r.CreateRepository(namespace); err != nil {
-			return fmt.Errorf("Create repository fail")
-		}
-	}
-
-	if b, _ := r.AciIsExisted(namespace, imgname); b == true {
-		for i, aci := range r.Acis {
-			if aci.ImageName == imgname {
-				r.Acis[i].SignPath = signpath
-				r.Acis[i].AciPath = acipath
-			}
-		}
-	} else {
-		r.Acis = append(r.Acis, AciDetail{
-			ImageName: imgname,
-			SignPath:  signpath,
-			AciPath:   acipath,
-		})
-	}
-	r.PubKeysPath = keyspath
-
-	if err := db.Save(r, key); err != nil {
-		return err
-	}
-	return nil
-}
-*/
