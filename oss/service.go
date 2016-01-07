@@ -60,11 +60,9 @@ func (this *oss) StartOSS() error {
 	)
 	if err = this.Loadconfig(); err != nil {
 		fmt.Println(err.Error())
-		return err
 	}
 	if err = this.Initdb(); err != nil {
 		fmt.Println(err.Error())
-		return err
 	}
 	if err = this.Startmaster(); err != nil {
 		fmt.Println(err.Error())
@@ -72,7 +70,6 @@ func (this *oss) StartOSS() error {
 	}
 	if err = this.Registerservers(); err != nil {
 		fmt.Println(err.Error())
-		return err
 	}
 	if strings.EqualFold(this.OssMode, "allinone") {
 		if err = this.Startservers(); err != nil {
