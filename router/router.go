@@ -4,6 +4,7 @@ import (
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/dockyard/handler"
+	"github.com/containerops/dockyard/oss/apiserver"
 )
 
 func SetRouters(m *macaron.Macaron) {
@@ -60,5 +61,14 @@ func SetRouters(m *macaron.Macaron) {
 		m.Put("/:namespace/:aciid/signature/:signfile", handler.PutSignHandler)
 		m.Put("/:namespace/:aciid/aci/:acifile", handler.PutAciHandler)
 		m.Post("/:namespace/:aciid/complete/:acifile/:signfile", handler.PostCompleteHandler)
+	})
+
+	m.Group("/oss", func() {
+		m.Group("/api", func() {
+			m.Get("/fileinfo", apiserver.GetFileInfo)
+			m.Get("/file", apiserver.DownloadFile)
+			m.Post("/file", apiserver.UploadFile)
+			m.Delete("/file", apiserver.DeleteFile)
+		})
 	})
 }
