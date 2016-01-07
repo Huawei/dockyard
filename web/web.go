@@ -2,7 +2,6 @@ package web
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"gopkg.in/macaron.v1"
