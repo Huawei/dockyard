@@ -292,7 +292,6 @@ func CheckAciSignature(acipath, signpath, pubkeyspath string) error {
 	}
 
 	var keyring openpgp.EntityList
-	//trustedKeys := make(map[string]*openpgp.Entity)
 
 	for _, file := range files {
 		pubkeyfile, err := os.Open(pubkeyspath + "/" + file.Name())
@@ -308,11 +307,6 @@ func CheckAciSignature(acipath, signpath, pubkeyspath string) error {
 
 		if len(keyList) < 1 {
 			return fmt.Errorf("Missing opengpg entity")
-		}
-
-		fingerprint := fmt.Sprintf("%x", keyList[0].PrimaryKey.Fingerprint)
-		if fingerprint != file.Name() {
-			return fmt.Errorf("fingerprint mismatch: %v:%v", file.Name(), fingerprint)
 		}
 
 		keyring = append(keyring, keyList[0])
@@ -337,19 +331,25 @@ func CheckAciSignature(acipath, signpath, pubkeyspath string) error {
 		return fmt.Errorf("Seek signature file: %v", err)
 	}
 
-	_, err = openpgp.CheckArmoredDetachedSignature(keyring, acifile, signfile)
-	if err == io.EOF {
-		if _, err := acifile.Seek(0, 0); err != nil {
-			return fmt.Errorf("Seek ACI file failed: %v", err)
-		}
-		if _, err := signfile.Seek(0, 0); err != nil {
-			return fmt.Errorf("Seek signature file: %v", err)
+	//check detached signature which default is ASCII format
+	if _, err = openpgp.CheckArmoredDetachedSignature(keyring, acifile, signfile); err != nil {
+		if err == io.EOF {
+			if _, err := acifile.Seek(0, 0); err != nil {
+				return fmt.Errorf("Seek ACI file failed: %v", err)
+			}
+			if _, err := signfile.Seek(0, 0); err != nil {
+				return fmt.Errorf("Seek signature file: %v", err)
+			}
+
+			//try to check detached signature with binary format
+			if _, err = openpgp.CheckDetachedSignature(keyring, acifile, signfile); err != nil {
+				return fmt.Errorf("No valid signatures found in signature file")
+			} else {
+				return nil
+			}
 		}
 
-		_, err = openpgp.CheckDetachedSignature(keyring, acifile, signfile)
-	}
-	if err == io.EOF {
-		return fmt.Errorf("No valid signatures found in signature file")
+		return err
 	}
 
 	return nil
