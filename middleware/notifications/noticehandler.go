@@ -54,6 +54,16 @@ func (n *notification) InitFunc() error {
 func (n *notification) Handler(ctx *macaron.Context) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
+
+	//Notification function just supports DockerV2 now
+	r := new(models.Repository)
+	if has, _, err := r.Has(namespace, repository); err != nil || has == false {
+		return
+	}
+	if r.Version != setting.APIVERSION_V2 {
+		return
+	}
+
 	actor := ActorRecord{Name: namespace}
 	repo := fmt.Sprintf("%v/%v", namespace, repository)
 

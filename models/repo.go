@@ -40,7 +40,6 @@ type Repository struct {
 	Updated       int64    `json:"updated"`       //
 	Version       int64    `json:"version"`       //
 	Memo          []string `json:"memo"`          //
-	Aci           AciDesc  `json:"aci"`           //
 }
 
 type Tag struct {
@@ -51,14 +50,6 @@ type Tag struct {
 	Sign       string   `json:"sign"`       //
 	Manifest   string   `json:"manifest"`   //
 	Memo       []string `json:"memo"`       //
-}
-
-type AciDesc struct {
-	AciID    string `json:"aciid"`
-	AciName  string `json:"aciname"`
-	ManiPath string `json:"manipath"`
-	SignPath string `json:"signpath"`
-	AciPath  string `json:"acipath"`
 }
 
 func (r *Repository) Has(namespace, repository string) (bool, string, error) {

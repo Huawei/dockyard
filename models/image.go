@@ -28,6 +28,9 @@ type Image struct {
 	Updated    int64    `json:"updated"`    //
 	Memo       []string `json:"memo"`       //
 	Version    int64    `json:"version"`    //
+	ManiPath   string   `json:"manipath"`
+	SignPath   string   `json:"signpath"`
+	AciPath    string   `json:"acipath"`
 }
 
 func (i *Image) Has(image string) (bool, string, error) {
