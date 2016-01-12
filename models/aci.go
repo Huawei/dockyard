@@ -20,7 +20,7 @@ type CompleteMsg struct {
 }
 
 type TemplateDesc struct {
-	NameSpace  string
+	Namespace  string
 	Repository string
 	Domains    string
 	ListenMode string

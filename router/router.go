@@ -49,17 +49,19 @@ func SetRouters(m *macaron.Macaron) {
 	//Rkt Registry & Hub API
 	m.Get("/:namespace/:repository/?ac-discovery=1", handler.DiscoveryACIHandler)
 
-	m.Group("/ac-fetch", func() {
-		m.Get("/:namespace/:repository/pubkeys", handler.GetPubkeysHandler)
-		m.Get("/:namespace/:repository/:acifilename", handler.GetACIHandler)
-	})
+	m.Group("/ac", func() {
+		m.Group("/fetch", func() {
+			m.Get("/:namespace/:repository/pubkeys", handler.GetPubkeysHandler)
+			m.Get("/:namespace/:repository/:acifilename", handler.GetACIHandler)
+		})
 
-	m.Group("/ac-push", func() {
-		m.Post("/:namespace/:repository/uploaded/:acifile", handler.PostUploadHandler)
-		m.Put("/:namespace/:repository/:imageId/manifest", handler.PutManifestHandler)
-		m.Put("/:namespace/:repository/:imageId/signature/:signfile", handler.PutSignHandler)
-		m.Put("/:namespace/:repository/:imageId/aci/:acifile", handler.PutAciHandler)
-		m.Post("/:namespace/:repository/:imageId/complete/:acifile/:signfile", handler.PostCompleteHandler)
+		m.Group("/push", func() {
+			m.Post("/:namespace/:repository/uploaded/:acifile", handler.PostUploadHandler)
+			m.Put("/:namespace/:repository/:imageId/manifest", handler.PutManifestHandler)
+			m.Put("/:namespace/:repository/:imageId/signature/:signfile", handler.PutSignHandler)
+			m.Put("/:namespace/:repository/:imageId/aci/:acifile", handler.PutAciHandler)
+			m.Post("/:namespace/:repository/:imageId/complete/:acifile/:signfile", handler.PostCompleteHandler)
+		})
 	})
 
 	//Object storage service API
