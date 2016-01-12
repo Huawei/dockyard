@@ -128,7 +128,7 @@ func PostUploadHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 		return http.StatusInternalServerError, result
 	}
 
-	prefix := fmt.Sprintf("%v://%v/ac-push/%v/%v/", setting.ListenMode, setting.Domains, namespace, repository)
+	prefix := fmt.Sprintf("%v://%v/ac/push/%v/%v/", setting.ListenMode, setting.Domains, namespace, repository)
 	endpoint := models.UploadDetails{
 		ACIPushVersion: "0.0.1", //TODO: follow ACI push spec
 		Multipart:      false,
