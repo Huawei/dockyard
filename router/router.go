@@ -65,7 +65,7 @@ func SetRouters(m *macaron.Macaron) {
 
 	m.Group("/oss", func() {
 		m.Group("/api", func() {
-			m.Get("/fileinfo", apiserver.GetFileInfo)
+			m.Get("/file/info", apiserver.GetFileInfo)
 			m.Get("/file", apiserver.DownloadFile)
 			m.Post("/file", apiserver.UploadFile)
 			m.Delete("/file", apiserver.DeleteFile)
