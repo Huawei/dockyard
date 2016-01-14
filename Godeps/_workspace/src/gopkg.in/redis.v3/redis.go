@@ -20,10 +20,9 @@ func (c *baseClient) conn() (*conn, bool, error) {
 	return c.connPool.Get()
 }
 
-func (c *baseClient) putConn(cn *conn, ei error) {
-	var err error
-	if isBadConn(cn, ei) {
-		err = c.connPool.Remove(cn)
+func (c *baseClient) putConn(cn *conn, err error) {
+	if isBadConn(cn, err) {
+		err = c.connPool.Remove(cn, err)
 	} else {
 		err = c.connPool.Put(cn)
 	}
@@ -121,7 +120,7 @@ type Options struct {
 	PoolSize int
 	// Specifies amount of time client waits for connection if all
 	// connections are busy before returning an error.
-	// Default is 5 seconds.
+	// Default is 1 seconds.
 	PoolTimeout time.Duration
 	// Specifies amount of time after which client closes idle
 	// connections. Should be less than server's timeout.
