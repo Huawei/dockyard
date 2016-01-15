@@ -64,10 +64,9 @@ or as involved as:
 ```bash
 go get github.com/containerops/dockyard
 cd $GOPATH/src/github.com/containerops/dockyard
-go get
 go build
 ```
-Tips:there may be some problems occured when executing `go get` in chinese network,you'd better use `make` to build.
+You can build Dockyard via `make` that depends on Godeps or `go build` that depends on your local package.There may be some problems occured when executing `go get` in chinese network,you'd better use `make` to build it.
 
 ### Prerequisites
 It is quite easy to use Dockyard, only a little work should be done before starting dockyard service. Take it easy, just follow the instructions as below.

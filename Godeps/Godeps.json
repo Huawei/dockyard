@@ -28,15 +28,18 @@
 		},
 		{
 			"ImportPath": "github.com/containerops/wrench/db",
-			"Rev": "2936095f3a20ac908a1cd5092a5e03dcf8214dda"
+			"Comment": "0.4.0-22-g3a5cc99",
+			"Rev": "3a5cc99818e418e558a3a36658fbe9742d41d4af"
 		},
 		{
 			"ImportPath": "github.com/containerops/wrench/setting",
-			"Rev": "2936095f3a20ac908a1cd5092a5e03dcf8214dda"
+			"Comment": "0.4.0-22-g3a5cc99",
+			"Rev": "3a5cc99818e418e558a3a36658fbe9742d41d4af"
 		},
 		{
 			"ImportPath": "github.com/containerops/wrench/utils",
-			"Rev": "2936095f3a20ac908a1cd5092a5e03dcf8214dda"
+			"Comment": "0.4.0-22-g3a5cc99",
+			"Rev": "3a5cc99818e418e558a3a36658fbe9742d41d4af"
 		},
 		{
 			"ImportPath": "github.com/docker/docker/pkg/archive",
@@ -142,11 +145,6 @@
 		{
 			"ImportPath": "github.com/satori/go.uuid",
 			"Rev": "d41af8bb6a7704f00bc3b7cba9355ae6a5a80048"
-		},
-		{
-			"ImportPath": "github.com/upyun/go-sdk/upyun",
-			"Comment": "v1.1.0",
-			"Rev": "53df861e646d255e461b31a7515e0cdaf171f8b6"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/cast5",

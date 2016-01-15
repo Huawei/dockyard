@@ -6,7 +6,7 @@ Dockyard 0.5.0 is an incremental release with new features,bug fixes and new sup
 
 #### New features
 
-- New support for rkt image storage,support rkt fetch&pull,adapt to rkt 0.15.0 version and acpush pre-release version.
+- New support for ACI storage,support rkt fetch&push ACIs from Dockyard,adapt to rkt and acpush client.
 - New support for OSS that is a distributed replicated object store.See [OSS](oss/README.md) documentation.
 
 #### Bug fixes
