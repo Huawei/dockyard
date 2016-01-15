@@ -3,14 +3,16 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
-	"github.com/jcloudpub/speedy/chunkmaster/metadata"
-	"github.com/jcloudpub/speedy/logs"
-	"github.com/jcloudpub/speedy/utils"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/gorilla/mux"
+
+	"github.com/containerops/dockyard/oss/chunkmaster/metadata"
+	"github.com/containerops/dockyard/oss/logs"
+	"github.com/containerops/dockyard/oss/utils"
 )
 
 const (
@@ -223,7 +225,7 @@ func batchInitChunkserverHandler(resp http.ResponseWriter, req *http.Request) {
 	}
 	log.Infof("[batchInitserverHandler] change json to arr %v", chunkserverList)
 
-	err = batchAddChunkserver(&chunkserverList)
+	err = BatchAddChunkserver(&chunkserverList)
 	if err != nil {
 		util.HandleError(resp, "", err, http.StatusInternalServerError)
 		return
@@ -326,7 +328,7 @@ func addChunkserver(chunkserver *metadata.Chunkserver) error {
 	return nil
 }
 
-func batchAddChunkserver(chunkserverList *[]metadata.Chunkserver) error {
+func BatchAddChunkserver(chunkserverList *[]metadata.Chunkserver) error {
 	for _, chunkserver := range *chunkserverList {
 		err := addChunkserver(&chunkserver)
 		if err != nil {
