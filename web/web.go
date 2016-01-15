@@ -2,12 +2,13 @@ package web
 
 import (
 	"fmt"
-	"os"
+	"strings"
 
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/dockyard/backend"
 	"github.com/containerops/dockyard/middleware"
+	"github.com/containerops/dockyard/oss"
 	"github.com/containerops/dockyard/router"
 	"github.com/containerops/wrench/db"
 	"github.com/containerops/wrench/setting"
@@ -30,22 +31,13 @@ func SetDockyardMacaron(m *macaron.Macaron) {
 	//Setting Middleware
 	middleware.SetMiddlewares(m)
 
+	//Start Object Storage Service if sets in conf
+	if strings.EqualFold(setting.OssSwitch, "enable") {
+		ossobj := oss.Instance()
+		ossobj.StartOSS()
+	}
+
 	//Setting Router
 	router.SetRouters(m)
 
-	//Create acpool to store aci/asc/pubkey
-	err := func() error {
-		acpoolname := setting.ImagePath + "/acpool"
-		if _, err := os.Stat(acpoolname); err == nil {
-			return nil
-		}
-
-		if err := os.Mkdir(acpoolname, 0755); err != nil {
-			return err
-		}
-		return nil
-	}()
-	if err != nil {
-		fmt.Printf("Create acpool for rkt failed %s", err.Error())
-	}
 }

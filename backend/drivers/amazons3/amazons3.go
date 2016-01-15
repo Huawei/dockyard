@@ -12,9 +12,8 @@ import (
 	"time"
 
 	"github.com/containerops/dockyard/backend/drivers"
-   	"github.com/containerops/wrench/setting"
+	"github.com/containerops/wrench/setting"
 )
-
 
 func init() {
 	drivers.Register("amazons3", InitFunc)
@@ -49,7 +48,7 @@ func amazons3save(file string) (url string, err error) {
 	r.ContentLength = int64(filesize)
 	r.Header.Set("Date", time.Now().UTC().Format(http.TimeFormat))
 	r.Header.Set("X-Amz-Acl", "public-write")
-	
+
 	fmt.Println(requstUrl)
 
 	amazons3Sign(r, key, setting.AccessKeyID, setting.AccessKeysecret)
