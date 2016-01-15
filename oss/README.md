@@ -12,25 +12,12 @@ OSS=Object Storage Service ,which consists of three parts: APIServer , ChunkMast
 
 besides, OSS needs the collaboration of a metadb, which stored metadata of images in key-value manner.
 
-## Example of configs 
+## Example of backend driver configs setting in `conf/runtime.conf`
 
 ```ini
 [oss]
-ossmode= allinone
-masterhost = 127.0.0.1
-masterport = 8099
-metahost = 10.229.40.121
-metaport = 3306
-dbuser = root
-dbpasswd = wang
-db = speedy1
-limitcsnum = 1
-connpoolcapacity = 200
-servers = 1_127.0.0.1:7657;1_127.0.0.1:7658;1_127.0.0.1:7659
-errlogpath = /usr/local/chunkserver/errlog
-datapath = /usr/local/chunkserver/data
-chunknum = 2
 apiport= 80
 apihttpsport=443
 partsizemb = 4
 ```
+the config of OSS itself please see `oss/oss.conf`
