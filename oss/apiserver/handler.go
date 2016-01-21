@@ -631,7 +631,6 @@ func handleChunkServerInfo(infos map[string][]chunkserver.ChunkServer) {
 	}
 
 	if len(delServers) != 0 {
-		fmt.Printf("len(delServers): %d \n", len(delServers))
 		for index := 0; index < len(delServers); index++ {
 			fmt.Printf("delete chunkserver: %v \n", delServers[index])
 			newConnectionPool.RemovePool(delServers[index])
@@ -639,7 +638,6 @@ func handleChunkServerInfo(infos map[string][]chunkserver.ChunkServer) {
 	}
 
 	if len(addServers) != 0 {
-		fmt.Printf("len(addServers): %d \n", len(addServers))
 		for index := 0; index < len(addServers); index++ {
 			fmt.Printf("add chunkserver: %v \n", addServers[index])
 			newConnectionPool.AddPool(addServers[index], ConnPoolCapacity)

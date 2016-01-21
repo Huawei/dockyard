@@ -4,6 +4,7 @@ import (
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/dockyard/handler"
+	"github.com/containerops/dockyard/oss"
 	"github.com/containerops/dockyard/oss/apiserver"
 )
 
@@ -47,23 +48,26 @@ func SetRouters(m *macaron.Macaron) {
 	})
 
 	//Rkt Registry & Hub API
-	//acis discovery responds endpoints
-	m.Get("/:namespace/:aciname/?ac-discovery=1", handler.DiscoveryACIHandler)
+	m.Get("/:namespace/:repository/?ac-discovery=1", handler.DiscoveryACIHandler)
 
-	//acis fetch
-	m.Get("/:namespace/pubkeys.gpg", handler.GetPubkeysHandler)
-	m.Get("/ac-fetch/:namespace/:acifile", handler.GetACIHandler)
+	m.Group("/ac", func() {
+		m.Group("/fetch", func() {
+			m.Get("/:namespace/:repository/pubkeys", handler.GetPubkeysHandler)
+			m.Get("/:namespace/:repository/:acifilename", handler.GetACIHandler)
+		})
 
-	//acis push
-	m.Group("/ac-push", func() {
-		m.Post("/uploaded/:domains/:namespace/:acifile", handler.PostUploadHandler)
-		m.Put("/:namespace/:aciid/manifest", handler.PutManifestHandler)
-		m.Put("/:namespace/:aciid/signature/:signfile", handler.PutSignHandler)
-		m.Put("/:namespace/:aciid/aci/:acifile", handler.PutAciHandler)
-		m.Post("/:namespace/:aciid/complete/:acifile/:signfile", handler.PostCompleteHandler)
+		m.Group("/push", func() {
+			m.Post("/:namespace/:repository/uploaded/:acifile", handler.PostUploadHandler)
+			m.Put("/:namespace/:repository/:imageId/manifest", handler.PutManifestHandler)
+			m.Put("/:namespace/:repository/:imageId/signature/:signfile", handler.PutSignHandler)
+			m.Put("/:namespace/:repository/:imageId/aci/:acifile", handler.PutAciHandler)
+			m.Post("/:namespace/:repository/:imageId/complete/:acifile/:signfile", handler.PostCompleteHandler)
+		})
 	})
 
 	m.Group("/oss", func() {
+		m.Post("/chunkserver", oss.StartLocalServer)
+		m.Put("/chunkserver/info", oss.ReceiveChunkserverInfo)
 		m.Group("/api", func() {
 			m.Get("/file/info", apiserver.GetFileInfo)
 			m.Get("/file", apiserver.DownloadFile)
