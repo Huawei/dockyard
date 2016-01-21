@@ -9,7 +9,6 @@ import (
 	_ "github.com/containerops/dockyard/backend/drivers/native"
 	_ "github.com/containerops/dockyard/backend/drivers/oss"
 	_ "github.com/containerops/dockyard/backend/drivers/qiniu"
-	_ "github.com/containerops/dockyard/backend/drivers/upyun"
 	"github.com/containerops/wrench/setting"
 )
 

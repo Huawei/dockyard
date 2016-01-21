@@ -74,12 +74,15 @@ func (c *PubSub) Subscribe(channels ...string) error {
 func (c *PubSub) PSubscribe(patterns ...string) error {
 	err := c.subscribe("PSUBSCRIBE", patterns...)
 	if err == nil {
-		c.channels = append(c.channels, patterns...)
+		c.patterns = append(c.patterns, patterns...)
 	}
 	return err
 }
 
 func remove(ss []string, es ...string) []string {
+	if len(es) == 0 {
+		return ss[:0]
+	}
 	for _, e := range es {
 		for i, s := range ss {
 			if s == e {
@@ -230,8 +233,10 @@ func (c *PubSub) Receive() (interface{}, error) {
 	return c.ReceiveTimeout(0)
 }
 
-func (c *PubSub) reconnect() {
-	c.connPool.Remove(nil) // nil to force removal
+func (c *PubSub) reconnect(reason error) {
+	// Close current connection.
+	c.connPool.(*stickyConnPool).Reset(reason)
+
 	if len(c.channels) > 0 {
 		if err := c.Subscribe(c.channels...); err != nil {
 			log.Printf("redis: Subscribe failed: %s", err)
@@ -239,7 +244,7 @@ func (c *PubSub) reconnect() {
 	}
 	if len(c.patterns) > 0 {
 		if err := c.PSubscribe(c.patterns...); err != nil {
-			log.Printf("redis: Subscribe failed: %s", err)
+			log.Printf("redis: PSubscribe failed: %s", err)
 		}
 	}
 }
@@ -247,39 +252,41 @@ func (c *PubSub) reconnect() {
 // ReceiveMessage returns a message or error. It automatically
 // reconnects to Redis in case of network errors.
 func (c *PubSub) ReceiveMessage() (*Message, error) {
-	var badConn bool
+	var errNum int
 	for {
 		msgi, err := c.ReceiveTimeout(5 * time.Second)
 		if err != nil {
-			if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-				if badConn {
-					c.reconnect()
-					badConn = false
-					continue
-				}
-
-				err := c.Ping("")
-				if err != nil {
-					c.reconnect()
-				} else {
-					badConn = true
-				}
-				continue
+			if !isNetworkError(err) {
+				return nil, err
 			}
 
-			if isNetworkError(err) {
-				c.reconnect()
-				continue
+			goodConn := errNum == 0
+			errNum++
+
+			if goodConn {
+				if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+					err := c.Ping("")
+					if err == nil {
+						continue
+					}
+					log.Printf("redis: PubSub.Ping failed: %s", err)
+				}
 			}
 
-			return nil, err
+			if errNum > 2 {
+				time.Sleep(time.Second)
+			}
+			c.reconnect(err)
+			continue
 		}
+
+		// Reset error number.
+		errNum = 0
 
 		switch msg := msgi.(type) {
 		case *Subscription:
 			// Ignore.
 		case *Pong:
-			badConn = false
 			// Ignore.
 		case *Message:
 			return msg, nil

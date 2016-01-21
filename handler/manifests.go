@@ -17,6 +17,12 @@ import (
 var ManifestCtx []byte
 
 func PutManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
+	//TODO: to consider parallel situation
+	manifest := ManifestCtx
+	defer func() {
+		ManifestCtx = []byte{}
+	}()
+
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
@@ -30,23 +36,21 @@ func PutManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 		return http.StatusBadRequest, result
 	}
 
-	if len(ManifestCtx) == 0 {
-		ManifestCtx, _ = ctx.Req.Body().Bytes()
+	if len(manifest) == 0 {
+		manifest, _ = ctx.Req.Body().Bytes()
 	}
 
-	if err := module.ParseManifest(ManifestCtx); err != nil {
+	if err := module.ParseManifest(manifest); err != nil {
 		log.Error("[REGISTRY API V2] Decode Manifest Error: %v", err.Error())
 
-		ManifestCtx = []byte{}
 		result, _ := json.Marshal(map[string]string{"message": "Manifest converted failed"})
 		return http.StatusBadRequest, result
 	}
 
-	digest, err := utils.DigestManifest(ManifestCtx)
+	digest, err := utils.DigestManifest(manifest)
 	if err != nil {
 		log.Error("[REGISTRY API V2] Get manifest digest failed: %v", err.Error())
 
-		ManifestCtx = []byte{}
 		result, _ := json.Marshal(map[string]string{"message": "Get manifest digest failed"})
 		return http.StatusBadRequest, result
 	}
@@ -61,7 +65,6 @@ func PutManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 	ctx.Resp.Header().Set("Docker-Content-Digest", digest)
 	ctx.Resp.Header().Set("Location", random)
 
-	ManifestCtx = []byte{}
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusAccepted, result
 }

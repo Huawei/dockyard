@@ -12,7 +12,6 @@ OSS=Object Storage Service ,which consists of three parts: APIServer , ChunkMast
 
 besides, OSS needs the collaboration of a metadb, which stored metadata of images in key-value manner.
 
-
 ## HOW TO USE 
 
 There two modes to use Object Storage Service(OSS), `allinone` and `distribute`

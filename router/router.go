@@ -65,6 +65,7 @@ func SetRouters(m *macaron.Macaron) {
 		})
 	})
 
+	//Object storage service API
 	m.Group("/oss", func() {
 		m.Post("/chunkserver", oss.StartLocalServer)
 		m.Put("/chunkserver/info", oss.ReceiveChunkserverInfo)

@@ -9,6 +9,7 @@ import (
 const (
 	APIVERSION_V1 = iota
 	APIVERSION_V2
+	APIVERSION_ACI
 )
 
 var (
@@ -37,6 +38,7 @@ var (
 	RegistryVersion     string
 	DistributionVersion string
 	Standalone          string
+	OssSwitch           string
 )
 
 // object storage driver config parameters
@@ -75,6 +77,13 @@ var (
 	//Return CVEs with minimal priority to Dockyard. Default: 'Low'
 	//All values: ['Unknown, Negligible, Low, Medium, High, Critical, Defcon1']
 	ClairVulnPriority string
+)
+
+// OSS backend driver parameters
+var (
+	APIPort      int
+	APIHttpsPort int
+	PartSizeMB   int
 )
 
 func SetConfig(path string) error {
@@ -186,6 +195,11 @@ func SetConfig(path string) error {
 	} else if standalone == "" {
 		err = fmt.Errorf("Standalone version value is null")
 	}
+	if ossswitch := conf.String("dockyard::ossswitch"); ossswitch != "" {
+		OssSwitch = ossswitch
+	} else if ossswitch == "" {
+		OssSwitch = "disable"
+	}
 
 	//Dockyard object storage,default to use dockyard storage
 	BackendDriver = "native"
@@ -248,18 +262,22 @@ func SetConfig(path string) error {
 		}
 
 	case "qcloud":
-		//It will be supported soon
+	//It will be supported soon
+	case "oss":
+		APIPort, err = conf.Int(BackendDriver + "::" + "apiport")
+		APIHttpsPort, err = conf.Int(BackendDriver + "::" + "apihttpsport")
+		PartSizeMB, err = conf.Int(BackendDriver + "::" + "partsizemb")
 	case "googlecloud":
 		//It will be supported soon
 	default:
 		err = fmt.Errorf("Doesn't support %v now", BackendDriver)
 	}
 
-	ClairDBPath = conf.String("clairDBPath")
-	ClairLogLevel = conf.String("clairLogLevel")
-	ClairKeepDB = conf.Bool("clairKeepDB")
-	ClairUpdateDuration = conf.String("clairUpdateDuration")
-	ClairVulnPriority = conf.String("clairVulnPriority")
+	ClairDBPath = conf.String("clair::path")
+	ClairLogLevel = conf.String("clair::logLevel")
+	ClairKeepDB, _ = conf.Bool("clair::keepDB")
+	ClairUpdateDuration = conf.String("clair::updateDuration")
+	ClairVulnPriority = conf.String("clair::vulnPriority")
 
 	return err
 }

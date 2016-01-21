@@ -51,12 +51,6 @@ Although dockyard is still in development, we encourage you to try out the tool 
 Installation is as simple as:
 
 ```bash
-go get github.com/containerops/dockyard
-```
-
-or as involved as:
-
-```bash
 # create a 'github.com/containerops' directory in your GOPATH/src
 cd github.com/containerops
 git clone https://github.com/containerops/dockyard
@@ -64,6 +58,15 @@ cd dockyard
 make
 sudo make install
 ```
+
+or as involved as:
+
+```bash
+go get github.com/containerops/dockyard
+cd $GOPATH/src/github.com/containerops/dockyard
+go build
+```
+You can build Dockyard via `make` that depends on Godeps or `go build` that depends on your local package.There may be some problems occured when executing `go get` in chinese network,you'd better use `make` to build it.
 
 ### Prerequisites
 It is quite easy to use Dockyard, only a little work should be done before starting dockyard service. Take it easy, just follow the instructions as below.
