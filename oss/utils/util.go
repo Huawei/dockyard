@@ -2,6 +2,7 @@ package util
 
 import (
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -15,6 +16,43 @@ import (
 
 func Call(method, baseUrl, path string, body io.Reader, headers map[string][]string) ([]byte, int, error) {
 	client := &http.Client{}
+
+	req, err := http.NewRequest(method, baseUrl+path, body)
+	if err != nil {
+		return nil, 408, err
+	}
+
+	if method == "POST" {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	if headers != nil {
+		for k, v := range headers {
+			req.Header[k] = v
+		}
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		if resp != nil {
+			return nil, resp.StatusCode, err
+		}
+		return nil, http.StatusNotFound, err
+	}
+
+	dataBody, err := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	if err != nil {
+		return nil, resp.StatusCode, err
+	}
+	return dataBody, resp.StatusCode, nil
+}
+
+func CallHttps(method, baseUrl, path string, body io.Reader, headers map[string][]string) ([]byte, int, error) {
+	client := &http.Client{}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client = &http.Client{Transport: tr}
 	req, err := http.NewRequest(method, baseUrl+path, body)
 	if err != nil {
 		return nil, 408, err
