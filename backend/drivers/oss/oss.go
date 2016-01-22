@@ -123,7 +123,7 @@ func ossgetfileinfo(filepath string) error {
 	}
 	header := make(map[string][]string, 0)
 	header["Path"] = []string{filepath}
-	result, statusCode, err := call("GET", apiserveraddr, "/oss/api/fileinfo", nil, header)
+	result, statusCode, err := call("GET", apiserveraddr, "/oss/api/file/info", nil, header)
 	if statusCode != http.StatusOK {
 		return fmt.Errorf("statusCode error: %d", statusCode, ", error: ", err)
 	}
@@ -145,7 +145,7 @@ func ossdownload(tag string, path string) error {
 	// get file information
 	header := make(map[string][]string, 0)
 	header["Path"] = []string{tag}
-	result, statusCode, err := call("GET", apiserveraddr, "/oss/api/fileinfo", nil, header)
+	result, statusCode, err := call("GET", apiserveraddr, "/oss/api/file/info", nil, header)
 	if statusCode != http.StatusOK {
 		return fmt.Errorf("statusCode error: %d", statusCode, ", error: ", err)
 	}

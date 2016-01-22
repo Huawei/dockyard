@@ -92,18 +92,12 @@ func InitAPI() error {
 
 func DeleteFile(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	path := ctx.Req.Header.Get(headerPath)
-	version := ctx.Req.Header.Get(headerVersion)
 
 	log.Info("[OSS][deleteFile] path: %s", path)
 
 	var err error
-	if version == VERSION1 {
-		err = metaDriver.DeleteFileMetaInfoV1(path)
-	} else {
-		err = metaDriver.DeleteFileMetaInfoV2(path)
-	}
 
-	if err != nil {
+	if err = metaDriver.DeleteFileMetaInfoV1(path); err != nil {
 		log.Error("[OSS]delete metainfo error for path: %s, error: %s", path, err)
 		return http.StatusInternalServerError, []byte(err.Error())
 	}
@@ -113,7 +107,7 @@ func DeleteFile(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 }
 
 func UploadFile(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
-	metaInfo, version, err := uploadFileReadParam(&ctx.Req.Header)
+	metaInfo, _, err := uploadFileReadParam(&ctx.Req.Header)
 	if err != nil {
 		log.Error("[OSS][uploadFile] read param error: %v", err)
 		return http.StatusBadRequest, []byte(err.Error())
@@ -130,13 +124,7 @@ func UploadFile(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 		return statusCode, []byte(err.Error())
 	}
 
-	if version == VERSION1 {
-		err = metaDriver.StoreMetaInfoV1(metaInfo)
-	} else {
-		err = metaDriver.StoreMetaInfoV2(metaInfo)
-	}
-
-	if err != nil {
+	if err = metaDriver.StoreMetaInfoV1(metaInfo); err != nil {
 		log.Error("[OSS]store metaInfo error: %s", err)
 		return http.StatusInternalServerError, []byte(err.Error())
 	}
@@ -416,7 +404,6 @@ func selectChunkServerGroupComplex(size int64) ([]chunkserver.ChunkServer, error
 		var writingCount = 0
 
 		length := len(servers)
-		fmt.Println(servers)
 		// skip empty group and transfering... group
 		if length == 0 || servers[0].GlobalStatus != chunkserver.GLOBAL_NORMAL_STATUS {
 			continue
@@ -644,7 +631,6 @@ func handleChunkServerInfo(infos map[string][]chunkserver.ChunkServer) {
 	}
 
 	if len(delServers) != 0 {
-		fmt.Printf("len(delServers): %d \n", len(delServers))
 		for index := 0; index < len(delServers); index++ {
 			fmt.Printf("delete chunkserver: %v \n", delServers[index])
 			newConnectionPool.RemovePool(delServers[index])
@@ -652,7 +638,6 @@ func handleChunkServerInfo(infos map[string][]chunkserver.ChunkServer) {
 	}
 
 	if len(addServers) != 0 {
-		fmt.Printf("len(addServers): %d \n", len(addServers))
 		for index := 0; index < len(addServers); index++ {
 			fmt.Printf("add chunkserver: %v \n", addServers[index])
 			newConnectionPool.AddPool(addServers[index], ConnPoolCapacity)
