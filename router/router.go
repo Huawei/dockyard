@@ -4,6 +4,7 @@ import (
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/dockyard/handler"
+	"github.com/containerops/dockyard/oss"
 	"github.com/containerops/dockyard/oss/apiserver"
 )
 
@@ -66,8 +67,10 @@ func SetRouters(m *macaron.Macaron) {
 
 	//Object storage service API
 	m.Group("/oss", func() {
+		m.Post("/chunkserver", oss.StartLocalServer)
+		m.Put("/chunkserver/info", oss.ReceiveChunkserverInfo)
 		m.Group("/api", func() {
-			m.Get("/fileinfo", apiserver.GetFileInfo)
+			m.Get("/file/info", apiserver.GetFileInfo)
 			m.Get("/file", apiserver.DownloadFile)
 			m.Post("/file", apiserver.UploadFile)
 			m.Delete("/file", apiserver.DeleteFile)
