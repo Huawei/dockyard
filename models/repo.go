@@ -49,7 +49,8 @@ type Tag struct {
 	Repository string   `json:"repository"` //
 	Sign       string   `json:"sign"`       //
 	Manifest   string   `json:"manifest"`   //
-	Memo       []string `json:"memo"`       //
+	Schema     int      `json:"schema"`
+	Memo       []string `json:"memo"` //
 }
 
 func (r *Repository) Has(namespace, repository string) (bool, string, error) {
@@ -241,7 +242,7 @@ func (r *Repository) PutJSONFromManifests(image map[string]string, namespace, re
 	return nil
 }
 
-func (r *Repository) PutTagFromManifests(image, namespace, repository, tag, manifests string) error {
+func (r *Repository) PutTagFromManifests(image, namespace, repository, tag, manifests string, schema int) error {
 	if has, _, err := r.Has(namespace, repository); err != nil {
 		return err
 	} else if has == false {
@@ -249,7 +250,14 @@ func (r *Repository) PutTagFromManifests(image, namespace, repository, tag, mani
 	}
 
 	t := new(Tag)
-	t.Name, t.ImageId, t.Namespace, t.Repository, t.Manifest = tag, image, namespace, repository, manifests
+	t = &Tag{
+		Name:       tag,
+		ImageId:    image,
+		Namespace:  namespace,
+		Repository: repository,
+		Manifest:   manifests,
+		Schema:     schema,
+	}
 
 	if err := t.Save(); err != nil {
 		return err
