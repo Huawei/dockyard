@@ -20,44 +20,51 @@ import (
 	"github.com/containerops/wrench/utils"
 )
 
-func ParseManifest(data []byte) error {
+func ParseManifest(data []byte, namespace, repository, tag string) (error, int) {
 	var manifest map[string]interface{}
 	if err := json.Unmarshal(data, &manifest); err != nil {
-		return err
+		return err, 0
 	}
 
-	tag := manifest["tag"]
-	namespace, repository := strings.Split(manifest["name"].(string), "/")[0], strings.Split(manifest["name"].(string), "/")[1]
+	schemaVersion := int(manifest["schemaVersion"].(float64))
+	if schemaVersion == 1 {
+		for k := len(manifest["history"].([]interface{})) - 1; k >= 0; k-- {
+			v := manifest["history"].([]interface{})[k]
+			compatibility := v.(map[string]interface{})["v1Compatibility"].(string)
 
-	for k := len(manifest["history"].([]interface{})) - 1; k >= 0; k-- {
-		v := manifest["history"].([]interface{})[k]
-		compatibility := v.(map[string]interface{})["v1Compatibility"].(string)
+			var image map[string]interface{}
+			if err := json.Unmarshal([]byte(compatibility), &image); err != nil {
+				return err, 0
+			}
 
-		var image map[string]interface{}
-		if err := json.Unmarshal([]byte(compatibility), &image); err != nil {
-			return err
-		}
+			i := map[string]string{}
+			r := new(models.Repository)
 
-		i := map[string]string{}
-		r := new(models.Repository)
+			if k == 0 {
+				i["Tag"] = tag
+			}
+			i["id"] = image["id"].(string)
 
-		if k == 0 {
-			i["Tag"] = tag.(string)
-		}
-		i["id"] = image["id"].(string)
+			if err := r.PutJSONFromManifests(i, namespace, repository); err != nil {
+				return err, 0
+			}
 
-		if err := r.PutJSONFromManifests(i, namespace, repository); err != nil {
-			return err
-		}
-
-		if k == 0 {
-			if err := r.PutTagFromManifests(image["id"].(string), namespace, repository, tag.(string), string(data)); err != nil {
-				return err
+			if k == 0 {
+				if err := r.PutTagFromManifests(image["id"].(string), namespace, repository, tag, string(data), schemaVersion); err != nil {
+					return err, 0
+				}
 			}
 		}
+	} else if schemaVersion == 2 {
+		r := new(models.Repository)
+		if err := r.PutTagFromManifests("schemaV2", namespace, repository, tag, string(data), schemaVersion); err != nil {
+			return err, 0
+		}
+	} else {
+		return fmt.Errorf("Invalid schema version"), 0
 	}
 
-	return nil
+	return nil, schemaVersion
 }
 
 func CopyImgLayer(srcPath, srcFile, dstPath, dstFile string, reqbody []byte) (int, error) {
