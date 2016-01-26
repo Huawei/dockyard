@@ -3,10 +3,9 @@ package docker
 import (
 	"fmt"
 	"os/exec"
+	"strconv"
 	"strings"
 	"testing"
-
-	"github.com/containerops/wrench/utils"
 )
 
 func TestPullInit(t *testing.T) {
@@ -170,6 +169,25 @@ func TestPullNonExistentRepo(t *testing.T) {
 	}
 }
 
+func compareDockerVer(cur, base string) int {
+	curversion := strings.Split(cur, ".")
+	baseversion := strings.Split(base, ".")
+
+	for i := 0; i < len(baseversion); i++ {
+		curnum, _ := strconv.Atoi(curversion[i])
+		basenum, _ := strconv.Atoi(baseversion[i])
+		if curnum < basenum {
+			return -1
+		} else if curnum > basenum {
+			return 1
+		} else {
+			continue
+		}
+	}
+
+	return 0
+}
+
 func getCurrentVersion() (string, string, error) {
 	cmd := exec.Command(DockerBinary, "-v")
 	out, err := ParseCmdCtx(cmd)
@@ -178,7 +196,7 @@ func getCurrentVersion() (string, string, error) {
 	}
 
 	curVer := strings.Split(strings.Split(out, ",")[0], " ")[2]
-	val := utils.Compare(curVer, "1.6.0")
+	val := compareDockerVer(curVer, "1.6.0")
 	if val < 0 {
 		return curVer, "V1", nil
 	} else {
