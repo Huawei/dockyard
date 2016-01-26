@@ -23,11 +23,11 @@ func PutTagV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	bodystr, _ := ctx.Req.Body().String()
 	log.Debug("[REGISTRY API V1] Repository Tag : %v", bodystr)
 
-	r, _ := regexp.Compile(`"([[:alnum:]]+)"`)
-	imageIds := r.FindStringSubmatch(bodystr)
+	rege, _ := regexp.Compile(`"([[:alnum:]]+)"`)
+	imageIds := rege.FindStringSubmatch(bodystr)
 
-	repo := new(models.Repository)
-	if err := repo.PutTag(imageIds[1], namespace, repository, tag); err != nil {
+	r := new(models.Repository)
+	if err := r.PutTag(imageIds[1], namespace, repository, tag); err != nil {
 		log.Error("[REGISTRY API V1] Put repository tag error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": err.Error()})
@@ -70,8 +70,8 @@ func GetRepositoryImagesV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (in
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
-	repo := new(models.Repository)
-	if has, _, err := repo.Has(namespace, repository); err != nil {
+	r := new(models.Repository)
+	if has, _, err := r.Has(namespace, repository); err != nil {
 		log.Error("[REGISTRY API V1] Read repository json error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Get V1 repository images failed,wrong name or repository"})
@@ -83,9 +83,9 @@ func GetRepositoryImagesV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (in
 		return http.StatusNotFound, result
 	}
 
-	repo.Download += 1
+	r.Download += 1
 
-	if err := repo.Save(); err != nil {
+	if err := r.Save(); err != nil {
 		log.Error("[REGISTRY API V1] Update download count error: %v", err.Error())
 		result, _ := json.Marshal(map[string]string{"message": "Save V1 repository failed"})
 		return http.StatusBadRequest, result
@@ -100,17 +100,17 @@ func GetRepositoryImagesV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (in
 
 	ctx.Resp.Header().Set("X-Docker-Token", token)
 	ctx.Resp.Header().Set("WWW-Authenticate", token)
-	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(repo.JSON)))
+	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(r.JSON)))
 
-	return http.StatusOK, []byte(repo.JSON)
+	return http.StatusOK, []byte(r.JSON)
 }
 
 func GetTagV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
-	repo := new(models.Repository)
-	if has, _, err := repo.Has(namespace, repository); err != nil {
+	r := new(models.Repository)
+	if has, _, err := r.Has(namespace, repository); err != nil {
 		log.Error("[REGISTRY API V1] Read repository json error: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Get V1 tag failed,wrong name or repository"})
@@ -124,7 +124,7 @@ func GetTagV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 
 	tag := map[string]string{}
 
-	for _, value := range repo.Tags {
+	for _, value := range r.Tags {
 		t := new(models.Tag)
 		if err := db.Get(t, value); err != nil {
 			log.Error(fmt.Sprintf("[REGISTRY API V1]  %s/%s Tags is not exist", namespace, repository))
