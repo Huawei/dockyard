@@ -15,17 +15,16 @@ import (
 )
 
 func SetDockyardMacaron(m *macaron.Macaron) {
-	//Setting Database
-	if err := db.InitDB(setting.DBURI, setting.DBPasswd, setting.DBDB); err != nil {
-		fmt.Printf("Connect Database error %s", err.Error())
+	if err := db.InitDB(setting.DBDriver, setting.DBUser, setting.DBPasswd, setting.DBURI, setting.DBName); err != nil {
+		fmt.Printf("Connect Database error %s\n", err.Error())
 	}
 
 	if err := backend.InitBackend(); err != nil {
-		fmt.Printf("Init backend error %s", err.Error())
+		fmt.Printf("Init backend error %s\n", err.Error())
 	}
 
 	if err := middleware.Initfunc(); err != nil {
-		fmt.Printf("Init middleware error %s", err.Error())
+		fmt.Printf("Init middleware error %s\n", err.Error())
 	}
 
 	//Setting Middleware
