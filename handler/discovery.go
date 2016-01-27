@@ -18,7 +18,7 @@ func DiscoveryACIHandler(ctx *macaron.Context, log *logs.BeeLogger) {
 
 	t, err := template.ParseFiles(models.TemplatePath)
 	if err != nil {
-		log.Error("[ACI API] Discovery parse template file failed: %v", err.Error())
+		log.Error("[ACI API] Failed to parse template file: %v", err.Error())
 		ctx.Resp.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(ctx.Resp, fmt.Sprintf("%v", err))
 		return
@@ -31,7 +31,7 @@ func DiscoveryACIHandler(ctx *macaron.Context, log *logs.BeeLogger) {
 		ListenMode: setting.ListenMode,
 	})
 	if err != nil {
-		log.Error("[ACI API] Discovery respond failed: %v", err.Error())
+		log.Error("[ACI API] Failed to respond: %v", err.Error())
 		fmt.Fprintf(ctx.Resp, fmt.Sprintf("%v", err))
 	}
 }

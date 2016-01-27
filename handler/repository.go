@@ -10,7 +10,6 @@ import (
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/dockyard/models"
-	"github.com/containerops/wrench/db"
 	"github.com/containerops/wrench/setting"
 	"github.com/containerops/wrench/utils"
 )
@@ -21,16 +20,15 @@ func PutTagV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	tag := ctx.Params(":tag")
 
 	bodystr, _ := ctx.Req.Body().String()
-	log.Debug("[REGISTRY API V1] Repository Tag : %v", bodystr)
 
 	rege, _ := regexp.Compile(`"([[:alnum:]]+)"`)
 	imageIds := rege.FindStringSubmatch(bodystr)
 
 	r := new(models.Repository)
 	if err := r.PutTag(imageIds[1], namespace, repository, tag); err != nil {
-		log.Error("[REGISTRY API V1] Put repository tag error: %v", err.Error())
+		log.Error("[REGISTRY API V1] Failed to save repository %v/%v tag: %v", namespace, repository, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": err.Error()})
+		result, _ := json.Marshal(map[string]string{"message": "Failed to save repository tag"})
 		return http.StatusBadRequest, result
 	}
 
@@ -44,9 +42,9 @@ func PutRepositoryImagesV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (in
 
 	r := new(models.Repository)
 	if err := r.PutImages(namespace, repository); err != nil {
-		log.Error("[REGISTRY API V1] Put images error: %v", err.Error())
+		log.Error("[REGISTRY API V1] Failed to save images: %v", err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Put V1 images error"})
+		result, _ := json.Marshal(map[string]string{"message": "Failed to save images"})
 		return http.StatusBadRequest, result
 	}
 
@@ -71,23 +69,23 @@ func GetRepositoryImagesV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (in
 	repository := ctx.Params(":repository")
 
 	r := new(models.Repository)
-	if has, _, err := r.Has(namespace, repository); err != nil {
-		log.Error("[REGISTRY API V1] Read repository json error: %v", err.Error())
+	if exists, err := r.Get(namespace, repository); err != nil {
+		log.Error("[REGISTRY API V1] Failed to get repository %v/%v context: %v", namespace, repository, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Get V1 repository images failed,wrong name or repository"})
+		result, _ := json.Marshal(map[string]string{"message": "Failed to get repository context"})
 		return http.StatusBadRequest, result
-	} else if has == false {
-		log.Error("[REGISTRY API V1] Read repository no found, %v/%v", namespace, repository)
+	} else if exists == false {
+		log.Error("[REGISTRY API V1] Not found repository %v/%v", namespace, repository)
 
-		result, _ := json.Marshal(map[string]string{"message": "Get V1 repository images failed,repository no found"})
+		result, _ := json.Marshal(map[string]string{"message": "Not found repository"})
 		return http.StatusNotFound, result
 	}
 
 	r.Download += 1
 
-	if err := r.Save(); err != nil {
-		log.Error("[REGISTRY API V1] Update download count error: %v", err.Error())
-		result, _ := json.Marshal(map[string]string{"message": "Save V1 repository failed"})
+	if err := r.Save(namespace, repository); err != nil {
+		log.Error("[REGISTRY API V1] Failed to save repository %v/%v context: %v", namespace, repository, err.Error())
+		result, _ := json.Marshal(map[string]string{"message": "Failed to save repository context"})
 		return http.StatusBadRequest, result
 	}
 
@@ -110,33 +108,33 @@ func GetTagV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	repository := ctx.Params(":repository")
 
 	r := new(models.Repository)
-	if has, _, err := r.Has(namespace, repository); err != nil {
-		log.Error("[REGISTRY API V1] Read repository json error: %v", err.Error())
+	if exists, err := r.Get(namespace, repository); err != nil {
+		log.Error("[REGISTRY API V1] Failed to get repository %v/%v context: %v", namespace, repository, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Get V1 tag failed,wrong name or repository"})
+		result, _ := json.Marshal(map[string]string{"message": "Failed to get repository context"})
 		return http.StatusBadRequest, result
-	} else if has == false {
-		log.Error("[REGISTRY API V1] Read repository no found. %v/%v", namespace, repository)
+	} else if exists == false {
+		log.Error("[REGISTRY API V1] Not found repository %v/%v", namespace, repository)
 
-		result, _ := json.Marshal(map[string]string{"message": "Get V1 tag failed,read repository no found"})
+		result, _ := json.Marshal(map[string]string{"message": "Not found repository"})
 		return http.StatusNotFound, result
 	}
 
-	tag := map[string]string{}
-
-	for _, value := range r.Tags {
+	tags := map[string]string{}
+	tagslist := r.GetTagslist()
+	for _, tagname := range tagslist {
 		t := new(models.Tag)
-		if err := db.Get(t, value); err != nil {
-			log.Error(fmt.Sprintf("[REGISTRY API V1]  %s/%s Tags is not exist", namespace, repository))
+		if exists, err := t.Get(namespace, repository, tagname); err != nil || !exists {
+			log.Error(fmt.Sprintf("[REGISTRY API V1]  %s/%s %v is not exist", namespace, repository, tagname))
 
-			result, _ := json.Marshal(map[string]string{"message": fmt.Sprintf("%s/%s Tags is not exist", namespace, repository)})
+			result, _ := json.Marshal(map[string]string{"message": "Tag is not exist"})
 			return http.StatusNotFound, result
 		}
 
-		tag[t.Name] = t.ImageId
+		tags[tagname] = t.ImageId
 	}
 
-	result, _ := json.Marshal(tag)
+	result, _ := json.Marshal(tags)
 	return http.StatusOK, result
 }
 
@@ -148,16 +146,16 @@ func PutRepositoryV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []b
 
 	body, err := ctx.Req.Body().String()
 	if err != nil {
-		log.Error("[REGISTRY API V1] Get request body error: %v", err.Error())
-		result, _ := json.Marshal(map[string]string{"message": "Put V1 repository failed,request body is empty"})
+		log.Error("[REGISTRY API V1] Failed to get request body: %v", err.Error())
+		result, _ := json.Marshal(map[string]string{"message": "Failed to get request body"})
 		return http.StatusBadRequest, result
 	}
 
 	r := new(models.Repository)
 	if err := r.Put(namespace, repository, body, ctx.Req.Header.Get("User-Agent"), setting.APIVERSION_V1); err != nil {
-		log.Error("[REGISTRY API V1] Put repository error: %v", err.Error())
+		log.Error("[REGISTRY API V1] Failed to save repository %v/%v context: %v", namespace, repository, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": err.Error()})
+		result, _ := json.Marshal(map[string]string{"message": "Failed to save repository context"})
 		return http.StatusBadRequest, result
 	}
 
