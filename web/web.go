@@ -7,6 +7,7 @@ import (
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/dockyard/backend"
+	"github.com/containerops/dockyard/clair"
 	"github.com/containerops/dockyard/middleware"
 	"github.com/containerops/dockyard/oss"
 	"github.com/containerops/dockyard/router"
@@ -21,6 +22,10 @@ func SetDockyardMacaron(m *macaron.Macaron) {
 	}
 
 	if err := backend.InitBackend(); err != nil {
+		fmt.Printf("Init backend error %s", err.Error())
+	}
+
+	if err := clair.InitClair(); err != nil {
 		fmt.Printf("Init backend error %s", err.Error())
 	}
 

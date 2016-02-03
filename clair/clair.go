@@ -1,6 +1,9 @@
 package clair
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -27,6 +30,12 @@ type ClairConfig struct {
 	VulnPriority string
 }
 
+type History struct {
+	ID        string
+	Parent    string
+	localPath string
+}
+
 const (
 	DefaultClairUpdateDuration = "1h0m0s"
 	DefaultClairLogLevel       = "info"
@@ -39,11 +48,7 @@ var (
 	clairStopper *utils.Stopper
 )
 
-func init() {
-}
-
-func ClairServiceInit() error {
-	// Load database setting
+func InitClair() error {
 	if setting.ClairDBPath != "" {
 		clairConf.DBPath = setting.ClairDBPath
 	} else {
@@ -55,13 +60,11 @@ func ClairServiceInit() error {
 	clairConf.Duration = setting.ClairUpdateDuration
 	clairConf.VulnPriority = setting.ClairVulnPriority
 
-	// Set database
 	if err := database.Open("bolt", clairConf.DBPath); err != nil {
 		logrus.Debug(err)
 		return err
 	}
 
-	// Set logLevel of clair lib
 	logLevel, err := capnslog.ParseLevel(strings.ToUpper(clairConf.LogLevel))
 	if err != nil {
 		logLevel, _ = capnslog.ParseLevel(strings.ToUpper(DefaultClairLogLevel))
@@ -69,13 +72,11 @@ func ClairServiceInit() error {
 	capnslog.SetGlobalLogLevel(logLevel)
 	capnslog.SetFormatter(capnslog.NewPrettyFormatter(os.Stdout, false))
 
-	// Set minumum priority parameter.
 	if types.Priority(clairConf.VulnPriority).IsValid() {
 		logrus.Debugf("Vuln priority is invalid :%v.", clairConf.VulnPriority)
 		clairConf.VulnPriority = DefaultClairVulnPriority
 	}
 
-	// Set 'duration' and Update the CVE database
 	if clairConf.Duration == "" {
 		logrus.Debugf("No duration set, so only update at the beginning.")
 		go updater.Update()
@@ -100,52 +101,71 @@ func ClairServiceInit() error {
 	return nil
 }
 
-func ClairServiceStop() {
+func StopClair() {
 	if clairStopper != nil {
 		clairStopper.End()
 	}
-	// Remove the database file
 	if !clairConf.KeepDB {
 		os.RemoveAll(clairConf.DBPath)
 	}
 
-	//Bugs in Clair upstream
-	//database.Close()
+	database.Close()
 }
 
-func ClairGetVulns(ID string, ParentID string, Path string) ([]*database.Vulnerability, error) {
-	// Process data.
-	logrus.Debugf("Start to get vulnerabilities: %v %v %v", ID, ParentID, Path)
-	if err := worker.Process(ID, ParentID, Path); err != nil {
-		logrus.Debugf("End find err process: %v", err)
-		return nil, err
+func Put(manifest []byte, vendor string, version string) error {
+	fmt.Println("start to scan")
+	var history []History
+	if vendor == "Docker" && version == "V2" {
+		history = getDockerV2History(manifest)
 	}
-	// Find layer
+
+	//The first one should be the base image (no parent)
+	for i := 0; i < len(history); i++ {
+		PutLayer(history[i])
+	}
+	return nil
+}
+
+func PutLayer(h History) error {
+	if err := worker.Process(h.ID, h.Parent, h.localPath); err != nil {
+		logrus.Debugf("End find err process: %v", err)
+		return err
+	}
+	return nil
+}
+
+func Get(manifest []byte, vendor string, version string) ([]*database.Vulnerability, error) {
+	var history []History
+	if vendor == "Docker" && version == "V2" {
+		history = getDockerV2History(manifest)
+	}
+	if len(history) == 0 {
+		return nil, errors.New("Cannot parse the manifest")
+	}
+	return GetVulns(history[len(history)-1].ID)
+}
+
+func GetVulns(ID string) ([]*database.Vulnerability, error) {
 	layer, err := database.FindOneLayerByID(ID, []string{database.FieldLayerParent, database.FieldLayerPackages})
 	if err != nil {
 		logrus.Debugf("Cannot get layer: %v", err)
 		return nil, err
 	}
 
-	// Find layer's packages.
 	packagesNodes, err := layer.AllPackages()
 	if err != nil {
 		logrus.Debugf("Cannot get packages: %v", err)
 		return nil, err
 	}
 
-	// Find vulnerabilities.
 	return getVulnerabilitiesFromLayerPackagesNodes(packagesNodes, types.Priority(clairConf.VulnPriority), []string{database.FieldVulnerabilityID, database.FieldVulnerabilityLink, database.FieldVulnerabilityPriority, database.FieldVulnerabilityDescription})
 }
 
-// getVulnerabilitiesFromLayerPackagesNodes returns the list of vulnerabilities
-// affecting the provided package nodes, filtered by Priority.
 func getVulnerabilitiesFromLayerPackagesNodes(packagesNodes []string, minimumPriority types.Priority, selectedFields []string) ([]*database.Vulnerability, error) {
 	if len(packagesNodes) == 0 {
 		return []*database.Vulnerability{}, nil
 	}
 
-	// Get successors of the packages.
 	packagesNextVersions, err := getSuccessorsFromPackagesNodes(packagesNodes)
 	if err != nil {
 		return []*database.Vulnerability{}, err
@@ -154,13 +174,11 @@ func getVulnerabilitiesFromLayerPackagesNodes(packagesNodes []string, minimumPri
 		return []*database.Vulnerability{}, nil
 	}
 
-	// Find vulnerabilities fixed in these successors.
 	vulnerabilities, err := database.FindAllVulnerabilitiesByFixedIn(packagesNextVersions, selectedFields)
 	if err != nil {
 		return []*database.Vulnerability{}, err
 	}
 
-	// Filter vulnerabilities depending on their priority and remove duplicates.
 	filteredVulnerabilities := []*database.Vulnerability{}
 	seen := map[string]struct{}{}
 	for _, v := range vulnerabilities {
@@ -175,20 +193,16 @@ func getVulnerabilitiesFromLayerPackagesNodes(packagesNodes []string, minimumPri
 	return filteredVulnerabilities, nil
 }
 
-// getSuccessorsFromPackagesNodes returns the node list of packages that have
-// versions following the versions of the provided packages.
 func getSuccessorsFromPackagesNodes(packagesNodes []string) ([]string, error) {
 	if len(packagesNodes) == 0 {
 		return []string{}, nil
 	}
 
-	// Get packages.
 	packages, err := database.FindAllPackagesByNodes(packagesNodes, []string{database.FieldPackageNextVersion})
 	if err != nil {
 		return []string{}, err
 	}
 
-	// Find all packages' successors.
 	var packagesNextVersions []string
 	for _, pkg := range packages {
 		nextVersions, err := pkg.NextVersions([]string{})
@@ -201,4 +215,35 @@ func getSuccessorsFromPackagesNodes(packagesNodes []string) ([]string, error) {
 	}
 
 	return packagesNextVersions, nil
+}
+
+//V2 only
+func getDockerV2History(data []byte) (history []History) {
+	fmt.Println("get history of ", string(data))
+	var manifest map[string]interface{}
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		return nil
+	}
+	//In manifest, the last one is the base image
+	for k := len(manifest["history"].([]interface{})) - 1; k >= 0; k-- {
+		var h History
+		compatibility := manifest["history"].([]interface{})[k].(map[string]interface{})["v1Compatibility"].(string)
+		if err := json.Unmarshal([]byte(compatibility), &h); err != nil {
+			return nil
+		}
+
+		if len(history) == 0 || history[len(history)-1].ID == h.Parent {
+			digest := manifest["fsLayers"].([]interface{})[k].(map[string]interface{})["blobSum"].(string)
+			h.localPath = getDockerV2Path(digest)
+			history = append(history, h)
+		}
+	}
+
+	return history
+}
+
+func getDockerV2Path(digest string) string {
+	tarsum := strings.Split(digest, ":")[1]
+	layerfile := fmt.Sprintf("%v/tarsum/%v/layer", setting.ImagePath, tarsum)
+	return layerfile
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/astaxie/beego/logs"
 	"gopkg.in/macaron.v1"
 
+	"github.com/containerops/dockyard/clair"
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/dockyard/module"
 	"github.com/containerops/wrench/setting"
@@ -53,6 +54,10 @@ func PutManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 
 		result, _ := json.Marshal(map[string]string{"message": "Get manifest digest failed"})
 		return http.StatusBadRequest, result
+	}
+
+	if err := clair.Put(ManifestCtx, "Docker", "V2"); err != nil {
+		log.Error("[REGISTRY API V2] Failed to scan Manifest Error: %v", err)
 	}
 
 	random := fmt.Sprintf("%s://%s/v2/%s/%s/manifests/%s",
