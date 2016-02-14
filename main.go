@@ -13,7 +13,7 @@ import (
 
 func main() {
 	if err := setting.SetConfig("conf/containerops.conf"); err != nil {
-		fmt.Printf("Read config failed: %v", err.Error())
+		fmt.Printf("Read config failed: %v\n", err.Error())
 		return
 	}
 

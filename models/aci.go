@@ -34,19 +34,19 @@ var TemplatePath string = "views/aci/index.html"
 func (a *Aci) Update(namespace, repository, tag, imageId, manipath, signpath, acipath string) error {
 	r := new(Repository)
 	r.Namespace, r.Repository, r.Version = namespace, repository, setting.APIVERSION_ACI
-	if err := r.Save(); err != nil {
+	if err := r.Save(namespace, repository); err != nil {
 		return err
 	}
 
 	i := new(Image)
 	i.ImageId, i.ManiPath, i.SignPath, i.AciPath = imageId, manipath, signpath, acipath
-	if err := i.Save(); err != nil {
+	if err := i.Save(imageId); err != nil {
 		return err
 	}
 
 	t := new(Tag)
-	t.Name, t.Namespace, t.Repository, t.ImageId = tag, namespace, repository, imageId
-	if err := t.Save(); err != nil {
+	t.Tag, t.Namespace, t.Repository, t.ImageId = tag, namespace, repository, imageId
+	if err := t.Save(namespace, repository, tag); err != nil {
 		return err
 	}
 

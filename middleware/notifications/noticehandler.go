@@ -57,7 +57,7 @@ func (n *notification) Handler(ctx *macaron.Context) {
 
 	//Notification function just supports DockerV2 now
 	r := new(models.Repository)
-	if has, _, err := r.Has(namespace, repository); err != nil || has == false {
+	if exists, err := r.Get(namespace, repository); err != nil || exists == false {
 		return
 	}
 	if r.Version != setting.APIVERSION_V2 {
@@ -73,7 +73,7 @@ func (n *notification) Handler(ctx *macaron.Context) {
 		tarsum := strings.Split(digest, ":")[1]
 
 		i := new(models.Image)
-		if has, _ := i.HasTarsum(tarsum); has == false {
+		if exists, _ := i.Get(tarsum); exists == false {
 			return
 		}
 
@@ -109,7 +109,7 @@ func (n *notification) Handler(ctx *macaron.Context) {
 			tarsum := strings.Split(digest, ":")[1]
 
 			i := new(models.Image)
-			if has, _ := i.HasTarsum(tarsum); has == false {
+			if exists, _ := i.Get(tarsum); exists == false {
 				return
 			}
 
@@ -139,7 +139,7 @@ func (n *notification) Handler(ctx *macaron.Context) {
 
 		if flag := strings.Contains(ctx.Req.RequestURI, "/manifests/"); flag == true {
 			t := new(models.Tag)
-			if err := t.Get(namespace, repository, ctx.Params(":tag")); err != nil {
+			if exists, err := t.Get(namespace, repository, ctx.Params(":tag")); err != nil || !exists {
 				return
 			}
 

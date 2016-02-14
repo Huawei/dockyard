@@ -20,13 +20,13 @@ import (
 	"github.com/containerops/wrench/utils"
 )
 
-func ParseManifest(data []byte, namespace, repository, tag string) (error, int) {
+func ParseManifest(data []byte, namespace, repository, tag string) (error, int64) {
 	var manifest map[string]interface{}
 	if err := json.Unmarshal(data, &manifest); err != nil {
 		return err, 0
 	}
 
-	schemaVersion := int(manifest["schemaVersion"].(float64))
+	schemaVersion := int64(manifest["schemaVersion"].(float64))
 	if schemaVersion == 1 {
 		for k := len(manifest["history"].([]interface{})) - 1; k >= 0; k-- {
 			v := manifest["history"].([]interface{})[k]
@@ -97,7 +97,7 @@ func CopyImgLayer(srcPath, srcFile, dstPath, dstFile string, reqbody []byte) (in
 func parseIP(ipStr string) net.IP {
 	ip := net.ParseIP(ipStr)
 	if ip == nil {
-		fmt.Errorf("invalid remote IP address: %q", ipStr)
+		fmt.Errorf("Invalid remote IP address: %q", ipStr)
 	}
 	return ip
 }
