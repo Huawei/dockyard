@@ -85,9 +85,11 @@ httpskeyfile = cert/containerops/containerops.key
 filepath = log/containerops-log
 
 [db]
-uri = localhost:6379
-passwd = containerops
-db = 8
+driver = mysql
+uri = localhost:3306
+user = root
+passwd = 123456
+name = dockyard
 
 [dockyard]
 path = data
@@ -98,10 +100,10 @@ standalone = true
 driver = qiniu
 
 [qiniu]
-endpoint = xxx
-bucket = xxx
-accessKeyID = xxx
-accessKeysecret = xxx
+endpoint = sample.com
+bucket = dockyard
+accessKeyID = userid
+accessKeysecret = userkey
 ```
 
 * runmode: application run mode must be `dev` or `prod`.
