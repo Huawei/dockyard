@@ -30,7 +30,7 @@ type Image struct {
 
 func (i *Image) Get(imageid string) (bool, error) {
 	i.ImageId = imageid
-	return db.Get(i, imageid)
+	return db.Drv.Get(i, imageid)
 }
 
 func (i *Image) Save(imageid string) error {
@@ -42,9 +42,9 @@ func (i *Image) Save(imageid string) error {
 
 	i.ImageId = imageid
 	if !exists {
-		err = db.Insert(i)
+		err = db.Drv.Insert(i)
 	} else {
-		err = db.Update(i)
+		err = db.Drv.Update(i)
 	}
 
 	return err
