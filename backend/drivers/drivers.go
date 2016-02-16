@@ -135,7 +135,7 @@ func Save(jsonIn string) (jsonOut string, err error) {
 		return "", err
 	}
 
-	if !rt[1].IsNil() {
+	if len(rt) > 1 && !rt[1].IsNil() {
 		errstr := rt[1].MethodByName("Error").Call(nil)[0].String()
 		if errstr != "" {
 			return "", fmt.Errorf(errstr)
