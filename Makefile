@@ -1,5 +1,5 @@
-#BUILDTAGS=
-#export GOPATH:=$(CURDIR)/Godeps/_workspace:$(GOPATH)
+BUILDTAGS=
+export GOPATH:=$(CURDIR)/Godeps/_workspace:$(GOPATH)
 
 all:
 		go build -tags "$(BUILDTAGS)" -o dockyard .
