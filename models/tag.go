@@ -27,7 +27,7 @@ func (t *Tag) TableUnique() [][]string {
 
 func (t *Tag) Get(namespace, repository, tag string) (bool, error) {
 	t.Namespace, t.Repository, t.Tag = namespace, repository, tag
-	return db.Get(t, namespace, repository, tag)
+	return db.Drv.Get(t, namespace, repository, tag)
 }
 
 func (t *Tag) Save(namespace, repository, tag string) error {
@@ -39,9 +39,9 @@ func (t *Tag) Save(namespace, repository, tag string) error {
 
 	t.Namespace, t.Repository, t.Tag = namespace, repository, tag
 	if !exists {
-		err = db.Insert(t)
+		err = db.Drv.Insert(t)
 	} else {
-		err = db.Update(t)
+		err = db.Drv.Update(t)
 	}
 
 	return err

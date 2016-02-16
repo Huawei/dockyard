@@ -8,6 +8,7 @@ import (
 
 	"github.com/containerops/dockyard/backend"
 	"github.com/containerops/dockyard/middleware"
+	"github.com/containerops/dockyard/models"
 	"github.com/containerops/dockyard/oss"
 	"github.com/containerops/dockyard/router"
 	"github.com/containerops/wrench/db"
@@ -15,8 +16,12 @@ import (
 )
 
 func SetDockyardMacaron(m *macaron.Macaron) {
-	if err := db.InitDB(setting.DBDriver, setting.DBUser, setting.DBPasswd, setting.DBURI, setting.DBName); err != nil {
-		fmt.Printf("Connect Database error %s\n", err.Error())
+	if err := db.RegisterDriver(setting.DBDriver); err != nil {
+		fmt.Printf("Register database driver error %s\n", err.Error())
+	}
+	db.Drv.RegisterModel(new(models.Repository), new(models.Tag), new(models.Image))
+	if err := db.Drv.InitDB(setting.DBDriver, setting.DBUser, setting.DBPasswd, setting.DBURI, setting.DBName, setting.DBDB); err != nil {
+		fmt.Printf("Connect database error %s\n", err.Error())
 	}
 
 	if err := backend.InitBackend(); err != nil {
