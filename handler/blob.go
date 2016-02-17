@@ -13,8 +13,6 @@ import (
 	"github.com/satori/go.uuid"
 	"gopkg.in/macaron.v1"
 
-	"github.com/containerops/dockyard/backend"
-	"github.com/containerops/dockyard/backend/drivers"
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/dockyard/module"
 	"github.com/containerops/wrench/setting"
@@ -141,16 +139,6 @@ func PutBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 
 		result, _ := json.Marshal(map[string]string{"message": "Failed to save tarsum"})
 		return http.StatusBadRequest, result
-	}
-
-	if setting.BackendDriver != "" {
-		file := layerfile
-		in_file := drivers.In{
-			"",
-			file,
-		}
-		In_File, _ := json.Marshal(in_file)
-		backend.Sc.PutIn(string(In_File))
 	}
 
 	random := fmt.Sprintf("%s://%s/v2/%s/%s/blobs/%s",
