@@ -1,4 +1,4 @@
-package backend
+package googlecloud
 
 import (
 	"io"
@@ -7,13 +7,14 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/containerops/wrench/setting"
 )
 
 var (
 	upFileName   string = "/tmp/gcs_test.txt"
 	downFileName string = "/tmp/new_gcs_test.txt"
 	fileContent  string = "Just for test gcs.\n Congratulations! U are sucess."
-	//retUrl_tmp  string
 )
 
 func newTestFile(t *testing.T) (f *os.File, err error) {
@@ -41,11 +42,14 @@ func TestGcssave(t *testing.T) {
 		t.Error(err)
 	}
 
+	err = setting.SetConfig("../../../conf/containerops.conf")
+	if err != nil {
+		t.Error(err)
+	}
 	retUrl, err := googlecloudsave(upFileName)
 	if err != nil {
 		t.Error(err)
 	}
-	//retUrl_tmp = retUrl
 
 	resp, err := http.Get(retUrl)
 	if err != nil {

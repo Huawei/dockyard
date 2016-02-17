@@ -1,168 +1,357 @@
-package backend
+package qcloud
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"math/rand"
+	"mime/multipart"
 	"net/http"
-	"net/url"
 	"os"
-	"sort"
 	"strings"
 	"time"
 
-	"github.com/astaxie/beego/config"
-)
-
-var (
-	QcloudEndpoint        string
-	QcloudAccessID        string
-	QcloudBucket          string
-	QcloudAccessKeyID     string
-	QcloudAccessKeySecret string
+	"github.com/containerops/dockyard/backend/drivers"
+	"github.com/containerops/wrench/setting"
 )
 
 func init() {
-	fmt.Println("qcloud")
-	InjectReflect.Bind("qcloudsave", qcloudsave)
+	drivers.Register("qcloud", InitFunc)
 }
 
-func qcloudSetconfig(conf config.ConfigContainer) error {
-	QcloudEndpoint = conf.String("qcloud::endpoint")
-	if QcloudEndpoint == "" {
-		return fmt.Errorf("Read endpoint of qcloud failed!")
-	}
-
-	QcloudAccessID = conf.String("qcloud::accessID")
-	if QcloudAccessID == "" {
-		return fmt.Errorf("Read accessID of qcloud failed!")
-	}
-
-	QcloudBucket = conf.String("qcloud::bucket")
-	if QcloudBucket == "" {
-		return fmt.Errorf("Read bucket qcloud failed!")
-	}
-
-	QcloudAccessKeyID = conf.String("qcloud::accessKeyID")
-	if QcloudAccessKeyID == "" {
-		return fmt.Errorf("Read accessKeyID of qcloud failed!")
-	}
-
-	QcloudAccessKeySecret = conf.String("qcloud::accessKeysecret")
-	if QcloudAccessKeySecret == "" {
-		return fmt.Errorf("Read accessKeysecret of qcloud failed!")
-	}
-	return nil
+func InitFunc() {
+	drivers.InjectReflect.Bind("qcloudsave", qcloudsave)
 }
 
-func makePlainText(api string, params map[string]interface{}) (plainText string) {
-	// sort
-	keys := make([]string, 0, len(params))
-	for k, _ := range params {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
+//according to data format of qcloud restful api
+func makePlainText(params map[string]interface{}) (plainText string) {
 
 	var plainParms string
-	for i := range keys {
-		k := keys[i]
-		plainParms += "&" + fmt.Sprintf("%v", k) + "=" + fmt.Sprintf("%v", params[k])
-	}
-	if api != "" {
-		plainText = "/" + api + "&" + plainParms[1:]
-	} else {
-		plainText = plainParms[1:]
-	}
-
-	plainText = url.QueryEscape(plainText)
+	plainParms += "&" + "a" + "=" + fmt.Sprintf("%v", params["a"])
+	plainParms += "&" + "b" + "=" + fmt.Sprintf("%v", params["b"])
+	plainParms += "&" + "k" + "=" + fmt.Sprintf("%v", params["k"])
+	plainParms += "&" + "e" + "=" + fmt.Sprintf("%v", params["e"])
+	plainParms += "&" + "t" + "=" + fmt.Sprintf("%v", params["t"])
+	plainParms += "&" + "r" + "=" + fmt.Sprintf("%v", params["r"])
+	plainParms += "&" + "f" + "=" + fmt.Sprintf("%v", params["f"])
+	plainText = plainParms[1:]
 
 	return plainText
 }
 
-func sign(plainText string, secretKey string) (sign string) {
+//generate a signature according to qcloud restful api
+func Sign(plainText string, secretKey string) (sign string) {
 	hmacObj := hmac.New(sha1.New, []byte(secretKey))
 	hmacObj.Write([]byte(plainText))
-	sign = base64.StdEncoding.EncodeToString(hmacObj.Sum(nil))
+	signObj := string(hmacObj.Sum(nil)) + plainText
+	sign = base64.StdEncoding.EncodeToString([]byte(signObj))
 	return
 }
 
-func qcloudsave(file string) (url string, err error) {
+func qcloudsave(filepath string) (url string, err error) {
 
+	fileattr := make(map[int]string)
+	for i, key := range strings.Split(filepath, ":") {
+		fileattr[i] = key
+	}
+
+	url, err = UploadFile(fileattr)
+	return
+
+}
+
+func UploadFile(fileattr map[int]string) (url string, err error) {
 	var key string
+	var file string
+	var filedir string
+	var requestUrl string
+	if len(fileattr) > 1 {
+		file = fileattr[1]
+		filedir = fileattr[0]
+	} else {
+		file = fileattr[0]
+	}
 	//get the filename from the file , eg,get "1.txt" from /home/liugenping/1.txt
 	for _, key = range strings.Split(file, "/") {
 
 	}
-
 	fin, err := os.Open(file)
 	if err != nil {
 		return "", err
 	}
 	defer fin.Close()
-	var fi os.FileInfo
-	fi, err = fin.Stat()
+	fileName := key
+	if len(fileattr) > 1 {
+		requestUrl = "http://" + setting.Endpoint + "/" + "files" + "/" + "v1" + "/" + setting.QcloudAccessID + "/" + setting.Bucket + "/" + filedir + "/" + fileName
+	} else {
+		requestUrl = "http://" + setting.Endpoint + "/" + "files" + "/" + "v1" + "/" + setting.QcloudAccessID + "/" + setting.Bucket + "/" + fileName
+	}
+	url, err = GetRequest(fin, file, requestUrl)
+	return url, err
+}
+
+func GenerateSign() (sign string) {
+
+	params := map[string]interface{}{}
+	params["a"] = setting.QcloudAccessID
+	params["b"] = setting.Bucket
+	params["k"] = setting.AccessKeyID
+	time_bg := fmt.Sprintf("%v", time.Now().Unix())
+	time_en := fmt.Sprintf("%v", time.Now().Unix()+2000000)
+	params["e"] = time_en
+	params["t"] = time_bg
+	rand := rand.New(rand.NewSource(time.Now().UnixNano()))
+	rands := fmt.Sprintf("%v", rand.Intn(100))
+	params["r"] = rands
+	params["f"] = ""
+
+	uploadPlainText := makePlainText(params)
+	sign = Sign(uploadPlainText, setting.AccessKeysecret)
+
+	return
+}
+
+var Criticalsize int64 = 2 * 1024 * 1024
+
+func upload_prepare(fin *os.File, filesize int64, requestUrl string) (session string, err error) {
+
+	h := sha1.New()
+	_, err = io.Copy(h, fin)
+	if err != nil {
+		return "", err
+	}
+	extraparams := map[string]string{
+		"op":         "upload_slice",
+		"filesize":   fmt.Sprintf("%v", filesize),
+		"sha":        fmt.Sprintf("%x", h.Sum(nil)),
+		"slice_size": fmt.Sprintf("%v", Criticalsize),
+	}
+	h = sha1.New()
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	for key, val := range extraparams {
+		_ = writer.WriteField(key, val)
+	}
+	err = writer.Close()
+	if err != nil {
+		return "", err
+	}
+
+	req, err := http.NewRequest("POST", requestUrl, body)
+	if err != nil {
+		return "", err
+	}
+
+	header := make(http.Header)
+	header.Set("Content-Type", writer.FormDataContentType())
+	header.Set("Authorization", GenerateSign())
+	req.Header = header
+
+	client := &http.Client{}
+	rsp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	out := []byte{}
+	out, err = ioutil.ReadAll(rsp.Body)
+	type drsp struct {
+		Offset     int64  `json:"offset"`
+		Session    string `json:"session"`
+		Slice_size int    `json:"slice_size"`
+		Url        string `json:"url"`
+	}
+	type qrsp struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+		Data    drsp   `json:"data"`
+	}
+	Qrsp := qrsp{}
+	err = json.Unmarshal(out, &Qrsp)
+	if Qrsp.Data.Url != "" {
+		return Qrsp.Data.Url, errors.New("file exists")
+	}
+	session = Qrsp.Data.Session
+
+	return session, nil
+}
+
+func upload_follow(fin *os.File, session string, filesize int64, requestUrl string) (url string, err error) {
+
+	type drsp struct {
+		Offset     int64  `json:"offset"`
+		Session    string `json:"session"`
+		Slice_size int    `json:"slice_size"`
+		Access_url string `json:"access_url"`
+	}
+	type qrsp struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+		Data    drsp   `json:"data"`
+	}
+	var offsetsta int64
+	var offsetend int64
+	var cnt int
+	var uploaddata = make([]byte, Criticalsize)
+	var header = make(http.Header)
+
+	for {
+		var filedata string
+		offsetsta = offsetend
+		offsetend += Criticalsize
+		if offsetend >= filesize {
+			offsetend = filesize
+			uploadend := make([]byte, offsetend-offsetsta)
+			_, err = fin.ReadAt(uploadend, offsetsta)
+			filedata = string(uploadend)
+		} else {
+			_, err = fin.ReadAt(uploaddata, offsetsta)
+			filedata = string(uploaddata)
+		}
+		extraparams := map[string]string{
+			"op":          "upload_slice",
+			"filecontent": filedata,
+			"sha":         fmt.Sprintf("%x", sha1.Sum([]byte(filedata))),
+			"session":     session,
+			"offset":      fmt.Sprintf("%v", offsetsta),
+		}
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		for key, val := range extraparams {
+			_ = writer.WriteField(key, val)
+		}
+		err = writer.Close()
+		if err != nil {
+			return "", err
+		}
+
+		header.Set("Content-Type", writer.FormDataContentType())
+		header.Set("Authorization", GenerateSign())
+		for cnt = 0; ; cnt++ {
+			req, err := http.NewRequest("POST", requestUrl, body)
+			if err != nil {
+				return "", err
+			}
+			req.Header = header
+			client := &http.Client{}
+
+			rsp, err := client.Do(req)
+			if err != nil {
+				return "", err
+			}
+			out, err := ioutil.ReadAll(rsp.Body)
+			Qrsp := qrsp{}
+			err = json.Unmarshal(out, &Qrsp)
+			session = Qrsp.Data.Session
+			url = Qrsp.Data.Access_url
+			if Qrsp.Code == 0 {
+				break
+			}
+			if cnt == 3 {
+				return "The net is disconnected!!!", err
+			}
+		}
+		if offsetend >= filesize {
+			break
+		}
+	}
+	return url, err
+}
+
+func upload_slice(fin *os.File, file string, requestUrl string) (url string, err error) {
+
+	fi, err := fin.Stat()
 	if err != nil {
 		return "", err
 	}
 	filesize := fi.Size()
 
-	params := map[string]interface{}{}
-	fileName := key
+	session, err := upload_prepare(fin, filesize, requestUrl)
+	if err != nil {
+		return session, err
+	}
+	url, err = upload_follow(fin, session, filesize, requestUrl)
+	return url, err
+}
 
-	//////
-	api := "api/cos_upload"
-	params["accessId"] = QcloudAccessID
-	params["bucketId"] = QcloudBucket
-	params["secretId"] = QcloudAccessKeyID
-	params["cosFile"] = fileName
-	params["path"] = "/"
-	time := fmt.Sprintf("%v", time.Now().Unix())
-	params["time"] = time
-	/////
+func GetRequest(fin *os.File, file string, requestUrl string) (url string, err error) {
 
-	fmt.Println("params[\"accessId\"]:", QcloudAccessID)
-	fmt.Println("params[\"bucketId\"]:", QcloudBucket)
-	fmt.Println("params[\"secretId\"]:", QcloudAccessKeyID)
-	fmt.Println("params[\"cosFile\"]:", fileName)
-
-	uploadPlainText := makePlainText(api, params)
-
-	sign := sign(uploadPlainText, QcloudAccessKeySecret)
-
-	var requstUrl string
-	requstUrl = "http://" + QcloudEndpoint + "/" + api + "?bucketId=" + QcloudBucket + "&cosFile=" + fileName + "&path=%2F" + "&accessId=" + QcloudAccessID + "&secretId=" + QcloudAccessKeyID + "&time=" + time + "&sign=" + sign
-
-	req, _ := http.NewRequest("POST", requstUrl, fin)
-	req.Body = fin
-	req.ContentLength = filesize
-	client := &http.Client{}
-	_, err = client.Do(req)
+	fi, err := fin.Stat()
 	if err != nil {
 		return "", err
 	}
+	filesize := fi.Size()
 
-	downloadUrl := qcloudGetDownloadUrl(fileName)
+	if filesize > Criticalsize {
+		url, err = upload_slice(fin, file, requestUrl)
+	} else {
+		h := sha1.New()
+		_, err = io.Copy(h, fin)
+		if err != nil {
+			return "", err
+		}
+		data, err := ioutil.ReadFile(file)
+		if err != nil {
+			return "", err
+		}
+		filedata := string(data)
+		extraparams := map[string]string{
+			"op":          "upload",
+			"filecontent": filedata,
+			"sha":         fmt.Sprintf("%x", h.Sum(nil)),
+		}
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		for key, val := range extraparams {
+			_ = writer.WriteField(key, val)
+		}
+		err = writer.Close()
+		if err != nil {
+			return "", err
+		}
 
-	return downloadUrl, nil
+		req, err := http.NewRequest("POST", requestUrl, body)
+		if err != nil {
+			return "", err
+		}
+
+		header := make(http.Header)
+		header.Set("Content-Type", writer.FormDataContentType())
+		header.Set("Authorization", GenerateSign())
+		req.Header = header
+		url, err = CliDo(req)
+	}
+	return
 }
 
-func qcloudGetDownloadUrl(fileName string) (downloadUrl string) {
-
-	params := map[string]interface{}{}
-
-	//////
-	params["accessId"] = QcloudAccessID
-	params["bucketId"] = QcloudBucket
-	params["secretId"] = QcloudAccessKeyID
-	params["path"] = "/" + fileName
-	time := fmt.Sprintf("%v", time.Now().Unix())
-	params["time"] = time
-
-	downloadPlainText := makePlainText("", params)
-	sign := sign(downloadPlainText, QcloudAccessKeySecret)
-	url := "cos.myqcloud.com/" + QcloudAccessID + "/" + QcloudBucket + "/" + fileName + "?" + "secretId=" + QcloudAccessKeyID + "&time=" + time
-	url += "&sign=" + sign
-	return url
-
+func CliDo(req *http.Request) (url string, err error) {
+	client := &http.Client{}
+	rsp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	out := []byte{}
+	out, err = ioutil.ReadAll(rsp.Body)
+	type drsp struct {
+		Access_url string `json:"access_url"`
+	}
+	type qrsp struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+		Data    drsp   `json:"data"`
+	}
+	Qrsp := qrsp{}
+	err = json.Unmarshal(out, &Qrsp)
+	if Qrsp.Code == 0 {
+		url = Qrsp.Data.Access_url
+	}
+	if Qrsp.Code == -4018 {
+		return "file exists", errors.New("file exists")
+	}
+	return url, nil
 }
