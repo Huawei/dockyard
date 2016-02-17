@@ -1,75 +1,51 @@
-package backend
+package googlecloud
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 	"strings"
 
-	"github.com/astaxie/beego/config"
-	"github.com/google/google-api-go-client/storage/v1"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"golang.org/x/oauth2/jwt"
-)
+	"google.golang.org/api/storage/v1"
 
-var (
-	projectID   string
-	bucket      string
-	scope       string
-	privateKey  []byte
-	clientEmail string
+	"github.com/containerops/dockyard/backend/drivers"
+	"github.com/containerops/wrench/setting"
 )
 
 func init() {
+	drivers.Register("googlecloudsave", InitFunc)
+}
 
-	gopath := os.Getenv("GOPATH")
-	if gopath == "" {
-		fmt.Errorf("read env GOPATH fail")
-		os.Exit(1)
-	}
-	//Reading config file named conf/runtime.conf for backend
-	conf, err := config.NewConfig("ini", gopath+"/src/github.com/containerops/dockyard/conf/runtime.conf")
-	if err != nil {
-		log.Fatalf("GCS reading conf/runtime.conf err %v", err)
-	}
+func InitFunc() {
+	drivers.InjectReflect.Bind("googlecloudsave", googlecloudsave)
+}
 
-	if projectID = conf.String("Googlecloud::projectid"); projectID == "" {
-		log.Fatalf("GCS reading conf/runtime.conf, GCS get projectID err, is nil")
-	}
+func googlecloudsave(filepath string) (url string, err error) {
 
-	//Get config var for jsonKeyFile, bucketName, projectID, which should be used later in oauth and get obj
-	if bucket = conf.String("Googlecloud::bucket"); bucket == "" {
-		log.Fatalf("GCS reading conf/runtime.conf, GCS get bucket err, is nil")
+	var file string
+	var filedir string
+	fileattr := make(map[int]string)
+	for i, key := range strings.Split(filepath, ":") {
+		fileattr[i] = key
 	}
-
-	if scope = conf.String("Googlecloud::scope"); scope == "" {
-		log.Fatalf("GCS reading conf/runtime.conf, GCS get privateKey err, is nil")
+	if len(fileattr) > 1 {
+		file = fileattr[1]
+		filedir = fileattr[0]
+	} else {
+		file = fileattr[0]
 	}
 
-	var privateKeyFile string
-	if privateKeyFile = conf.String("Googlecloud::privatekey"); privateKeyFile == "" {
-		log.Fatalf("GCS reading conf/runtime.conf, GCS get privateKey err, is nil")
-	}
-	privateKey, err = ioutil.ReadFile(gopath + "/src/github.com/containerops/dockyard/conf/" + privateKeyFile)
+	privateKey, err := ioutil.ReadFile(setting.PrivateKeyFilePath + setting.PrivateKeyFile)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	if clientEmail = conf.String("Googlecloud::clientemail"); clientEmail == "" {
-		log.Fatalf("GCS reading conf/runtime.conf, GCS get clientEmail err, is nil")
-	}
-
-	InjectReflect.Bind("googlecloudsave", googlecloudsave)
-}
-
-func googlecloudsave(file string) (url string, err error) {
-
-	s := []string{scope}
+	s := []string{setting.Scope}
 
 	conf := jwt.Config{
-		Email:      clientEmail,
+		Email:      setting.Clientemail,
 		PrivateKey: privateKey,
 		Scopes:     s,
 		TokenURL:   google.JWTTokenURL,
@@ -87,14 +63,16 @@ func googlecloudsave(file string) (url string, err error) {
 	var objectName string
 	for _, objectName = range strings.Split(file, "/") {
 	}
+	if len(fileattr) > 1 {
+		objectName = filedir + "/" + objectName
+	}
 	object := &storage.Object{Name: objectName}
-
 	// Insert an object into a bucket.
 	fileDes, err := os.Open(file)
 	if err != nil {
 		log.Fatalf("Error opening %q: %v", file, err)
 	}
-	objs, err := service.Objects.Insert(bucket, object).Media(fileDes).Do()
+	objs, err := service.Objects.Insert(setting.Bucket, object).Media(fileDes).Do()
 	if err != nil {
 		log.Fatalf("GCS Objects.Insert failed: %v", err)
 	}

@@ -6,8 +6,9 @@ import (
 	"github.com/containerops/dockyard/backend/drivers"
 	_ "github.com/containerops/dockyard/backend/drivers/aliyun"
 	_ "github.com/containerops/dockyard/backend/drivers/amazons3"
-	_ "github.com/containerops/dockyard/backend/drivers/native"
+	_ "github.com/containerops/dockyard/backend/drivers/googlecloud"
 	_ "github.com/containerops/dockyard/backend/drivers/oss"
+	_ "github.com/containerops/dockyard/backend/drivers/qcloud"
 	_ "github.com/containerops/dockyard/backend/drivers/qiniu"
 	"github.com/containerops/wrench/setting"
 )
