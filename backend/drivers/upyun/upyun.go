@@ -2,6 +2,7 @@ package upyun
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 
@@ -21,30 +22,42 @@ func InitFunc() {
 
 func upyunsave(file string) (url string, err error) {
 
-	var key string
-
-	for _, key = range strings.Split(file, "/") {
-
-	}
+	path := strings.Split(file, ":")
+	key := fmt.Sprintf("%v/layer", path[0])
+	localFile := path[1]
 
 	opath := "/" + setting.Bucket + "/" + key
 	url = "http://" + setting.Endpoint + opath
 
-	var u *upyun.UpYun
-	u = upyun.NewUpYun(setting.Bucket, setting.User, setting.Passwd)
-	if nil == u {
-		return "", errors.New("UpYun.NewUpYun Fail")
-	}
-
-	u.SetEndpoint(setting.Endpoint)
-
-	fin, err := os.Open(file)
+	fd, err := os.Open(localFile)
 	if err != nil {
 		return "", err
 	}
-	defer fin.Close()
+	defer fd.Close()
+	fi, err := fd.Stat()
+	if err != nil {
+		return "", err
+	}
+	fsize := fi.Size()
 
-	_, err = u.Put(key, fin, false, "")
+	if fsize < (2 << 27) {
+		uf := upyun.NewUpYunForm(setting.Bucket, setting.Secret)
+		if nil == uf {
+			return "", errors.New("UpYun.NewUpYunForm Fail")
+		}
+		options := map[string]string{}
+
+		_, err = uf.Put(localFile, key, 3600, options)
+
+	} else {
+		ump := upyun.NewUpYunMultiPart(setting.Bucket, setting.Secret, 1024000)
+		if nil == ump {
+			return "", errors.New("UpYun.NewUpYunForm Fail")
+		}
+		options := map[string]interface{}{}
+
+		_, err = ump.Put(localFile, key, 3600, options)
+	}
 	if err != nil {
 		return "", err
 	}
