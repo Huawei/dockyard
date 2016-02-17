@@ -17,23 +17,28 @@ func DemoConfig() ClairConfig {
 }
 
 func Test_ClairService(t *testing.T) {
-	if err := ClairServiceInit(); err != nil {
+	if err := InitClair(); err != nil {
 		t.Log("Clair service init failed!")
 		return
 	} else {
 		fmt.Println("Success in init clair service")
 	}
-	id := "123"
-	parentID := ""
+	var h History
+	h.ID = "123"
+	h.Parent = ""
 	// Assume we have this layer file in the current directoy
-	Path := "123.tar"
+	h.localPath = "123.tar"
 
-	if vulns, err := ClairGetVulns(id, parentID, Path); err != nil {
+	if err := PutLayer(h); err != nil {
+		fmt.Println("Cannot put layer")
+		return
+	}
+	if vulns, err := GetVulns(h.ID); err != nil {
 		for index := 0; index < len(vulns); index++ {
 			fmt.Println(*vulns[index])
 		}
 	} else {
 		fmt.Println("No vul risk!")
 	}
-	ClairServiceStop()
+	StopClair()
 }
