@@ -17,21 +17,19 @@ import (
 
 func SetDockyardMacaron(m *macaron.Macaron) {
 	if err := db.RegisterDriver(setting.DBDriver); err != nil {
-		fmt.Printf("Register database driver error %s\n", err.Error())
+		fmt.Printf("Register database driver error: %s\n", err.Error())
 	} else {
 		db.Drv.RegisterModel(new(models.Repository), new(models.Tag), new(models.Image))
 		err := db.Drv.InitDB(setting.DBDriver, setting.DBUser, setting.DBPasswd, setting.DBURI, setting.DBName, setting.DBDB)
 		if err != nil {
-			fmt.Printf("Connect database error %s\n", err.Error())
+			fmt.Printf("Connect database error: %s\n", err.Error())
 		}
 	}
 
-	if err := backend.InitBackend(); err != nil {
-		fmt.Printf("Init backend error %s\n", err.Error())
-	}
+	backend.InitBackend()
 
 	if err := middleware.Initfunc(); err != nil {
-		fmt.Printf("Init middleware error %s\n", err.Error())
+		fmt.Printf("Init middleware error: %s\n", err.Error())
 	}
 
 	//Setting Middleware
