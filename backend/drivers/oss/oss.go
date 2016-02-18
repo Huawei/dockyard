@@ -37,7 +37,7 @@ func InitFunc() {
 	drivers.InjectReflect.Bind("osssave", osssave)
 }
 
-func osssave(filepath string) error {
+func osssave(filepath string) (url string, err error) {
 	//TODO: define the naming rules of path
 	path := filepath
 	partSize := setting.PartSizeMB * 1024 * 1024
@@ -46,32 +46,32 @@ func osssave(filepath string) error {
 	file, err := os.Open(filepath)
 	defer file.Close()
 	if err != nil {
-		return fmt.Errorf("open file %s err: %v \n", filepath, err)
+		return "", fmt.Errorf("open file %s err: %v \n", filepath, err)
 	}
 	fileinfo, err := file.Stat()
 	if err != nil {
-		return fmt.Errorf("get file %s info err: %v \n", filepath, err)
+		return "", fmt.Errorf("get file %s info err: %v \n", filepath, err)
 	}
 	fileSize := fileinfo.Size()
 	fileBody := make([]byte, fileSize)
 	nread, err := file.Read(fileBody)
 	if err != nil || int64(nread) != fileSize {
-		return fmt.Errorf("[oss save] read %s nread: %v, fileSize: %v, err: %v", filepath, nread, fileSize, err)
+		return "", fmt.Errorf("[oss save] read %s nread: %v, fileSize: %v, err: %v", filepath, nread, fileSize, err)
 	}
 	partCount := int(fileSize / int64(partSize))
 	partial := int(fileSize % int64(partSize))
 
 	if partCount == 0 && partial == 0 {
-		return nil
+		return filepath, nil
 	}
 
 	// if data divide into only one fragment
 	if partCount == 0 && partial != 0 {
 		err := postFile(path, fileBody[0:partial], 0, 0, int64(partial), true)
 		if err != nil {
-			return fmt.Errorf("oss save file error: %v", err)
+			return "", fmt.Errorf("oss save file error: %v", err)
 		}
-		return nil
+		return filepath, nil
 	}
 
 	//if data divide into more than one fragment
@@ -101,16 +101,16 @@ func osssave(filepath string) error {
 	}
 	err = postFile(path, fileBody[begin:end], k, int64(begin), int64(end), true)
 	if err != nil {
-		return fmt.Errorf("oss save file error: %v", err)
+		return "", fmt.Errorf("oss save file error: %v", err)
 	}
 	//check if all fragments successfully saved
 	for i := 0; i < partCount; i++ {
 		if result[i] != 1 {
-			return fmt.Errorf("oss save file error, fragment %d error", i)
+			return "", fmt.Errorf("oss save file error, fragment %d error", i)
 		}
 	}
 	fmt.Printf("oss save file %v finish", filepath)
-	return nil
+	return filepath, nil
 }
 
 func ossgetfileinfo(filepath string) error {
