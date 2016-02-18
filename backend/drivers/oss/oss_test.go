@@ -9,7 +9,7 @@ import (
 func Test_osssave(t *testing.T) {
 	err := setting.SetConfig("../../../conf/containerops.conf")
 	file := "oss_test.go"
-	err = osssave(file)
+	_, err = osssave(file)
 	if err != nil {
 		t.Error(err)
 		return
