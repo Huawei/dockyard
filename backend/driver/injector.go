@@ -1,4 +1,4 @@
-package drivers
+package driver
 
 import (
 	"fmt"
@@ -6,6 +6,19 @@ import (
 )
 
 type Injector map[string]reflect.Value
+type INITFUNC func()
+
+var Drv = make(map[string]INITFUNC)
+
+func Register(name string, initfunc INITFUNC) error {
+	if _, existed := Drv[name]; existed {
+		return fmt.Errorf("%v has already been registered", name)
+	}
+
+	Drv[name] = initfunc
+
+	return nil
+}
 
 func NewInjector(size int) Injector {
 	return make(Injector, size)

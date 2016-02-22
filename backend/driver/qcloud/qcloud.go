@@ -17,16 +17,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/containerops/dockyard/backend/drivers"
+	"github.com/containerops/dockyard/backend/driver"
 	"github.com/containerops/wrench/setting"
 )
 
 func init() {
-	drivers.Register("qcloud", InitFunc)
+	driver.Register("qcloud", InitFunc)
 }
 
 func InitFunc() {
-	drivers.InjectReflect.Bind("qcloudsave", qcloudsave)
+	driver.InjectReflect.Bind("qcloudsave", qcloudsave)
 }
 
 //according to data format of qcloud restful api
@@ -54,29 +54,8 @@ func Sign(plainText string, secretKey string) (sign string) {
 	return
 }
 
-func qcloudsave(filepath string) (url string, err error) {
-
-	fileattr := make(map[int]string)
-	for i, key := range strings.Split(filepath, ":") {
-		fileattr[i] = key
-	}
-
-	url, err = UploadFile(fileattr)
-	return
-
-}
-
-func UploadFile(fileattr map[int]string) (url string, err error) {
+func qcloudsave(file string) (url string, err error) {
 	var key string
-	var file string
-	var filedir string
-	var requestUrl string
-	if len(fileattr) > 1 {
-		file = fileattr[1]
-		filedir = fileattr[0]
-	} else {
-		file = fileattr[0]
-	}
 	//get the filename from the file , eg,get "1.txt" from /home/liugenping/1.txt
 	for _, key = range strings.Split(file, "/") {
 
@@ -87,11 +66,7 @@ func UploadFile(fileattr map[int]string) (url string, err error) {
 	}
 	defer fin.Close()
 	fileName := key
-	if len(fileattr) > 1 {
-		requestUrl = "http://" + setting.Endpoint + "/" + "files" + "/" + "v1" + "/" + setting.QcloudAccessID + "/" + setting.Bucket + "/" + filedir + "/" + fileName
-	} else {
-		requestUrl = "http://" + setting.Endpoint + "/" + "files" + "/" + "v1" + "/" + setting.QcloudAccessID + "/" + setting.Bucket + "/" + fileName
-	}
+	requestUrl := "http://" + setting.Endpoint + "/" + "files" + "/" + "v1" + "/" + setting.QcloudAccessID + "/" + setting.Bucket + "/" + fileName
 	url, err = GetRequest(fin, file, requestUrl)
 	return url, err
 }
