@@ -1,27 +1,27 @@
 package backend
 
 import (
-	"github.com/containerops/dockyard/backend/drivers"
-	_ "github.com/containerops/dockyard/backend/drivers/aliyun"
-	_ "github.com/containerops/dockyard/backend/drivers/amazons3"
-	_ "github.com/containerops/dockyard/backend/drivers/googlecloud"
-	_ "github.com/containerops/dockyard/backend/drivers/oss"
-	_ "github.com/containerops/dockyard/backend/drivers/qcloud"
-	_ "github.com/containerops/dockyard/backend/drivers/qiniu"
-	_ "github.com/containerops/dockyard/backend/drivers/upyun"
+	"github.com/containerops/dockyard/backend/driver"
+	_ "github.com/containerops/dockyard/backend/driver/aliyun"
+	_ "github.com/containerops/dockyard/backend/driver/amazons3"
+	_ "github.com/containerops/dockyard/backend/driver/googlecloud"
+	_ "github.com/containerops/dockyard/backend/driver/oss"
+	_ "github.com/containerops/dockyard/backend/driver/qcloud"
+	_ "github.com/containerops/dockyard/backend/driver/qiniu"
+	_ "github.com/containerops/dockyard/backend/driver/upyun"
 	"github.com/containerops/wrench/setting"
 )
 
-var Sc drivers.ShareChannel
+var Sc driver.ShareChannel
 
 func InitBackend() {
-	initfunc, existed := drivers.Drv[setting.BackendDriver]
+	initfunc, existed := driver.Drv[setting.BackendDriver]
 	if !existed {
 		return
 	}
 	initfunc()
 
 	//Init goroutine
-	Sc = *drivers.NewShareChannel()
+	Sc = *driver.NewShareChannel()
 	Sc.Open()
 }

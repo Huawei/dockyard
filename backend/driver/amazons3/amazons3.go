@@ -11,16 +11,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/containerops/dockyard/backend/drivers"
+	"github.com/containerops/dockyard/backend/driver"
 	"github.com/containerops/wrench/setting"
 )
 
 func init() {
-	drivers.Register("amazons3", InitFunc)
+	driver.Register("amazons3", InitFunc)
 }
 
 func InitFunc() {
-	drivers.InjectReflect.Bind("amazons3save", amazons3save)
+	driver.InjectReflect.Bind("amazons3save", amazons3save)
 }
 
 func amazons3save(file string) (url string, err error) {
