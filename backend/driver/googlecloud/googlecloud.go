@@ -11,32 +11,19 @@ import (
 	"golang.org/x/oauth2/jwt"
 	"google.golang.org/api/storage/v1"
 
-	"github.com/containerops/dockyard/backend/drivers"
+	"github.com/containerops/dockyard/backend/driver"
 	"github.com/containerops/wrench/setting"
 )
 
 func init() {
-	drivers.Register("googlecloudsave", InitFunc)
+	driver.Register("googlecloudsave", InitFunc)
 }
 
 func InitFunc() {
-	drivers.InjectReflect.Bind("googlecloudsave", googlecloudsave)
+	driver.InjectReflect.Bind("googlecloudsave", googlecloudsave)
 }
 
-func googlecloudsave(filepath string) (url string, err error) {
-
-	var file string
-	var filedir string
-	fileattr := make(map[int]string)
-	for i, key := range strings.Split(filepath, ":") {
-		fileattr[i] = key
-	}
-	if len(fileattr) > 1 {
-		file = fileattr[1]
-		filedir = fileattr[0]
-	} else {
-		file = fileattr[0]
-	}
+func googlecloudsave(file string) (url string, err error) {
 
 	privateKey, err := ioutil.ReadFile(setting.PrivateKeyFilePath + setting.PrivateKeyFile)
 	if err != nil {
@@ -62,9 +49,6 @@ func googlecloudsave(filepath string) (url string, err error) {
 	//Split filename as a objectName
 	var objectName string
 	for _, objectName = range strings.Split(file, "/") {
-	}
-	if len(fileattr) > 1 {
-		objectName = filedir + "/" + objectName
 	}
 	object := &storage.Object{Name: objectName}
 	// Insert an object into a bucket.
