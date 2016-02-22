@@ -1,12 +1,11 @@
 package qiniu
 
 import (
-	"os"
 	"strings"
 
-	"golang.org/x/net/context"
-	"qiniupkg.com/api.v7/kodo"
-	"qiniupkg.com/api.v7/kodocli"
+	"github.com/qiniu/api.v6/conf"
+	"github.com/qiniu/api.v6/io"
+	"github.com/qiniu/api.v6/rs"
 
 	"github.com/containerops/dockyard/backend/driver"
 	"github.com/containerops/wrench/setting"
@@ -27,46 +26,18 @@ func qiniusave(file string) (url string, err error) {
 	for _, key = range strings.Split(file, "/") {
 
 	}
-	fil, err := os.Open(file)
-	if err != nil {
-		return "", err
-	}
-	defer fil.Close()
-	fi, err := fil.Stat()
-	if err != nil {
-		return "", err
-	}
-	fsize := fi.Size()
 
-	kodo.SetMac(setting.AccessKeyID, setting.AccessKeysecret)
+	conf.ACCESS_KEY = setting.AccessKeyID
+	conf.SECRET_KEY = setting.AccessKeysecret
 
-	zone := 0
-	c := kodo.New(zone, nil) //Create a Client object
+	url = "http://" + setting.Endpoint + "/" + key
 
-	bucket := setting.Bucket
-	policy := &kodo.PutPolicy{
-		Scope:   bucket, // restriction
-		Expires: 3600,   // expired time of uptoken
-	}
-	uptoken := c.MakeUptoken(policy)
+	putPolicy := rs.PutPolicy{Scope: setting.Bucket}
+	uptoken := putPolicy.Token(nil)
 
-	domain := setting.Endpoint
-	url = kodocli.MakeBaseUrl(domain, key)
-
-	//file less than 128m
-	if fsize < (2 << 27) {
-		zone = 0
-		uploader := kodocli.NewUploader(zone, nil)
-		ctx := context.Background()
-		err = uploader.PutFile(ctx, nil, uptoken, key, file, nil)
-	} else {
-		//file more than 128m
-		zone = 0
-		uploader := kodocli.NewUploader(zone, nil)
-		ctx := context.Background()
-		err = uploader.RputFile(ctx, nil, uptoken, key, file, nil)
-	}
-
+	var ret io.PutRet
+	var extra = &io.PutExtra{}
+	err = io.PutFile(nil, &ret, uptoken, key, file, extra)
 	if err != nil {
 		return "", err
 	} else {
