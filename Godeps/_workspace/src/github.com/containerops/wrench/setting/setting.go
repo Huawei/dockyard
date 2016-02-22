@@ -13,7 +13,7 @@ const (
 )
 
 var (
-	conf config.ConfigContainer
+	conf config.Configer
 )
 
 var (
@@ -28,9 +28,15 @@ var (
 	HttpsCertFile string
 	HttpsKeyFile  string
 	LogPath       string
-	DBURI         string
-	DBPasswd      string
-	DBDB          int64
+
+	//DB
+	DBDriver string
+	DBUser   string
+	DBPasswd string
+	DBName   string
+	DBURI    string
+	DBDB     int64
+
 	//Dockyard
 	BackendDriver       string
 	ImagePath           string
@@ -50,17 +56,17 @@ var (
 	AccessKeysecret string
 
 	//upyun unique
-	User   string
-	Passwd string
+	Secret string
 
 	//qcloud unique
-	AccessID string
+	QcloudAccessID string
 
 	//googlecloud unique
-	Projectid      string
-	Scope          string
-	PrivateKeyFile string
-	Clientemail    string
+	Projectid          string
+	Scope              string
+	PrivateKeyFilePath string
+	PrivateKeyFile     string
+	Clientemail        string
 )
 
 // Clair service config parameters
@@ -94,6 +100,7 @@ func SetConfig(path string) error {
 		return fmt.Errorf("Read %s error: %v", path, err.Error())
 	}
 
+	//config globals
 	if appname := conf.String("appname"); appname != "" {
 		AppName = appname
 	} else if appname == "" {
@@ -154,18 +161,28 @@ func SetConfig(path string) error {
 		err = fmt.Errorf("LogPath config value is null")
 	}
 
+	//config DB
+	if dbdriver := conf.String("db::driver"); dbdriver != "" {
+		DBDriver = dbdriver
+	} else {
+		err = fmt.Errorf("DB driver config value is null")
+	}
 	if dburi := conf.String("db::uri"); dburi != "" {
 		DBURI = dburi
-	} else if dburi == "" {
-		err = fmt.Errorf("DBURI config value is null")
 	}
-
+	if dbuser := conf.String("db::user"); dbuser != "" {
+		DBUser = dbuser
+	}
 	if dbpass := conf.String("db::passwd"); dbpass != "" {
 		DBPasswd = dbpass
 	}
+	if dbname := conf.String("db::name"); dbname != "" {
+		DBName = dbname
+	}
+	dbpartition, _ := conf.Int64("db::db")
+	DBDB = dbpartition
 
-	DBDB, err = conf.Int64("db::db")
-
+	//config Dockyard
 	if imagepath := conf.String("dockyard::path"); imagepath != "" {
 		ImagePath = imagepath
 	} else if imagepath == "" {
@@ -202,15 +219,13 @@ func SetConfig(path string) error {
 	}
 
 	//Dockyard object storage,default to use dockyard storage
-	BackendDriver = "native"
 	if backenddriver := conf.String("dockyard::driver"); backenddriver != "" {
 		BackendDriver = backenddriver
 	}
 
 	// TBD: It should be considered to refine the universal config parameters
 	switch BackendDriver {
-	case "native":
-		//It will be supported soon
+	case "":
 	case "qiniu", "aliyun", "amazons3":
 		if endpoint := conf.String(BackendDriver + "::" + "endpoint"); endpoint != "" {
 			Endpoint = endpoint
@@ -235,7 +250,6 @@ func SetConfig(path string) error {
 		} else {
 			err = fmt.Errorf("AccessKeysecret value is null")
 		}
-
 	case "upyun":
 		if endpoint := conf.String(BackendDriver + "::" + "endpoint"); endpoint != "" {
 			Endpoint = endpoint
@@ -249,28 +263,83 @@ func SetConfig(path string) error {
 			err = fmt.Errorf("Bucket value is null")
 		}
 
-		if user := conf.String(BackendDriver + "::" + "user"); user != "" {
-			User = user
+		if secret := conf.String(BackendDriver + "::" + "secret"); secret != "" {
+			Secret = secret
 		} else {
-			err = fmt.Errorf("User value is null")
+			err = fmt.Errorf("Secret value is null")
 		}
-
-		if passwd := conf.String(BackendDriver + "::" + "passwd"); passwd != "" {
-			Passwd = passwd
-		} else {
-			err = fmt.Errorf("Passwd value is null")
-		}
-
 	case "qcloud":
-	//It will be supported soon
+		if endpoint := conf.String(BackendDriver + "::" + "endpoint"); endpoint != "" {
+			Endpoint = endpoint
+		} else {
+			err = fmt.Errorf("Endpoint value is null")
+		}
+
+		if accessID := conf.String(BackendDriver + "::" + "accessID"); accessID != "" {
+			QcloudAccessID = accessID
+		} else {
+			err = fmt.Errorf("accessID value is null")
+		}
+
+		if bucket := conf.String(BackendDriver + "::" + "bucket"); bucket != "" {
+			Bucket = bucket
+		} else {
+			err = fmt.Errorf("Bucket value is null")
+		}
+
+		if accessKeyID := conf.String(BackendDriver + "::" + "accessKeyID"); accessKeyID != "" {
+			AccessKeyID = accessKeyID
+		} else {
+			err = fmt.Errorf("AccessKeyID value is null")
+		}
+
+		if accessKeysecret := conf.String(BackendDriver + "::" + "accessKeysecret"); accessKeysecret != "" {
+			AccessKeysecret = accessKeysecret
+		} else {
+			err = fmt.Errorf("AccessKeysecret value is null")
+		}
 	case "oss":
 		APIPort, err = conf.Int(BackendDriver + "::" + "apiport")
 		APIHttpsPort, err = conf.Int(BackendDriver + "::" + "apihttpsport")
 		PartSizeMB, err = conf.Int(BackendDriver + "::" + "partsizemb")
 	case "googlecloud":
-		//It will be supported soon
+		if projectid := conf.String(BackendDriver + "::" + "projectid"); projectid != "" {
+			Projectid = projectid
+		} else {
+			err = fmt.Errorf("Projectid value is null")
+		}
+
+		if scope := conf.String(BackendDriver + "::" + "scope"); scope != "" {
+			Scope = scope
+		} else {
+			err = fmt.Errorf("Scope value is null")
+		}
+
+		if bucket := conf.String(BackendDriver + "::" + "bucket"); bucket != "" {
+			Bucket = bucket
+		} else {
+			err = fmt.Errorf("Bucket value is null")
+		}
+
+		if keyfilepath := conf.String(BackendDriver + "::" + "keyfilepath"); keyfilepath != "" {
+			PrivateKeyFilePath = keyfilepath
+		} else {
+			err = fmt.Errorf("Privatekey value is null")
+		}
+
+		if privatekey := conf.String(BackendDriver + "::" + "privatekey"); privatekey != "" {
+			PrivateKeyFile = privatekey
+		} else {
+			err = fmt.Errorf("Privatekey value is null")
+		}
+
+		if clientemail := conf.String(BackendDriver + "::" + "clientemail"); clientemail != "" {
+			Clientemail = clientemail
+		} else {
+			err = fmt.Errorf("Clientemail value is null")
+		}
 	default:
-		err = fmt.Errorf("Doesn't support %v now", BackendDriver)
+		err = fmt.Errorf("Not support %v", BackendDriver)
 	}
 
 	ClairDBPath = conf.String("clair::path")
