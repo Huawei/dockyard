@@ -13,7 +13,7 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/containerops/dockyard/backend/drivers"
+	"github.com/containerops/dockyard/backend/driver"
 	"github.com/containerops/wrench/setting"
 )
 
@@ -30,11 +30,11 @@ type Fileinfo struct {
 }
 
 func init() {
-	drivers.Register("oss", InitFunc)
+	driver.Register("oss", InitFunc)
 }
 
 func InitFunc() {
-	drivers.InjectReflect.Bind("osssave", osssave)
+	driver.InjectReflect.Bind("osssave", osssave)
 }
 
 func osssave(filepath string) (url string, err error) {

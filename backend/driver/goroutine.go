@@ -1,4 +1,4 @@
-package drivers
+package driver
 
 import (
 	"encoding/json"
@@ -29,20 +29,6 @@ type ShareChannel struct {
 	OutFailure chan string
 	ExitFlag   bool
 	waitGroup  *sync.WaitGroup
-}
-
-type INITFUNC func()
-
-var Drv = make(map[string]INITFUNC)
-
-func Register(name string, initfunc INITFUNC) error {
-	if _, existed := Drv[name]; existed {
-		return fmt.Errorf("%v has already been registered", name)
-	}
-
-	Drv[name] = initfunc
-
-	return nil
 }
 
 func NewShareChannel() *ShareChannel {
@@ -84,7 +70,7 @@ func (sc *ShareChannel) Open() {
 	go func() {
 		for !sc.ExitFlag {
 			obj := sc.getIn()
-			outJson, err := Save(obj)
+			outJson, err := save(obj)
 			if nil != err {
 				sc.putOutFailure(obj)
 			} else {
@@ -102,7 +88,7 @@ func (sc *ShareChannel) Close() {
 	for f := true; f; {
 		select {
 		case obj := <-sc.In:
-			outJson, err := Save(obj)
+			outJson, err := save(obj)
 			if nil != err {
 				sc.putOutFailure(obj)
 			} else {
@@ -118,7 +104,7 @@ func (sc *ShareChannel) Close() {
 	close(sc.OutFailure)
 }
 
-func Save(jsonIn string) (jsonOut string, err error) {
+func save(jsonIn string) (jsonOut string, err error) {
 
 	var url string
 	var rt []reflect.Value
