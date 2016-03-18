@@ -12,7 +12,7 @@ import (
 	"google.golang.org/api/storage/v1"
 
 	"github.com/containerops/dockyard/backend/driver"
-	"github.com/containerops/wrench/setting"
+	"github.com/containerops/dockyard/utils/setting"
 )
 
 func init() {

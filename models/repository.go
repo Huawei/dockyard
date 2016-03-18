@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/containerops/wrench/db"
-	"github.com/containerops/wrench/setting"
+	"github.com/containerops/dockyard/utils/db"
+	"github.com/containerops/dockyard/utils/setting"
 )
 
 type Repository struct {

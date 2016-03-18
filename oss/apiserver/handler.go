@@ -19,7 +19,7 @@ import (
 	"github.com/containerops/dockyard/oss/apiserver/meta"
 	"github.com/containerops/dockyard/oss/apiserver/meta/mysqldriver"
 	"github.com/containerops/dockyard/oss/utils"
-	"github.com/containerops/wrench/setting"
+	"github.com/containerops/dockyard/utils/setting"
 )
 
 const (

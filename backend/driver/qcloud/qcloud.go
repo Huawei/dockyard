@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/containerops/dockyard/backend/driver"
-	"github.com/containerops/wrench/setting"
+	"github.com/containerops/dockyard/utils/setting"
 )
 
 func init() {

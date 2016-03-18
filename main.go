@@ -8,7 +8,7 @@ import (
 
 	"github.com/containerops/dockyard/cmd"
 	_ "github.com/containerops/dockyard/middleware/notifications"
-	"github.com/containerops/wrench/setting"
+	"github.com/containerops/dockyard/utils/setting"
 )
 
 func main() {

@@ -16,8 +16,8 @@ import (
 	"golang.org/x/crypto/openpgp"
 
 	"github.com/containerops/dockyard/models"
-	"github.com/containerops/wrench/setting"
-	"github.com/containerops/wrench/utils"
+	"github.com/containerops/dockyard/utils"
+	"github.com/containerops/dockyard/utils/setting"
 )
 
 func ParseManifest(data []byte, namespace, repository, tag string) (error, int64) {

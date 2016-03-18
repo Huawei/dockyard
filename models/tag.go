@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/containerops/wrench/db"
+	"github.com/containerops/dockyard/utils/db"
 )
 
 type Tag struct {
