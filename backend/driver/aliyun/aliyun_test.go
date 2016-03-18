@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/containerops/wrench/setting"
+	"github.com/containerops/dockyard/utils/setting"
 )
 
 func Test_aliyunsave(t *testing.T) {

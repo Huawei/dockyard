@@ -18,7 +18,7 @@ import (
 	_ "github.com/coreos/clair/worker/detectors/packages"
 	"github.com/coreos/pkg/capnslog"
 
-	"github.com/containerops/wrench/setting"
+	"github.com/containerops/dockyard/utils/setting"
 )
 
 type ClairConfig struct {

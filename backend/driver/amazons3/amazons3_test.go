@@ -3,7 +3,7 @@ package amazons3
 import (
 	"testing"
 
-	"github.com/containerops/wrench/setting"
+	"github.com/containerops/dockyard/utils/setting"
 )
 
 func Test_amazons3save(t *testing.T) {

@@ -10,9 +10,9 @@ import (
 	"github.com/codegangsta/cli"
 	"gopkg.in/macaron.v1"
 
+	"github.com/containerops/dockyard/utils"
+	"github.com/containerops/dockyard/utils/setting"
 	"github.com/containerops/dockyard/web"
-	"github.com/containerops/wrench/setting"
-	"github.com/containerops/wrench/utils"
 )
 
 var CmdWeb = cli.Command{

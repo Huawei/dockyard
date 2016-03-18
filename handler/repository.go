@@ -10,8 +10,8 @@ import (
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/dockyard/models"
-	"github.com/containerops/wrench/setting"
-	"github.com/containerops/wrench/utils"
+	"github.com/containerops/dockyard/utils"
+	"github.com/containerops/dockyard/utils/setting"
 )
 
 func PutTagV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {

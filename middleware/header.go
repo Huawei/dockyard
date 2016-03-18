@@ -5,7 +5,7 @@ import (
 
 	"gopkg.in/macaron.v1"
 
-	"github.com/containerops/wrench/setting"
+	"github.com/containerops/dockyard/utils/setting"
 )
 
 func setRespHeaders() macaron.Handler {

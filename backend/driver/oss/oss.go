@@ -14,7 +14,7 @@ import (
 	"sync"
 
 	"github.com/containerops/dockyard/backend/driver"
-	"github.com/containerops/wrench/setting"
+	"github.com/containerops/dockyard/utils/setting"
 )
 
 const (

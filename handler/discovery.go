@@ -9,7 +9,7 @@ import (
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/dockyard/models"
-	"github.com/containerops/wrench/setting"
+	"github.com/containerops/dockyard/utils/setting"
 )
 
 func DiscoveryACIHandler(ctx *macaron.Context, log *logs.BeeLogger) {
