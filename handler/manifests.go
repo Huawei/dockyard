@@ -10,8 +10,8 @@ import (
 
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/dockyard/module"
-	"github.com/containerops/wrench/setting"
-	"github.com/containerops/wrench/utils"
+	"github.com/containerops/dockyard/utils/setting"
+	"github.com/containerops/dockyard/utils/signature"
 )
 
 var ManifestCtx []byte
@@ -32,7 +32,7 @@ func PutManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 		manifest, _ = ctx.Req.Body().Bytes()
 	}
 
-	digest, err := utils.DigestManifest(manifest)
+	digest, err := signature.DigestManifest(manifest)
 	if err != nil {
 		log.Error("[REGISTRY API V2] Failed to get manifest digest: %v", err.Error())
 
@@ -113,7 +113,7 @@ func GetManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 		return http.StatusNotFound, result
 	}
 
-	digest, err := utils.DigestManifest([]byte(t.Manifest))
+	digest, err := signature.DigestManifest([]byte(t.Manifest))
 	if err != nil {
 		log.Error("[REGISTRY API V2] Failed to get manifest digest: %v", err.Error())
 

@@ -3,7 +3,7 @@ package oss
 import (
 	"testing"
 
-	"github.com/containerops/wrench/setting"
+	"github.com/containerops/dockyard/utils/setting"
 )
 
 func Test_osssave(t *testing.T) {

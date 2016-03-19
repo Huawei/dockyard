@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/containerops/wrench/setting"
+	"github.com/containerops/dockyard/utils/setting"
 )
 
 type UploadDetails struct {

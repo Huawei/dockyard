@@ -9,7 +9,7 @@ import (
 	_ "github.com/containerops/dockyard/backend/driver/qcloud"
 	_ "github.com/containerops/dockyard/backend/driver/qiniu"
 	_ "github.com/containerops/dockyard/backend/driver/upyun"
-	"github.com/containerops/wrench/setting"
+	"github.com/containerops/dockyard/utils/setting"
 )
 
 var Sc driver.ShareChannel
