@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/containerops/wrench/db"
+	"github.com/containerops/dockyard/utils/db"
 )
 
 type Image struct {

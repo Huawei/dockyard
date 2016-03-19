@@ -8,7 +8,8 @@ import (
 	"github.com/satori/go.uuid"
 
 	"github.com/containerops/dockyard/module"
-	"github.com/containerops/wrench/utils"
+	"github.com/containerops/dockyard/utils"
+	"github.com/containerops/dockyard/utils/signature"
 )
 
 type bridge struct {
@@ -74,13 +75,13 @@ func (b *bridge) createManifestEvent(action string, repo string, sm *SignedManif
 	event.Target.MediaType = ManifestMediaType
 	event.Target.Repository = repo
 
-	p, err := utils.Payload(sm.Raw)
+	p, err := signature.Payload(sm.Raw)
 	if err != nil {
 		return nil, err
 	}
 
 	event.Target.Length = int64(len(p))
-	event.Target.Digest, err = utils.FromReader(bytes.NewReader(p))
+	event.Target.Digest, err = signature.FromReader(bytes.NewReader(p))
 	if err != nil {
 		return nil, err
 	}

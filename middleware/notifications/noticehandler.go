@@ -13,8 +13,9 @@ import (
 	"github.com/containerops/dockyard/middleware"
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/dockyard/module"
-	"github.com/containerops/wrench/setting"
-	"github.com/containerops/wrench/utils"
+	"github.com/containerops/dockyard/utils"
+	"github.com/containerops/dockyard/utils/setting"
+	"github.com/containerops/dockyard/utils/signature"
 )
 
 type notification struct{}
@@ -143,7 +144,7 @@ func (n *notification) Handler(ctx *macaron.Context) {
 				return
 			}
 
-			digest, err := utils.DigestManifest([]byte(t.Manifest))
+			digest, err := signature.DigestManifest([]byte(t.Manifest))
 			if err != nil {
 				fmt.Errorf("[REGISTRY API V2] Get manifest digest failed: %v", err.Error())
 				return
@@ -221,7 +222,7 @@ func (n *notification) Handler(ctx *macaron.Context) {
 			sm.Raw = make([]byte, len(buf), len(buf))
 			copy(sm.Raw, buf)
 
-			digest, err := utils.DigestManifest(buf)
+			digest, err := signature.DigestManifest(buf)
 			if err != nil {
 				fmt.Errorf("[REGISTRY API V2] Get manifest digest failed: %v", err.Error())
 				//return http.StatusBadRequest, result
