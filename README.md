@@ -51,12 +51,6 @@ Although dockyard is still in development, we encourage you to try out the tool 
 Installation is as simple as:
 
 ```bash
-go get github.com/containerops/dockyard
-```
-
-or as involved as:
-
-```bash
 # create a 'github.com/containerops' directory in your GOPATH/src
 cd github.com/containerops
 git clone https://github.com/containerops/dockyard
@@ -64,6 +58,15 @@ cd dockyard
 make
 sudo make install
 ```
+
+or as involved as:
+
+```bash
+go get github.com/containerops/dockyard
+cd $GOPATH/src/github.com/containerops/dockyard
+go build
+```
+You can build Dockyard via `make` that depends on Godeps or `go build` that depends on your local package.There may be some problems occured when executing `go get` in chinese network,you'd better use `make` to build it.
 
 ### Prerequisites
 It is quite easy to use Dockyard, only a little work should be done before starting dockyard service. Take it easy, just follow the instructions as below.
@@ -82,9 +85,11 @@ httpskeyfile = cert/containerops/containerops.key
 filepath = log/containerops-log
 
 [db]
-uri = localhost:6379
-passwd = containerops
-db = 8
+driver = mysql
+uri = localhost:3306
+user = root
+passwd = 123456
+name = dockyard
 
 [dockyard]
 path = data
@@ -95,10 +100,10 @@ standalone = true
 driver = qiniu
 
 [qiniu]
-endpoint = xxx
-bucket = xxx
-accessKeyID = xxx
-accessKeysecret = xxx
+endpoint = sample.com
+bucket = dockyard
+accessKeyID = userid
+accessKeysecret = userkey
 ```
 
 * runmode: application run mode must be `dev` or `prod`.
@@ -106,9 +111,12 @@ accessKeysecret = xxx
 * httpscertfile: specify user own https certificate file by this parameter.
 * httpskeyfile: specify user own https key file by this parameter.
 * [log] filepath: specify where Dockyard logs are stored.
-* [db] uri: Dockyard database provider is `redis`,`IP` and `Port` would be specified before `redis` boots.
+* [db] driver: specify `mysql` or `redis` to store image context.
+* [db] uri: Dockyard database provider is `mysql` or `redis`,`IP` and `Port` would be specified before database boots.
+* [db] user: optionally,specify the user to login and access when `mysql` is used.
 * [db] passwd: specify the password to login and access db.
-* [db] db: specify db area number to use.
+* [db] name: optionally,specify db name when `mysql` is used.
+* [db] db: optionally,specify db partition number when `redis` is used.
 * [dockyard] path: specify where `Docker` and `Rocket` image files are stored.
 * [dockyard] domains: registry server name or IP.
 * [dockyard] registry: specify the version of Docker V1 protocol.

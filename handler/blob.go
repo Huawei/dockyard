@@ -15,8 +15,8 @@ import (
 
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/dockyard/module"
-	"github.com/containerops/wrench/setting"
-	"github.com/containerops/wrench/utils"
+	"github.com/containerops/dockyard/utils"
+	"github.com/containerops/dockyard/utils/setting"
 )
 
 func HeadBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
@@ -24,10 +24,15 @@ func HeadBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte)
 	tarsum := strings.Split(digest, ":")[1]
 
 	i := new(models.Image)
-	if has, _ := i.HasTarsum(tarsum); has == false {
-		log.Info("[REGISTRY API V2] Tarsum not found: %v", tarsum)
+	if exists, err := i.Get(tarsum); err != nil {
+		log.Info("[REGISTRY API V2] Failed to get tarsum %v: %v", tarsum, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Tarsum not found"})
+		result, _ := json.Marshal(map[string]string{"message": "Failed to get tarsum"})
+		return http.StatusBadRequest, result
+	} else if !exists {
+		log.Info("[REGISTRY API V2] Not found tarsum: %v", tarsum)
+
+		result, _ := json.Marshal(map[string]string{"message": "Not found tarsum"})
 		return http.StatusNotFound, result
 	}
 
@@ -82,10 +87,10 @@ func PatchBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte
 
 	data, _ := ctx.Req.Body().Bytes()
 	if err := ioutil.WriteFile(layerfileTmp, data, 0777); err != nil {
-		log.Error("[REGISTRY API V2] Save layerfile failed: %v", err.Error())
+		log.Error("[REGISTRY API V2] Failed to save layer file %v: %v", layerfileTmp, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Save layerfile failed"})
-		return http.StatusBadRequest, result
+		result, _ := json.Marshal(map[string]string{"message": "Failed to save layer file"})
+		return http.StatusInternalServerError, result
 	}
 
 	state := utils.MD5(fmt.Sprintf("%s/%s/%s", namespace, repository, time.Now().UnixNano()/int64(time.Millisecond)))
@@ -120,19 +125,19 @@ func PutBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 	reqbody, _ := ctx.Req.Body().Bytes()
 	layerlen, err := module.CopyImgLayer(imagePathTmp, layerfileTmp, imagePath, layerfile, reqbody)
 	if err != nil {
-		log.Error("[REGISTRY API V2] Save layerfile failed: %v", err.Error())
+		log.Error("[REGISTRY API V2] Failed to save layer file %v: %v", layerfile, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Save layerfile failed"})
-		return http.StatusBadRequest, result
+		result, _ := json.Marshal(map[string]string{"message": "Failed to save layer file"})
+		return http.StatusInternalServerError, result
 	}
 
 	//saving specific tarsum every times is in order to split the same tarsum in HEAD handler
 	i := new(models.Image)
 	i.Path, i.Size = layerfile, int64(layerlen)
-	if err := i.PutTarsum(tarsum); err != nil {
-		log.Error("[REGISTRY API V2] Save tarsum failed: %v", err.Error())
+	if err := i.Save(tarsum); err != nil {
+		log.Error("[REGISTRY API V2] Failed to save tarsum %v: %v", tarsum, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Save tarsum failed"})
+		result, _ := json.Marshal(map[string]string{"message": "Failed to save tarsum"})
 		return http.StatusBadRequest, result
 	}
 
@@ -156,28 +161,32 @@ func GetBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 	tarsum := strings.Split(digest, ":")[1]
 
 	i := new(models.Image)
-	has, _ := i.HasTarsum(tarsum)
-	if has == false {
-		log.Error("[REGISTRY API V2] Digest not found: %v", tarsum)
+	if exists, err := i.Get(tarsum); err != nil {
+		log.Error("[REGISTRY API V2] Failed to get tarsum %v: %v", tarsum, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Digest not found"})
+		result, _ := json.Marshal(map[string]string{"message": "Failed to get tarsum"})
+		return http.StatusBadRequest, result
+	} else if !exists {
+		log.Error("[REGISTRY API V2] Not found tarsum: %v: %v", tarsum, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"message": "Not found tarsum"})
 		return http.StatusNotFound, result
 	}
 
 	layerfile := i.Path
 	if _, err := os.Stat(layerfile); err != nil {
-		log.Error("[REGISTRY API V2] File path is invalid: %v", err.Error())
+		log.Error("[REGISTRY API V2] File path %v is invalid: %v", layerfile, err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "File path is invalid"})
-		return http.StatusBadRequest, result
+		return http.StatusInternalServerError, result
 	}
 
 	file, err := ioutil.ReadFile(layerfile)
 	if err != nil {
-		log.Error("[REGISTRY API V2] Read file failed: %v", err.Error())
+		log.Error("[REGISTRY API V2] Failed to read layer file %v: %v", layerfile, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Read file failed"})
-		return http.StatusBadRequest, result
+		result, _ := json.Marshal(map[string]string{"message": "Failed to read layer file"})
+		return http.StatusInternalServerError, result
 	}
 
 	ctx.Resp.Header().Set("Content-Type", "application/x-gzip")

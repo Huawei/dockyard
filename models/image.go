@@ -5,103 +5,109 @@ import (
 	"fmt"
 	"time"
 
-	"gopkg.in/redis.v3"
-
-	"github.com/containerops/wrench/db"
+	"github.com/containerops/dockyard/utils/db"
 )
 
 type Image struct {
-	ImageId    string   `json:"imageid"`    //
-	JSON       string   `json:"json"`       //
-	Ancestry   string   `json:"ancestry"`   //
-	Checksum   string   `json:"checksum"`   // tarsum+sha256
-	Payload    string   `json:"payload"`    // sha256
-	URL        string   `json:"url"`        //
-	Backend    string   `json:"backend"`    //
-	Path       string   `json:"path"`       //
-	Sign       string   `json:"sign"`       //
-	Size       int64    `json:"size"`       //
-	Uploaded   bool     `json:"uploaded"`   //
-	Checksumed bool     `json:"checksumed"` //
-	Encrypted  bool     `json:"encrypted"`  //
-	Created    int64    `json:"created"`    //
-	Updated    int64    `json:"updated"`    //
-	Memo       []string `json:"memo"`       //
-	Version    int64    `json:"version"`    //
+	Id         int64     `json:"id" orm:"auto"`
+	ImageId    string    `json:"imageid" orm:"unique;varchar(255)"`
+	JSON       string    `json:"json" orm:"null;type(text)"`
+	Ancestry   string    `json:"ancestry" orm:"null;type(text)"`
+	Checksum   string    `json:"checksum" orm:"null;varchar(255)"`
+	Payload    string    `json:"payload" orm:"null;varchar(255)"`
+	Checksumed bool      `json:"checksumed" orm:"null;default(0)"`
+	Uploaded   bool      `json:"uploaded" orm:"null;default(0)"`
+	Path       string    `json:"path" orm:"null;varchar(255)"`
+	Size       int64     `json:"size" orm:"default(0)"`
+	Version    int64     `json:"version" orm:"default(0)"`
+	ManiPath   string    `json:"manipath" orm:"null;varchar(255)"`
+	SignPath   string    `json:"signpath" orm:"null;varchar(255)"`
+	AciPath    string    `json:"acipath" orm:"null;varchar(255)"`
+	Memo       string    `json:"memo" orm:"null;varchar(255)"`
+	Created    time.Time `json:"created" orm:"auto_now_add;type(datetime)"`
+	Updated    time.Time `json:"updated" orm:"auto_now;type(datetime)"`
 }
 
-func (i *Image) Has(image string) (bool, string, error) {
-	if key := db.Key("image", image); len(key) <= 0 {
-		return false, "", fmt.Errorf("Invalid image key")
+func (i *Image) Get(imageid string) (bool, error) {
+	i.ImageId = imageid
+	return db.Drv.Get(i, imageid)
+}
+
+func (i *Image) Save(imageid string) error {
+	img := Image{ImageId: imageid}
+	exists, err := img.Get(imageid)
+	if err != nil {
+		return err
+	}
+
+	i.ImageId = imageid
+	if !exists {
+		err = db.Drv.Insert(i)
 	} else {
-		if err := db.Get(i, key); err != nil {
-			if err == redis.Nil {
-				return false, "", nil
-			} else {
-				return false, "", err
-			}
-		}
-
-		return true, key, nil
-	}
-}
-
-func (i *Image) Save() error {
-	key := db.Key("image", i.ImageId)
-
-	if err := db.Save(i, key); err != nil {
-		return err
+		err = db.Drv.Update(i)
 	}
 
-	if _, err := db.Client.HSet(db.GLOBAL_IMAGE_INDEX, i.ImageId, key).Result(); err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (i *Image) GetJSON(imageId string) (string, error) {
-	if has, _, err := i.Has(imageId); err != nil {
+	if exists, err := i.Get(imageId); err != nil {
 		return "", err
-	} else if has == false {
-		return "", fmt.Errorf("Image not found")
+	} else if exists == false {
+		return "", fmt.Errorf("Not found image")
 	} else if !i.Checksumed || !i.Uploaded {
-		return "", fmt.Errorf("Image JSON not found")
+		return "", fmt.Errorf("Not found image JSON")
 	} else {
 		return i.JSON, nil
 	}
 }
 
-func (i *Image) GetChecksumPayload(imageId string) (string, error) {
-	if has, _, err := i.Has(imageId); err != nil {
+func (i *Image) GetPayload(imageId string) (string, error) {
+	if exists, err := i.Get(imageId); err != nil {
 		return "", err
-	} else if has == false {
-		return "", fmt.Errorf("Image not found")
+	} else if exists == false {
+		return "", fmt.Errorf("Not found image")
 	} else if !i.Checksumed || !i.Uploaded {
-		return "", fmt.Errorf("Image JSON not found")
+		return "", fmt.Errorf("Not found image payload")
 	} else {
 		return i.Payload, nil
 	}
 }
 
 func (i *Image) PutJSON(imageId, json string, version int64) error {
-	if has, _, err := i.Has(imageId); err != nil {
+	if exists, err := i.Get(imageId); err != nil {
 		return err
-	} else if has == false {
+	} else if exists == false {
 		i.ImageId = imageId
 		i.JSON = json
-		i.Created = time.Now().UnixNano() / int64(time.Millisecond)
 		i.Version = version
-
-		if err = i.Save(); err != nil {
-			return err
-		}
 	} else {
-		i.ImageId, i.JSON = imageId, json
-		i.Uploaded, i.Checksumed, i.Encrypted, i.Size, i.Updated, i.Version =
-			false, false, false, 0, time.Now().UnixNano()/int64(time.Millisecond), version
+		i.ImageId = imageId
+		i.JSON = json
+		i.Uploaded = false
+		i.Checksumed = false
+		i.Size = 0
+		i.Version = version
+	}
 
-		if err := i.Save(); err != nil {
+	if err := i.Save(imageId); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (i *Image) PutLayer(imageId string, path string, uploaded bool, size int64) error {
+	if exists, err := i.Get(imageId); err != nil {
+		return err
+	} else if exists == false {
+		return fmt.Errorf("Not found image")
+	} else {
+		i.Path = path
+		i.Uploaded = uploaded
+		i.Size = size
+
+		if err := i.Save(imageId); err != nil {
 			return err
 		}
 	}
@@ -110,19 +116,21 @@ func (i *Image) PutJSON(imageId, json string, version int64) error {
 }
 
 func (i *Image) PutChecksum(imageId string, checksum string, checksumed bool, payload string) error {
-	if has, _, err := i.Has(imageId); err != nil {
+	if exists, err := i.Get(imageId); err != nil {
 		return err
-	} else if has == false {
-		return fmt.Errorf("Image not found")
+	} else if exists == false {
+		return fmt.Errorf("Not found image")
 	} else {
 		if err := i.PutAncestry(imageId); err != nil {
 
 			return err
 		}
 
-		i.Checksum, i.Checksumed, i.Payload, i.Updated = checksum, checksumed, payload, time.Now().UnixNano()/int64(time.Millisecond)
+		i.Checksum = checksum
+		i.Checksumed = checksumed
+		i.Payload = payload
 
-		if err = i.Save(); err != nil {
+		if err = i.Save(imageId); err != nil {
 			return err
 		}
 	}
@@ -131,28 +139,27 @@ func (i *Image) PutChecksum(imageId string, checksum string, checksumed bool, pa
 }
 
 func (i *Image) PutAncestry(imageId string) error {
-	if has, _, err := i.Has(imageId); err != nil {
+	if exists, err := i.Get(imageId); err != nil {
 		return err
-	} else if has == false {
-		return fmt.Errorf("Image not found")
+	} else if exists == false {
+		return fmt.Errorf("Not found image")
 	}
 
 	var imageJSONMap map[string]interface{}
 	var imageAncestry []string
-
 	if err := json.Unmarshal([]byte(i.JSON), &imageJSONMap); err != nil {
 		return err
 	}
 
 	if value, has := imageJSONMap["parent"]; has == true {
 		parentImage := new(Image)
-		parentHas, _, err := parentImage.Has(value.(string))
+		parentHas, err := parentImage.Get(value.(string))
 		if err != nil {
 			return err
 		}
 
 		if !parentHas {
-			return fmt.Errorf("Parent image not found")
+			return fmt.Errorf("Not found parent image")
 		}
 
 		var parentAncestry []string
@@ -166,39 +173,7 @@ func (i *Image) PutAncestry(imageId string) error {
 	ancestryJSON, _ := json.Marshal(imageAncestry)
 	i.Ancestry = string(ancestryJSON)
 
-	if err := i.Save(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (i *Image) PutLayer(imageId string, path string, uploaded bool, size int64) error {
-	if has, _, err := i.Has(imageId); err != nil {
-		return err
-	} else if has == false {
-		return fmt.Errorf("Image not found")
-	} else {
-		i.Path, i.Uploaded, i.Size, i.Updated = path, uploaded, size, time.Now().UnixNano()/int64(time.Millisecond)
-
-		if err := i.Save(); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (i *Image) HasTarsum(tarsum string) (bool, error) {
-	if err := db.Get(i, db.Key("tarsum", tarsum)); err != nil {
-		return false, err
-	}
-
-	return true, nil
-}
-
-func (i *Image) PutTarsum(tarsum string) error {
-	if err := db.Save(i, db.Key("tarsum", tarsum)); err != nil {
+	if err := i.Save(imageId); err != nil {
 		return err
 	}
 

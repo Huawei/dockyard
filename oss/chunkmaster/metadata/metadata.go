@@ -1,8 +1,9 @@
 package metadata
 
 import (
-	"github.com/jcloudpub/speedy/utils"
 	"time"
+
+	"github.com/containerops/dockyard/oss/utils"
 )
 
 type Chunkserver struct {

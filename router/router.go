@@ -4,6 +4,8 @@ import (
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/dockyard/handler"
+	"github.com/containerops/dockyard/oss"
+	"github.com/containerops/dockyard/oss/apiserver"
 )
 
 func SetRouters(m *macaron.Macaron) {
@@ -46,21 +48,32 @@ func SetRouters(m *macaron.Macaron) {
 	})
 
 	//Rkt Registry & Hub API
-	//acis discovery responds endpoints
-	m.Get("/:imagename/?ac-discovery=1", handler.DiscoveryACIHandler)
+	m.Get("/:namespace/:repository/?ac-discovery=1", handler.DiscoveryACIHandler)
 
-	//acis fetch
-	m.Get("/ac-image/:acname", handler.GetACIHandler)
-	m.Get("/ac-pubkeys/pubkeys.gpg", handler.GetPubkeysHandler)
+	m.Group("/ac", func() {
+		m.Group("/fetch", func() {
+			m.Get("/:namespace/:repository/pubkeys", handler.GetPubkeysHandler)
+			m.Get("/:namespace/:repository/:acifilename", handler.GetACIHandler)
+		})
 
-	//acis push
-	m.Group("/ac-push", func() {
-		m.Get("/", handler.RenderListOfACIs)
-		m.Get("/pubkeys.gpg", handler.GetPubkeys)
-		m.Post("/:image/startupload", handler.InitiateUpload)
-		m.Put("/manifest/:num", handler.UploadManifest)
-		m.Put("/signature/:num", handler.ReceiveSignUpload)
-		m.Put("/aci/:num", handler.ReceiveAciUpload)
-		m.Post("/complete/:num", handler.CompleteUpload)
+		m.Group("/push", func() {
+			m.Post("/:namespace/:repository/uploaded/:acifile", handler.PostUploadHandler)
+			m.Put("/:namespace/:repository/:imageId/manifest", handler.PutManifestHandler)
+			m.Put("/:namespace/:repository/:imageId/signature/:signfile", handler.PutSignHandler)
+			m.Put("/:namespace/:repository/:imageId/aci/:acifile", handler.PutAciHandler)
+			m.Post("/:namespace/:repository/:imageId/complete/:acifile/:signfile", handler.PostCompleteHandler)
+		})
+	})
+
+	//Object storage service API
+	m.Group("/oss", func() {
+		m.Post("/chunkserver", oss.StartLocalServer)
+		m.Put("/chunkserver/info", oss.ReceiveChunkserverInfo)
+		m.Group("/api", func() {
+			m.Get("/file/info", apiserver.GetFileInfo)
+			m.Get("/file", apiserver.DownloadFile)
+			m.Post("/file", apiserver.UploadFile)
+			m.Delete("/file", apiserver.DeleteFile)
+		})
 	})
 }

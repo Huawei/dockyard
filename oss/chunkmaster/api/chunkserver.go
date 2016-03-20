@@ -3,14 +3,16 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
-	"github.com/jcloudpub/speedy/chunkmaster/metadata"
-	"github.com/jcloudpub/speedy/logs"
-	"github.com/jcloudpub/speedy/utils"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/gorilla/mux"
+
+	"github.com/containerops/dockyard/oss/chunkmaster/metadata"
+	"github.com/containerops/dockyard/oss/logs"
+	"github.com/containerops/dockyard/oss/utils"
 )
 
 const (
@@ -197,7 +199,7 @@ func initChunkserverHandler(resp http.ResponseWriter, req *http.Request) {
 	chunkserver.TotalChunks = 0
 	chunkserver.ConnectionsCount = 0
 
-	err = addChunkserver(chunkserver)
+	err = AddChunkserver(chunkserver)
 	if err != nil {
 		util.HandleError(resp, "", err, http.StatusInternalServerError)
 		return
@@ -223,7 +225,7 @@ func batchInitChunkserverHandler(resp http.ResponseWriter, req *http.Request) {
 	}
 	log.Infof("[batchInitserverHandler] change json to arr %v", chunkserverList)
 
-	err = batchAddChunkserver(&chunkserverList)
+	err = BatchAddChunkserver(&chunkserverList)
 	if err != nil {
 		util.HandleError(resp, "", err, http.StatusInternalServerError)
 		return
@@ -302,7 +304,7 @@ func LoadChunkserverInfo() error {
 	return nil
 }
 
-func addChunkserver(chunkserver *metadata.Chunkserver) error {
+func AddChunkserver(chunkserver *metadata.Chunkserver) error {
 	chunkserver.Status = INIT_STATUS
 	chunkserver.TotalFreeSpace = 0
 	chunkserver.MaxFreeSpace = 0
@@ -326,9 +328,9 @@ func addChunkserver(chunkserver *metadata.Chunkserver) error {
 	return nil
 }
 
-func batchAddChunkserver(chunkserverList *[]metadata.Chunkserver) error {
+func BatchAddChunkserver(chunkserverList *[]metadata.Chunkserver) error {
 	for _, chunkserver := range *chunkserverList {
-		err := addChunkserver(&chunkserver)
+		err := AddChunkserver(&chunkserver)
 		if err != nil {
 			return err
 		}
@@ -405,6 +407,11 @@ func chunkmasterFidHandler(resp http.ResponseWriter, req *http.Request) {
 
 	resp.Header().Set("Content-Type", "application/json")
 	util.Response(respData, http.StatusOK, resp)
+}
+
+func IsChunkServerExsist(chunkserver *metadata.Chunkserver) (bool, error) {
+	exist, err := mdDriver.IsExistChunkserver(chunkserver)
+	return exist, err
 }
 
 func allocFid() (uint64, uint64, error) {

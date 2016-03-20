@@ -13,8 +13,9 @@ import (
 	"github.com/containerops/dockyard/middleware"
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/dockyard/module"
-	"github.com/containerops/wrench/setting"
-	"github.com/containerops/wrench/utils"
+	"github.com/containerops/dockyard/utils"
+	"github.com/containerops/dockyard/utils/setting"
+	"github.com/containerops/dockyard/utils/signature"
 )
 
 type notification struct{}
@@ -54,6 +55,16 @@ func (n *notification) InitFunc() error {
 func (n *notification) Handler(ctx *macaron.Context) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
+
+	//Notification function just supports DockerV2 now
+	r := new(models.Repository)
+	if exists, err := r.Get(namespace, repository); err != nil || exists == false {
+		return
+	}
+	if r.Version != setting.APIVERSION_V2 {
+		return
+	}
+
 	actor := ActorRecord{Name: namespace}
 	repo := fmt.Sprintf("%v/%v", namespace, repository)
 
@@ -63,7 +74,7 @@ func (n *notification) Handler(ctx *macaron.Context) {
 		tarsum := strings.Split(digest, ":")[1]
 
 		i := new(models.Image)
-		if has, _ := i.HasTarsum(tarsum); has == false {
+		if exists, _ := i.Get(tarsum); exists == false {
 			return
 		}
 
@@ -99,7 +110,7 @@ func (n *notification) Handler(ctx *macaron.Context) {
 			tarsum := strings.Split(digest, ":")[1]
 
 			i := new(models.Image)
-			if has, _ := i.HasTarsum(tarsum); has == false {
+			if exists, _ := i.Get(tarsum); exists == false {
 				return
 			}
 
@@ -129,11 +140,11 @@ func (n *notification) Handler(ctx *macaron.Context) {
 
 		if flag := strings.Contains(ctx.Req.RequestURI, "/manifests/"); flag == true {
 			t := new(models.Tag)
-			if err := t.Get(namespace, repository, ctx.Params(":tag")); err != nil {
+			if exists, err := t.Get(namespace, repository, ctx.Params(":tag")); err != nil || !exists {
 				return
 			}
 
-			digest, err := utils.DigestManifest([]byte(t.Manifest))
+			digest, err := signature.DigestManifest([]byte(t.Manifest))
 			if err != nil {
 				fmt.Errorf("[REGISTRY API V2] Get manifest digest failed: %v", err.Error())
 				return
@@ -211,7 +222,7 @@ func (n *notification) Handler(ctx *macaron.Context) {
 			sm.Raw = make([]byte, len(buf), len(buf))
 			copy(sm.Raw, buf)
 
-			digest, err := utils.DigestManifest(buf)
+			digest, err := signature.DigestManifest(buf)
 			if err != nil {
 				fmt.Errorf("[REGISTRY API V2] Get manifest digest failed: %v", err.Error())
 				//return http.StatusBadRequest, result

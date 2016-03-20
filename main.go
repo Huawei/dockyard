@@ -8,12 +8,12 @@ import (
 
 	"github.com/containerops/dockyard/cmd"
 	_ "github.com/containerops/dockyard/middleware/notifications"
-	"github.com/containerops/wrench/setting"
+	"github.com/containerops/dockyard/utils/setting"
 )
 
 func main() {
 	if err := setting.SetConfig("conf/containerops.conf"); err != nil {
-		fmt.Printf("Read config failed: %v", err.Error())
+		fmt.Printf("Read config failed: %v\n", err.Error())
 		return
 	}
 

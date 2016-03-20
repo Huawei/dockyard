@@ -12,24 +12,19 @@ import (
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/dockyard/models"
-	"github.com/containerops/wrench/setting"
-	"github.com/containerops/wrench/utils"
+	"github.com/containerops/dockyard/utils"
+	"github.com/containerops/dockyard/utils/setting"
 )
 
 func GetImageAncestryV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	imageId := ctx.Params(":imageId")
 
 	i := new(models.Image)
-	if has, _, err := i.Has(imageId); err != nil {
-		log.Error("[REGISTRY API V1] Read Image Ancestry Error: %v", err.Error())
+	if _, err := i.Get(imageId); err != nil {
+		log.Error("[REGISTRY API V1] Failed to get image %v ancestry: %v", imageId, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Read Image Ancestry Error"})
+		result, _ := json.Marshal(map[string]string{"message": "Failed to get image ancestry"})
 		return http.StatusBadRequest, result
-	} else if has == false {
-		log.Error("[REGISTRY API V1] Read Image None: %v", err.Error())
-
-		result, _ := json.Marshal(map[string]string{"message": "Read Image None"})
-		return http.StatusNotFound, result
 	}
 
 	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(i.Ancestry)))
@@ -46,16 +41,16 @@ func GetImageJSONV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 
 	i := new(models.Image)
 	if jsonInfo, err = i.GetJSON(imageId); err != nil {
-		log.Error("[REGISTRY API V1] Search Image JSON Error: %v", err.Error())
+		log.Error("[REGISTRY API V1] Failed to get image %v json: %v", imageId, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Search Image JSON Error"})
+		result, _ := json.Marshal(map[string]string{"message": "Failed to get image json"})
 		return http.StatusNotFound, result
 	}
 
-	if payload, err = i.GetChecksumPayload(imageId); err != nil {
-		log.Error("[REGISTRY API V1] Search Image Checksum Error: %v", err.Error())
+	if payload, err = i.GetPayload(imageId); err != nil {
+		log.Error("[REGISTRY API V1] Failed to get image %v payload: %v", imageId, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Search Image Checksum Error"})
+		result, _ := json.Marshal(map[string]string{"message": "Failed to get image payload"})
 		return http.StatusNotFound, result
 	}
 
@@ -70,32 +65,27 @@ func GetImageLayerV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []b
 	imageId := ctx.Params(":imageId")
 
 	i := new(models.Image)
-	if has, _, err := i.Has(imageId); err != nil {
-		log.Error("[REGISTRY API V1] Read Image Layer File Status Error: %v", err.Error())
+	if _, err := i.Get(imageId); err != nil {
+		log.Error("[REGISTRY API V1] Failed to get image %v layer: %v", imageId, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Read Image Layer file Error"})
-		return http.StatusBadRequest, result
-	} else if has == false {
-		log.Error("[REGISTRY API V1] Read Image None Error")
-
-		result, _ := json.Marshal(map[string]string{"message": "Read Image None"})
+		result, _ := json.Marshal(map[string]string{"message": "Failed to get image layer"})
 		return http.StatusNotFound, result
 	}
 
 	layerfile := i.Path
 	if _, err := os.Stat(layerfile); err != nil {
-		log.Error("[REGISTRY API V1] Read Image file state error: %v", err.Error())
+		log.Error("[REGISTRY API V1] Image layer file state error: %v", err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Read Image file state error"})
-		return http.StatusBadRequest, result
+		result, _ := json.Marshal(map[string]string{"message": "Image layer file state error"})
+		return http.StatusInternalServerError, result
 	}
 
 	file, err := ioutil.ReadFile(layerfile)
 	if err != nil {
-		log.Error("[REGISTRY API V1] Read Image file error: %v", err.Error())
+		log.Error("[REGISTRY API V1] Failed to read image layer: %v", err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Read Image file error"})
-		return http.StatusBadRequest, result
+		result, _ := json.Marshal(map[string]string{"message": "Failed to read image layer"})
+		return http.StatusInternalServerError, result
 	}
 
 	ctx.Resp.Header().Set("Content-Type", "application/octet-stream")
@@ -109,17 +99,17 @@ func PutImageJSONV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 
 	info, err := ctx.Req.Body().String()
 	if err != nil {
-		log.Error("[REGISTRY API V1] Get request body error: %v", err.Error())
+		log.Error("[REGISTRY API V1] Failed to get request body: %v", err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Put V1 image JSON failed,request body is empty"})
+		result, _ := json.Marshal(map[string]string{"message": "Failed to get request body"})
 		return http.StatusBadRequest, result
 	}
 
 	i := new(models.Image)
 	if err := i.PutJSON(imageId, info, setting.APIVERSION_V1); err != nil {
-		log.Error("[REGISTRY API V1] Put Image JSON Error: %v", err.Error())
+		log.Error("[REGISTRY API V1] Failed to put image %v json: %v", imageId, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Put Image JSON Error"})
+		result, _ := json.Marshal(map[string]string{"message": "Failed to put image json"})
 		return http.StatusBadRequest, result
 	}
 
@@ -144,17 +134,17 @@ func PutImageLayerv1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []b
 
 	data, _ := ctx.Req.Body().Bytes()
 	if err := ioutil.WriteFile(layerfile, data, 0777); err != nil {
-		log.Error("[REGISTRY API V1] Put Image Layer File Error: %v", err.Error())
+		log.Error("[REGISTRY API V1] Failed to save image layer: %v", err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Put Image Layer File Error"})
+		result, _ := json.Marshal(map[string]string{"message": "Failed to save image layer"})
 		return http.StatusBadRequest, result
 	}
 
 	i := new(models.Image)
 	if err := i.PutLayer(imageId, layerfile, true, int64(len(data))); err != nil {
-		log.Error("[REGISTRY API V1] Put Image Layer File Data Error: %v", err.Error())
+		log.Error("[REGISTRY API V1] Failed to save image %v layer data: %v", imageId, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Put Image Layer File Data Error"})
+		result, _ := json.Marshal(map[string]string{"message": "Failed to save image layer data"})
 		return http.StatusBadRequest, result
 	}
 
@@ -168,21 +158,18 @@ func PutImageChecksumV1Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, 
 	checksum := strings.Split(ctx.Req.Header.Get("X-Docker-Checksum"), ":")[1]
 	payload := strings.Split(ctx.Req.Header.Get("X-Docker-Checksum-Payload"), ":")[1]
 
-	log.Debug("[REGISTRY API V1] Image Checksum : %v", checksum)
-	log.Debug("[REGISTRY API V1] Image Payload: %v", payload)
-
 	i := new(models.Image)
 	if err := i.PutChecksum(imageId, checksum, true, payload); err != nil {
-		log.Error("[REGISTRY API V1] Put Image Checksum & Payload Error: %v", err.Error())
+		log.Error("[REGISTRY API V1] Failed to save image %v checksum: %v", imageId, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Put Image Checksum & Payload Error"})
+		result, _ := json.Marshal(map[string]string{"message": "Failed to save image checksum"})
 		return http.StatusBadRequest, result
 	}
 
 	if err := i.PutAncestry(imageId); err != nil {
-		log.Error("[REGISTRY API V1] Put Image Ancestry Error: %v", err.Error())
+		log.Error("[REGISTRY API V1] Failed to save image %v ancestry: %v", imageId, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Put Image Ancestry Error"})
+		result, _ := json.Marshal(map[string]string{"message": "Failed to save image ancestry"})
 		return http.StatusBadRequest, result
 	}
 
