@@ -86,6 +86,8 @@ type (
 	RenderOptions struct {
 		// Directory to load templates. Default is "templates".
 		Directory string
+		// Addtional directories to overwite templates.
+		AppendDirectories []string
 		// Layout template name. Will not render a layout if "". Default is to "".
 		Layout string
 		// Extensions to parse template files from. Defaults are [".tmpl", ".html"].
@@ -172,13 +174,32 @@ func NewTemplateFileSystem(opt RenderOptions, omitData bool) TplFileSystem {
 	fs := TplFileSystem{}
 	fs.files = make([]TemplateFile, 0, 10)
 
-	dir, err := filepath.EvalSymlinks(opt.Directory)
-	if err != nil {
-		return fs
+	// Directories are composed in reverse order because later one overwrites previous ones,
+	// so once found, we can directly jump out of the loop.
+	dirs := make([]string, 0, len(opt.AppendDirectories)+1)
+	for i := len(opt.AppendDirectories) - 1; i >= 0; i-- {
+		dirs = append(dirs, opt.AppendDirectories[i])
 	}
+	dirs = append(dirs, opt.Directory)
 
-	if err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		r, err := filepath.Rel(dir, path)
+	var err error
+	for i := range dirs {
+		// Skip ones that does not exists for symlink test,
+		// but allow non-symlink ones added after start.
+		if !com.IsExist(dirs[i]) {
+			continue
+		}
+
+		dirs[i], err = filepath.EvalSymlinks(dirs[i])
+		if err != nil {
+			panic("EvalSymlinks(" + dirs[i] + "): " + err.Error())
+		}
+	}
+	lastDir := dirs[len(dirs)-1]
+
+	// We still walk the last (original) directory because it's non-sense we load templates not exist in original directory.
+	if err = filepath.Walk(lastDir, func(path string, info os.FileInfo, err error) error {
+		r, err := filepath.Rel(lastDir, path)
 		if err != nil {
 			return err
 		}
@@ -186,19 +207,31 @@ func NewTemplateFileSystem(opt RenderOptions, omitData bool) TplFileSystem {
 		ext := GetExt(r)
 
 		for _, extension := range opt.Extensions {
-			if ext == extension {
-				var data []byte
-				if !omitData {
+			if ext != extension {
+				continue
+			}
+
+			var data []byte
+			if !omitData {
+				// Loop over candidates of directory, break out once found.
+				// The file always exists because it's inside the walk function,
+				// and read original file is the worst case.
+				for i := range dirs {
+					path = filepath.Join(dirs[i], r)
+					if !com.IsFile(path) {
+						continue
+					}
+
 					data, err = ioutil.ReadFile(path)
 					if err != nil {
 						return err
 					}
+					break
 				}
-
-				name := filepath.ToSlash((r[0 : len(r)-len(ext)]))
-				fs.files = append(fs.files, NewTplFile(name, data, ext))
-				break
 			}
+
+			name := filepath.ToSlash((r[0 : len(r)-len(ext)]))
+			fs.files = append(fs.files, NewTplFile(name, data, ext))
 		}
 
 		return nil
@@ -230,8 +263,7 @@ func GetExt(s string) string {
 }
 
 func compile(opt RenderOptions) *template.Template {
-	dir := opt.Directory
-	t := template.New(dir)
+	t := template.New(opt.Directory)
 	t.Delims(opt.Delims.Left, opt.Delims.Right)
 	// Parse an initial template in case we don't have any.
 	template.Must(t.Parse("Macaron"))
@@ -595,4 +627,85 @@ func (r *TplRender) SetTemplatePath(setName, dir string) {
 
 func (r *TplRender) HasTemplateSet(name string) bool {
 	return r.templateSet.Get(name) != nil
+}
+
+// DummyRender is used when user does not choose any real render to use.
+// This way, we can print out friendly message which asks them to register one,
+// instead of ugly and confusing 'nil pointer' panic.
+type DummyRender struct {
+	http.ResponseWriter
+}
+
+func renderNotRegistered() {
+	panic("middleware render hasn't been registered")
+}
+
+func (r *DummyRender) SetResponseWriter(http.ResponseWriter) {
+	renderNotRegistered()
+}
+
+func (r *DummyRender) JSON(int, interface{}) {
+	renderNotRegistered()
+}
+
+func (r *DummyRender) JSONString(interface{}) (string, error) {
+	renderNotRegistered()
+	return "", nil
+}
+
+func (r *DummyRender) RawData(int, []byte) {
+	renderNotRegistered()
+}
+
+func (r *DummyRender) PlainText(int, []byte) {
+	renderNotRegistered()
+}
+
+func (r *DummyRender) HTML(int, string, interface{}, ...HTMLOptions) {
+	renderNotRegistered()
+}
+
+func (r *DummyRender) HTMLSet(int, string, string, interface{}, ...HTMLOptions) {
+	renderNotRegistered()
+}
+
+func (r *DummyRender) HTMLSetString(string, string, interface{}, ...HTMLOptions) (string, error) {
+	renderNotRegistered()
+	return "", nil
+}
+
+func (r *DummyRender) HTMLString(string, interface{}, ...HTMLOptions) (string, error) {
+	renderNotRegistered()
+	return "", nil
+}
+
+func (r *DummyRender) HTMLSetBytes(string, string, interface{}, ...HTMLOptions) ([]byte, error) {
+	renderNotRegistered()
+	return nil, nil
+}
+
+func (r *DummyRender) HTMLBytes(string, interface{}, ...HTMLOptions) ([]byte, error) {
+	renderNotRegistered()
+	return nil, nil
+}
+
+func (r *DummyRender) XML(int, interface{}) {
+	renderNotRegistered()
+}
+
+func (r *DummyRender) Error(int, ...string) {
+	renderNotRegistered()
+}
+
+func (r *DummyRender) Status(int) {
+	renderNotRegistered()
+}
+
+func (r *DummyRender) SetTemplatePath(string, string) {
+	renderNotRegistered()
+}
+
+func (r *DummyRender) HasTemplateSet(string) bool {
+	renderNotRegistered()
+	return false
 }
