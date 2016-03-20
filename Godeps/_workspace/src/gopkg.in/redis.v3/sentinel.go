@@ -2,7 +2,6 @@ package redis
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"net"
 	"strings"
@@ -228,12 +227,11 @@ func (d *sentinelFailover) closeOldConns(newMaster string) {
 			break
 		}
 		if cn.RemoteAddr().String() != newMaster {
-			err := fmt.Errorf(
+			log.Printf(
 				"redis-sentinel: closing connection to the old master %s",
 				cn.RemoteAddr(),
 			)
-			log.Print(err)
-			d.pool.Remove(cn, err)
+			d.pool.Remove(cn)
 		} else {
 			cnsToPut = append(cnsToPut, cn)
 		}
