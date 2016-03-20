@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"gopkg.in/redis.v3/internal/consistenthash"
-	"gopkg.in/redis.v3/internal/hashtag"
 )
 
 var (
@@ -152,7 +151,7 @@ func (ring *Ring) getClient(key string) (*Client, error) {
 		return nil, errClosed
 	}
 
-	name := ring.hash.Get(hashtag.Key(key))
+	name := ring.hash.Get(hashKey(key))
 	if name == "" {
 		ring.mx.RUnlock()
 		return nil, errRingShardsDown
@@ -298,7 +297,7 @@ func (pipe *RingPipeline) Exec() (cmds []Cmder, retErr error) {
 
 	cmdsMap := make(map[string][]Cmder)
 	for _, cmd := range cmds {
-		name := pipe.ring.hash.Get(hashtag.Key(cmd.clusterKey()))
+		name := pipe.ring.hash.Get(hashKey(cmd.clusterKey()))
 		if name == "" {
 			cmd.setErr(errRingShardsDown)
 			if retErr == nil {

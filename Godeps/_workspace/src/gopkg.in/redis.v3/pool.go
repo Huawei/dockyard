@@ -20,7 +20,7 @@ type pool interface {
 	First() *conn
 	Get() (*conn, bool, error)
 	Put(*conn) error
-	Remove(*conn, error) error
+	Remove(*conn) error
 	Len() int
 	FreeLen() int
 	Close() error
@@ -130,7 +130,7 @@ type connPool struct {
 
 	_closed int32
 
-	lastErr atomic.Value
+	lastDialErr error
 }
 
 func newConnPool(opt *Options) *connPool {
@@ -204,15 +204,15 @@ func (p *connPool) wait() *conn {
 func (p *connPool) new() (*conn, error) {
 	if p.rl.Limit() {
 		err := fmt.Errorf(
-			"redis: you open connections too fast (last_error=%q)",
-			p.loadLastErr(),
+			"redis: you open connections too fast (last error: %v)",
+			p.lastDialErr,
 		)
 		return nil, err
 	}
 
 	cn, err := p.dialer()
 	if err != nil {
-		p.storeLastErr(err.Error())
+		p.lastDialErr = err
 		return nil, err
 	}
 
@@ -255,9 +255,8 @@ func (p *connPool) Get() (cn *conn, isNew bool, err error) {
 func (p *connPool) Put(cn *conn) error {
 	if cn.rd.Buffered() != 0 {
 		b, _ := cn.rd.Peek(cn.rd.Buffered())
-		err := fmt.Errorf("redis: connection has unread data: %q", b)
-		log.Print(err)
-		return p.Remove(cn, err)
+		log.Printf("redis: connection has unread data: %q", b)
+		return p.Remove(cn)
 	}
 	if p.opt.getIdleTimeout() > 0 {
 		cn.usedAt = time.Now()
@@ -276,9 +275,7 @@ func (p *connPool) replace(cn *conn) (*conn, error) {
 	return newcn, nil
 }
 
-func (p *connPool) Remove(cn *conn, reason error) error {
-	p.storeLastErr(reason.Error())
-
+func (p *connPool) Remove(cn *conn) error {
 	// Replace existing connection with new one and unblock waiter.
 	newcn, err := p.replace(cn)
 	if err != nil {
@@ -333,17 +330,6 @@ func (p *connPool) reaper() {
 	}
 }
 
-func (p *connPool) storeLastErr(err string) {
-	p.lastErr.Store(err)
-}
-
-func (p *connPool) loadLastErr() string {
-	if v := p.lastErr.Load(); v != nil {
-		return v.(string)
-	}
-	return ""
-}
-
 //------------------------------------------------------------------------------
 
 type singleConnPool struct {
@@ -371,7 +357,7 @@ func (p *singleConnPool) Put(cn *conn) error {
 	return nil
 }
 
-func (p *singleConnPool) Remove(cn *conn, _ error) error {
+func (p *singleConnPool) Remove(cn *conn) error {
 	if p.cn != cn {
 		panic("p.cn != cn")
 	}
@@ -454,13 +440,13 @@ func (p *stickyConnPool) Put(cn *conn) error {
 	return nil
 }
 
-func (p *stickyConnPool) remove(reason error) (err error) {
-	err = p.pool.Remove(p.cn, reason)
+func (p *stickyConnPool) remove() (err error) {
+	err = p.pool.Remove(p.cn)
 	p.cn = nil
 	return err
 }
 
-func (p *stickyConnPool) Remove(cn *conn, _ error) error {
+func (p *stickyConnPool) Remove(cn *conn) error {
 	defer p.mx.Unlock()
 	p.mx.Lock()
 	if p.closed {
@@ -493,10 +479,10 @@ func (p *stickyConnPool) FreeLen() int {
 	return 0
 }
 
-func (p *stickyConnPool) Reset(reason error) (err error) {
+func (p *stickyConnPool) Reset() (err error) {
 	p.mx.Lock()
 	if p.cn != nil {
-		err = p.remove(reason)
+		err = p.remove()
 	}
 	p.mx.Unlock()
 	return err
@@ -514,8 +500,7 @@ func (p *stickyConnPool) Close() error {
 		if p.reusable {
 			err = p.put()
 		} else {
-			reason := errors.New("redis: sticky not reusable connection")
-			err = p.remove(reason)
+			err = p.remove()
 		}
 	}
 	return err

@@ -779,7 +779,7 @@ func (c *commandable) LPush(key string, values ...string) *IntCmd {
 	return cmd
 }
 
-func (c *commandable) LPushX(key, value interface{}) *IntCmd {
+func (c *commandable) LPushX(key, value string) *IntCmd {
 	cmd := NewIntCmd("LPUSHX", key, value)
 	c.Process(cmd)
 	return cmd
@@ -796,13 +796,13 @@ func (c *commandable) LRange(key string, start, stop int64) *StringSliceCmd {
 	return cmd
 }
 
-func (c *commandable) LRem(key string, count int64, value interface{}) *IntCmd {
+func (c *commandable) LRem(key string, count int64, value string) *IntCmd {
 	cmd := NewIntCmd("LREM", key, count, value)
 	c.Process(cmd)
 	return cmd
 }
 
-func (c *commandable) LSet(key string, index int64, value interface{}) *StatusCmd {
+func (c *commandable) LSet(key string, index int64, value string) *StatusCmd {
 	cmd := NewStatusCmd("LSET", key, index, value)
 	c.Process(cmd)
 	return cmd
@@ -843,7 +843,7 @@ func (c *commandable) RPush(key string, values ...string) *IntCmd {
 	return cmd
 }
 
-func (c *commandable) RPushX(key string, value interface{}) *IntCmd {
+func (c *commandable) RPushX(key string, value string) *IntCmd {
 	cmd := NewIntCmd("RPUSHX", key, value)
 	c.Process(cmd)
 	return cmd
@@ -915,7 +915,7 @@ func (c *commandable) SInterStore(destination string, keys ...string) *IntCmd {
 	return cmd
 }
 
-func (c *commandable) SIsMember(key string, member interface{}) *BoolCmd {
+func (c *commandable) SIsMember(key, member string) *BoolCmd {
 	cmd := NewBoolCmd("SISMEMBER", key, member)
 	c.Process(cmd)
 	return cmd
@@ -927,7 +927,7 @@ func (c *commandable) SMembers(key string) *StringSliceCmd {
 	return cmd
 }
 
-func (c *commandable) SMove(source, destination string, member interface{}) *BoolCmd {
+func (c *commandable) SMove(source, destination, member string) *BoolCmd {
 	cmd := NewBoolCmd("SMOVE", source, destination, member)
 	c.Process(cmd)
 	return cmd
@@ -1340,13 +1340,8 @@ func (c *commandable) PFAdd(key string, fields ...string) *IntCmd {
 	return cmd
 }
 
-func (c *commandable) PFCount(keys ...string) *IntCmd {
-	args := make([]interface{}, 1+len(keys))
-	args[0] = "PFCOUNT"
-	for i, key := range keys {
-		args[1+i] = key
-	}
-	cmd := NewIntCmd(args...)
+func (c *commandable) PFCount(key string) *IntCmd {
+	cmd := NewIntCmd("PFCOUNT", key)
 	c.Process(cmd)
 	return cmd
 }
@@ -1454,12 +1449,9 @@ func (c *commandable) FlushDb() *StatusCmd {
 	return cmd
 }
 
-func (c *commandable) Info(section ...string) *StringCmd {
-	args := []interface{}{"INFO"}
-	if len(section) > 0 {
-		args = append(args, section[0])
-	}
-	cmd := NewStringCmd(args...)
+func (c *commandable) Info() *StringCmd {
+	cmd := NewStringCmd("INFO")
+	cmd._clusterKeyPos = 0
 	c.Process(cmd)
 	return cmd
 }
@@ -1670,101 +1662,14 @@ func (c *commandable) ClusterMeet(host, port string) *StatusCmd {
 	return cmd
 }
 
-func (c *commandable) ClusterForget(nodeID string) *StatusCmd {
-	cmd := newKeylessStatusCmd("CLUSTER", "forget", nodeID)
-	c.Process(cmd)
-	return cmd
-}
-
 func (c *commandable) ClusterReplicate(nodeID string) *StatusCmd {
 	cmd := newKeylessStatusCmd("CLUSTER", "replicate", nodeID)
 	c.Process(cmd)
 	return cmd
 }
 
-func (c *commandable) ClusterResetSoft() *StatusCmd {
-	cmd := newKeylessStatusCmd("CLUSTER", "reset", "soft")
-	c.Process(cmd)
-	return cmd
-}
-
-func (c *commandable) ClusterResetHard() *StatusCmd {
-	cmd := newKeylessStatusCmd("CLUSTER", "reset", "hard")
-	c.Process(cmd)
-	return cmd
-}
-
 func (c *commandable) ClusterInfo() *StringCmd {
 	cmd := NewStringCmd("CLUSTER", "info")
-	cmd._clusterKeyPos = 0
-	c.Process(cmd)
-	return cmd
-}
-
-func (c *commandable) ClusterKeySlot(key string) *IntCmd {
-	cmd := NewIntCmd("CLUSTER", "keyslot", key)
-	cmd._clusterKeyPos = 2
-	c.Process(cmd)
-	return cmd
-}
-
-func (c *commandable) ClusterCountFailureReports(nodeID string) *IntCmd {
-	cmd := NewIntCmd("CLUSTER", "count-failure-reports", nodeID)
-	cmd._clusterKeyPos = 2
-	c.Process(cmd)
-	return cmd
-}
-
-func (c *commandable) ClusterCountKeysInSlot(slot int) *IntCmd {
-	cmd := NewIntCmd("CLUSTER", "countkeysinslot", slot)
-	cmd._clusterKeyPos = 2
-	c.Process(cmd)
-	return cmd
-}
-
-func (c *commandable) ClusterDelSlots(slots ...int) *StatusCmd {
-	args := make([]interface{}, 2+len(slots))
-	args[0] = "CLUSTER"
-	args[1] = "DELSLOTS"
-	for i, slot := range slots {
-		args[2+i] = slot
-	}
-	cmd := newKeylessStatusCmd(args...)
-	c.Process(cmd)
-	return cmd
-}
-
-func (c *commandable) ClusterDelSlotsRange(min, max int) *StatusCmd {
-	size := max - min + 1
-	slots := make([]int, size)
-	for i := 0; i < size; i++ {
-		slots[i] = min + i
-	}
-	return c.ClusterDelSlots(slots...)
-}
-
-func (c *commandable) ClusterSaveConfig() *StatusCmd {
-	cmd := newKeylessStatusCmd("CLUSTER", "saveconfig")
-	c.Process(cmd)
-	return cmd
-}
-
-func (c *commandable) ClusterSlaves(nodeID string) *StringSliceCmd {
-	cmd := NewStringSliceCmd("CLUSTER", "SLAVES", nodeID)
-	cmd._clusterKeyPos = 2
-	c.Process(cmd)
-	return cmd
-}
-
-func (c *commandable) Readonly() *StatusCmd {
-	cmd := newKeylessStatusCmd("READONLY")
-	cmd._clusterKeyPos = 0
-	c.Process(cmd)
-	return cmd
-}
-
-func (c *commandable) ReadWrite() *StatusCmd {
-	cmd := newKeylessStatusCmd("READWRITE")
 	cmd._clusterKeyPos = 0
 	c.Process(cmd)
 	return cmd
