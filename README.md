@@ -1,5 +1,5 @@
 # Dockyard: An image hub for containers
-![Dockyard](docs/dockyard.jpg "Dockyard")
+![Dockyard](external/images/dockyard.jpg "Dockyard")
 
 ## What is Dockyard
 Dockyard is an image hub for docker, rkt or other container engines. Its features include:
