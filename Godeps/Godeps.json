@@ -1,9 +1,10 @@
 {
 	"ImportPath": "github.com/containerops/dockyard",
-	"GoVersion": "go1.5",
+	"GoVersion": "go1.6",
 	"Deps": [
 		{
 			"ImportPath": "github.com/Unknwon/com",
+			"Comment": "v1",
 			"Rev": "28b053d5a2923b87ce8c5a08f3af779894a72758"
 		},
 		{
@@ -23,12 +24,12 @@
 		},
 		{
 			"ImportPath": "github.com/codegangsta/cli",
-			"Comment": "1.2.0-224-gaca5b04",
-			"Rev": "aca5b047ed14d17224157c3434ea93bf6cdaadee"
+			"Comment": "1.2.0-229-g9fec0fa",
+			"Rev": "9fec0fad02befc9209347cc6d620e68e1b45f74d"
 		},
 		{
 			"ImportPath": "github.com/docker/libtrust",
-			"Rev": "9cbd2a1374f46905c68a4eb3694a130610adc62a"
+			"Rev": "c8d2b36d60a84f3fa7d5e5e355be64f0fbe0b481"
 		},
 		{
 			"ImportPath": "github.com/go-macaron/inject",
@@ -41,15 +42,15 @@
 		},
 		{
 			"ImportPath": "github.com/golang/protobuf/proto",
-			"Rev": "62e4364d64b32762febb61f2c88c0a29bc49a225"
+			"Rev": "8d92cf5fc15a4382f8964b08e1f42a75c0591aa3"
 		},
 		{
 			"ImportPath": "github.com/gorilla/context",
-			"Rev": "1c83b3eabd45b6d76072b66b746c20815fb2872d"
+			"Rev": "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
 		},
 		{
 			"ImportPath": "github.com/gorilla/mux",
-			"Rev": "9c068cf16d982f8bd444b8c352acbeec34c4fe5b"
+			"Rev": "0eeaf8392f5b04950925b8a69fe70f110fa7cbfc"
 		},
 		{
 			"ImportPath": "github.com/huawei-openlab/newdb/orm",
@@ -57,28 +58,28 @@
 		},
 		{
 			"ImportPath": "github.com/qiniu/api.v6/auth/digest",
-			"Comment": "v6.0.9-7-g92e32b3",
-			"Rev": "92e32b3d85734d7b1e2f3f0765850ebd0d15eed2"
+			"Comment": "v6.0.9.1",
+			"Rev": "3247daf4da139e08f657cb22147683a8e37cdfc8"
 		},
 		{
 			"ImportPath": "github.com/qiniu/api.v6/conf",
-			"Comment": "v6.0.9-7-g92e32b3",
-			"Rev": "92e32b3d85734d7b1e2f3f0765850ebd0d15eed2"
+			"Comment": "v6.0.9.1",
+			"Rev": "3247daf4da139e08f657cb22147683a8e37cdfc8"
 		},
 		{
 			"ImportPath": "github.com/qiniu/api.v6/io",
-			"Comment": "v6.0.9-7-g92e32b3",
-			"Rev": "92e32b3d85734d7b1e2f3f0765850ebd0d15eed2"
+			"Comment": "v6.0.9.1",
+			"Rev": "3247daf4da139e08f657cb22147683a8e37cdfc8"
 		},
 		{
 			"ImportPath": "github.com/qiniu/api.v6/rs",
-			"Comment": "v6.0.9-7-g92e32b3",
-			"Rev": "92e32b3d85734d7b1e2f3f0765850ebd0d15eed2"
+			"Comment": "v6.0.9.1",
+			"Rev": "3247daf4da139e08f657cb22147683a8e37cdfc8"
 		},
 		{
 			"ImportPath": "github.com/qiniu/api.v6/url",
-			"Comment": "v6.0.9-7-g92e32b3",
-			"Rev": "92e32b3d85734d7b1e2f3f0765850ebd0d15eed2"
+			"Comment": "v6.0.9.1",
+			"Rev": "3247daf4da139e08f657cb22147683a8e37cdfc8"
 		},
 		{
 			"ImportPath": "github.com/qiniu/bytes",
@@ -92,7 +93,7 @@
 		},
 		{
 			"ImportPath": "github.com/satori/go.uuid",
-			"Rev": "d41af8bb6a7704f00bc3b7cba9355ae6a5a80048"
+			"Rev": "e673fdd4dea8a7334adbbe7f57b7e4b00bdc5502"
 		},
 		{
 			"ImportPath": "github.com/upyun/go-sdk/upyun",
@@ -101,15 +102,15 @@
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/cast5",
-			"Rev": "6025851c7c2bf210daf74d22300c699b16541847"
+			"Rev": "c197bcf24cde29d3f73c7b4ac6fd41f4384e8af6"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/openpgp",
-			"Rev": "6025851c7c2bf210daf74d22300c699b16541847"
+			"Rev": "c197bcf24cde29d3f73c7b4ac6fd41f4384e8af6"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
-			"Rev": "35b06af0720201bc2f326773a80767387544f8c4"
+			"Rev": "4876518f9e71663000c348837735820161a42df7"
 		},
 		{
 			"ImportPath": "golang.org/x/oauth2",
@@ -117,15 +118,15 @@
 		},
 		{
 			"ImportPath": "google.golang.org/api/gensupport",
-			"Rev": "e61f6e00cdf8b78313641288c50f6e2d4e3d749c"
+			"Rev": "9bf6e6e569ff057f75d9604a46c52928f17d2b54"
 		},
 		{
 			"ImportPath": "google.golang.org/api/googleapi",
-			"Rev": "e61f6e00cdf8b78313641288c50f6e2d4e3d749c"
+			"Rev": "9bf6e6e569ff057f75d9604a46c52928f17d2b54"
 		},
 		{
 			"ImportPath": "google.golang.org/api/storage/v1",
-			"Rev": "e61f6e00cdf8b78313641288c50f6e2d4e3d749c"
+			"Rev": "9bf6e6e569ff057f75d9604a46c52928f17d2b54"
 		},
 		{
 			"ImportPath": "google.golang.org/appengine",
@@ -133,20 +134,20 @@
 		},
 		{
 			"ImportPath": "google.golang.org/cloud/compute/metadata",
-			"Rev": "5ff67fe23b1ba3ed2135491d9bb2ca087c84bfde"
+			"Rev": "335f47490e2408f3e034226c587f2ce80d1053ed"
 		},
 		{
 			"ImportPath": "google.golang.org/cloud/internal",
-			"Rev": "5ff67fe23b1ba3ed2135491d9bb2ca087c84bfde"
+			"Rev": "335f47490e2408f3e034226c587f2ce80d1053ed"
 		},
 		{
 			"ImportPath": "gopkg.in/bsm/ratelimit.v1",
-			"Rev": "fbc2d5a2daac4dc3801ee3073874800e2be6ccd1"
+			"Rev": "db14e161995a5177acef654cb0dd785e8ee8bc22"
 		},
 		{
 			"ImportPath": "gopkg.in/ini.v1",
-			"Comment": "v1.10.1",
-			"Rev": "776aa739ce9373377cd16f526cdf06cb4c89b40f"
+			"Comment": "v1.11.0",
+			"Rev": "12f418cc7edc5a618a51407b7ac1f1f512139df3"
 		},
 		{
 			"ImportPath": "gopkg.in/macaron.v1",
@@ -155,8 +156,8 @@
 		},
 		{
 			"ImportPath": "gopkg.in/redis.v3",
-			"Comment": "v3.2.19",
-			"Rev": "ba9dda7567ee6939c265e36f734e6ae3e014779a"
+			"Comment": "v3.6.0",
+			"Rev": "d2ae7d870764d131887fa31a743bb50abbcf9384"
 		}
 	]
 }
