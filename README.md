@@ -1,8 +1,8 @@
-# Dockyard - Container Registry And Container Volume Mangaement
+# Dockyard - Container Registry And Container Repository 
 ![Dockyard](external/images/dockyard.jpg "Dockyard - Container Registry And Container Volume Mangaement")
 
-## What is Dockyard
-Dockyard is an container registry with volume management function for Docker, rkt or other container engines. Its features include:
+## What is Dockyard ?
+Dockyard is a container registry with volume management function for Docker, rkt or other container engines. Its features include:
 - Image storage and meta discovery for popular container runtime such as docker and rkt.
 - Image distribution by P2P protocol.
 - Public and private repositories for users and organizations.
