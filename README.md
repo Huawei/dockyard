@@ -2,11 +2,11 @@
 ![Dockyard](external/images/dockyard.jpg "Dockyard - Container Registry And Container Volume Mangaement")
 
 ## What is Dockyard ?
-Dockyard is a container registry with volume management function for Docker, rkt or other container engines. Its features include:
-- Image storage and meta discovery for popular container runtime such as docker and rkt.
-- Image distribution by P2P protocol.
-- Public and private repositories for users and organizations.
-- Built-in object storage engine and drivers.
+Dockyard is a container registry storing and distributing container image include [Docker Image](https://github.com/docker/distribution/tree/master/docs/spec), [App Container Image](https://github.com/appc/spec/blob/master/spec/aci.md) and [OCI](https://opencontaienrs.org) Image(*on the road*). It's key features and goals include:
+- Converting image format between above formats.
+- Multi supported distribute protocols include Docker Registry V1 & V2 and App Container Image Discovery.
+- Custome distribute protocol by framework. 
+- Authentication in distributing process and authorization for public and private container image.
 - Built-in object storage service.
 - Built-in container volume management for runtime with distributed file system.
 - Convert image object to distributed file-system for container mount and start directly.
