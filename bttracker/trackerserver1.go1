@@ -1,0 +1,135 @@
+package handler
+
+import (
+	"fmt"
+	"html/template"
+	"net/http"
+
+	"github.com/astaxie/beego/logs"
+	"gopkg.in/macaron.v1"
+
+	"github.com/containerops/wrench/setting"
+)
+
+type Announce struct {
+	InfoHash   string
+	PeerId     string
+	Port       int
+	Uploaded   int64
+	Downloaded int64
+	Left       int64
+	Compact    bool
+	NoPeerId   bool //Indicates that the tracker can omit peer id field in peers dictionary. This option is ignored if compact is enabled.
+	Event      TEvent
+	Numwant    int //Optional,This value is permitted to be zero. If omitted, typically defaults to 50 peers.
+	IP         net.IP //Optional
+	Key        string //Optional
+	TrackerId  string //Optional
+}
+
+type CompactAnnounceResponse struct {
+	Interval   int      `bencode:"interval"`
+	Complete   int      `bencode:"complete"`
+	Incomplete int      `bencode:"incomplete"`
+	Peers      []string `bencode:"peers"`
+}
+
+type AnnounceResponse struct {
+	Interval   int          `bencode:"interval"`
+	Complete   int          `bencode:"complete"`
+	Incomplete int          `bencode:"incomplete"`
+	Peers      []StructPeer `bencode:"peers"`
+}
+
+type StructPeer struct {
+	PeerId string `bencode:"peer id"`
+	LastIP string `bencode:"ip"`
+	Port   int16  `bencode:"port"`
+}
+
+func (s *StructPeer) Compact() string {
+	var peer [6]byte
+
+	//first parse the ip
+	ip := net.ParseIP(s.LastIP).To4()
+	if ip == nil {
+		return ""
+	}
+
+	var buf bytes.Buffer //make a buffer
+	binary.Write(&buf, binary.BigEndian, s.Port)
+
+	copy(peer[:], ip)
+	copy(peer[4:], buf.Bytes())
+
+	return string(peer[:])
+}
+
+type Peer struct {
+	IP             string
+	Port           uint16
+	status         int  //downloading,stop,finish
+	PreConnectTime uint64
+}
+
+type Torrent struct {
+	infoHash    string
+	name        string //file name
+	//file        string //file path
+	size        uint64
+	//complete    uint32
+	//downloading uint32
+	//downloaded  uint32
+
+	//torrentFile string
+	peers       []Peer
+}
+
+type TrackerServer struct {
+	torrents []torrent
+	interval uint32 //interval time for client to connet
+}
+
+var ts TrackerServer
+
+
+/* Get persistent data from db
+func (ts *TrackerServer) Start() error {
+	
+}
+*/
+func (ts *TrackerServer) LoadTorrent(file string)error {
+		m, err := torrent.CreateMetaInfoFromFileSystem(nil, file, "", 0, true)
+		if err != nil {
+			return err
+		}
+
+		m.Announce = "http://" + "127.0.0.1:80" + "/announce"
+
+		meta, err := os.Create(tf)
+		if err != nil {
+			return err
+		}
+
+		defer meta.Close()
+
+		err = m.Bencode(meta)
+		if err != nil {
+			return err
+		}
+	return true
+}
+
+func (ts *TrackerServer) findTorrent(infoHash string) bool,error {
+	return false,nil
+}
+
+// Handle tracker client's request for torrent
+func HandleAnnounce(ctx *macaron.Context, log *logs.BeeLogger) {
+	Announce an 
+	
+	ts.findTorrent(infoHash)
+
+}
+
+
