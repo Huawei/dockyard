@@ -1,25 +1,15 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/codegangsta/cli"
 
 	"github.com/containerops/dockyard/cmd"
-	_ "github.com/containerops/dockyard/middleware/notifications"
-	"github.com/containerops/dockyard/utils/setting"
+	_ "github.com/containerops/dockyard/utils/setting"
 )
 
 func main() {
-	if err := setting.SetConfig("conf/containerops.conf"); err != nil {
-		fmt.Printf("Read config failed: %v\n", err.Error())
-		return
-	}
-
-	//if read middleware config failed, register function of middleware will be skipped
-	setting.GetConfFromJSON("conf/config.json")
-
 	app := cli.NewApp()
 
 	app.Name = setting.AppName
@@ -30,6 +20,9 @@ func main() {
 
 	app.Commands = []cli.Command{
 		cmd.CmdWeb,
+		cmd.CmdDatabase,
+		cmd.CmdOSS,
+		cmd.CmdMonitor,
 	}
 
 	app.Flags = append(app.Flags, []cli.Flag{}...)
