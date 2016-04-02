@@ -103,19 +103,9 @@ func ValidatePassword(password string) error {
 }
 
 func MD5(key string) string {
-	md5String := fmt.Sprintf("%s%d", key, time.Now().Unix())
+	md5String := fmt.Sprintf("dockyard %s is a container %d hub", key, time.Now().Unix())
 	h := md5.New()
 	h.Write([]byte(md5String))
 
 	return hex.EncodeToString(h.Sum(nil))
-}
-
-func Compare(a, b string) int {
-	if a == b {
-		return 0
-	}
-	if a < b {
-		return -1
-	}
-	return +1
 }
