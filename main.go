@@ -6,7 +6,7 @@ import (
 	"github.com/codegangsta/cli"
 
 	"github.com/containerops/dockyard/cmd"
-	_ "github.com/containerops/dockyard/setting"
+	"github.com/containerops/dockyard/setting"
 )
 
 func main() {
