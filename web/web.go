@@ -11,8 +11,8 @@ import (
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/dockyard/oss"
 	"github.com/containerops/dockyard/router"
+	"github.com/containerops/dockyard/setting"
 	"github.com/containerops/dockyard/utils/db"
-	"github.com/containerops/dockyard/utils/setting"
 )
 
 func SetDockyardMacaron(m *macaron.Macaron) {

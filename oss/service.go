@@ -19,7 +19,7 @@ import (
 	"github.com/containerops/dockyard/oss/chunkmaster/metadata"
 	log "github.com/containerops/dockyard/oss/logs"
 	"github.com/containerops/dockyard/oss/utils"
-	"github.com/containerops/dockyard/utils/setting"
+	"github.com/containerops/dockyard/setting"
 )
 
 var (
