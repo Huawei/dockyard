@@ -1,7 +1,7 @@
 package models
 
 import (
-	"github.com/containerops/dockyard/utils/setting"
+	"github.com/containerops/dockyard/setting"
 )
 
 type UploadDetails struct {
