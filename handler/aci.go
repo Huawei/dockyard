@@ -23,7 +23,7 @@ func GetPubkeysHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
-	pubkeysPath := module.GetPubkeysPath(namespace, repository)
+	pubkeysPath := module.GetPubkeysPath(namespace, repository, setting.APIVERSION_ACI)
 	if _, err := os.Stat(pubkeysPath); err != nil {
 		log.Error("[ACI API] Pubkeys path %v is invalid: %v", pubkeysPath, err.Error())
 
@@ -109,7 +109,7 @@ func PostUploadHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 	signfile := fmt.Sprintf("%v%v", acifile, ".asc")
 
 	//TODO: only for testing,pubkey will be read and saved via user management module
-	pubkeyspath := module.GetPubkeysPath(namespace, repository)
+	pubkeyspath := module.GetPubkeysPath(namespace, repository, setting.APIVERSION_ACI)
 	if _, err := os.Stat(pubkeyspath); err != nil {
 		if err := os.MkdirAll(pubkeyspath, os.ModePerm); err != nil {
 			log.Error("[ACI API] Failed to create pubkeys path %v: %v", pubkeyspath, err.Error())
@@ -120,7 +120,7 @@ func PostUploadHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 	}
 
 	imageId := utils.MD5(uuid.NewV4().String())
-	imagepath := module.GetImagePath(imageId)
+	imagepath := module.GetImagePath(imageId, setting.APIVERSION_ACI)
 	if err := os.MkdirAll(imagepath, os.ModePerm); err != nil {
 		log.Error("[ACI API] Failed to create aci path %v: %v", imagepath, err.Error())
 
@@ -145,7 +145,7 @@ func PostUploadHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 func PutManifestHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	imageId := ctx.Params(":imageId")
 
-	manipath := module.GetManifestPath(imageId)
+	manipath := module.GetManifestPath(imageId, setting.APIVERSION_ACI)
 
 	data, _ := ctx.Req.Body().Bytes()
 	if err := ioutil.WriteFile(manipath, data, 0777); err != nil {
@@ -163,12 +163,12 @@ func PutSignHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	imageId := ctx.Params(":imageId")
 	signfile := ctx.Params(":signfile")
 
-	signpath := module.GetSignaturePath(imageId, signfile)
+	signfilepath := module.GetSignaturePath(imageId, signfile, setting.APIVERSION_ACI)
 
 	data, _ := ctx.Req.Body().Bytes()
-	if err := ioutil.WriteFile(signpath, data, 0777); err != nil {
+	if err := ioutil.WriteFile(signfilepath, data, 0777); err != nil {
 		//Temporary directory would be deleted in PostCompleteHandler
-		log.Error("[ACI API] Failed to save signature file %v : %v", signpath, err.Error())
+		log.Error("[ACI API] Failed to save signature file %v : %v", signfilepath, err.Error())
 		result, _ := json.Marshal(map[string]string{"message": "Failed to save signature file"})
 		return http.StatusInternalServerError, result
 	}
@@ -181,12 +181,12 @@ func PutAciHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	imageId := ctx.Params(":imageId")
 	acifile := ctx.Params(":acifile")
 
-	acipath := module.GetAciPath(imageId, acifile)
+	acifilepath := module.GetLayerPath(imageId, acifile, setting.APIVERSION_ACI)
 
 	data, _ := ctx.Req.Body().Bytes()
-	if err := ioutil.WriteFile(acipath, data, 0777); err != nil {
+	if err := ioutil.WriteFile(acifilepath, data, 0777); err != nil {
 		//Temporary directory would be deleted in PostCompleteHandler
-		log.Error("[ACI API] Failed to save aci file %v : %v", acipath, err.Error())
+		log.Error("[ACI API] Failed to save aci file %v : %v", acifilepath, err.Error())
 		result, _ := json.Marshal(map[string]string{"message": "Failed to save aci file"})
 		return http.StatusInternalServerError, result
 	}
@@ -201,7 +201,7 @@ func PostCompleteHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte
 
 	body, _ := ctx.Req.Body().Bytes()
 	if err := module.CheckClientStatus(body); err != nil {
-		module.CleanCache(imageId)
+		module.CleanCache(imageId, setting.APIVERSION_ACI)
 		log.Error("[ACI API] Failed to push aci: %v", err.Error())
 
 		failmsg := module.FillRespMsg(false, err.Error(), "")
@@ -214,12 +214,12 @@ func PostCompleteHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte
 	signfile := ctx.Params(":signfile")
 
 	//TODO: only for testing,pubkey will be read and saved via user management module
-	pubkeyspath := module.GetPubkeysPath(namespace, repository)
-	acipath := module.GetAciPath(imageId, acifile)
-	signpath := module.GetSignaturePath(imageId, signfile)
-	manipath := module.GetManifestPath(imageId)
-	if err := module.VerifyAciSignature(acipath, signpath, pubkeyspath); err != nil {
-		module.CleanCache(imageId)
+	pubkeyspath := module.GetPubkeysPath(namespace, repository, setting.APIVERSION_ACI)
+	acifilepath := module.GetLayerPath(imageId, acifile, setting.APIVERSION_ACI)
+	signfilepath := module.GetSignaturePath(imageId, signfile, setting.APIVERSION_ACI)
+	manipath := module.GetManifestPath(imageId, setting.APIVERSION_ACI)
+	if err := module.VerifyAciSignature(acifilepath, signfilepath, pubkeyspath); err != nil {
+		module.CleanCache(imageId, setting.APIVERSION_ACI)
 		log.Error("[ACI API] Failed to verify Aci: %v", err.Error())
 
 		failmsg := module.FillRespMsg(false, "", err.Error())
@@ -236,8 +236,8 @@ func PostCompleteHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte
 	}
 
 	a := new(models.Aci)
-	if err := a.Update(namespace, repository, tag, imageId, manipath, signpath, acipath); err != nil {
-		module.CleanCache(imageId)
+	if err := a.Update(namespace, repository, tag, imageId, manipath, signfilepath, acifilepath); err != nil {
+		module.CleanCache(imageId, setting.APIVERSION_ACI)
 		log.Error("[ACI API] Failed to update %v/%v: %v", namespace, repository, err.Error())
 
 		failmsg := module.FillRespMsg(false, "", err.Error())
@@ -247,7 +247,7 @@ func PostCompleteHandler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte
 
 	//Delete old aci directory after redis is updated
 	if oldimageId != "" {
-		module.CleanCache(oldimageId)
+		module.CleanCache(oldimageId, setting.APIVERSION_ACI)
 	}
 
 	successmsg := module.FillRespMsg(true, "", "")
