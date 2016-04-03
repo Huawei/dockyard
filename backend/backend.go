@@ -9,6 +9,7 @@ import (
 	_ "github.com/containerops/dockyard/backend/oss"
 	_ "github.com/containerops/dockyard/backend/qcloud"
 	_ "github.com/containerops/dockyard/backend/qiniu"
+	_ "github.com/containerops/dockyard/backend/rados"
 	_ "github.com/containerops/dockyard/backend/s3"
 	_ "github.com/containerops/dockyard/backend/upyun"
 )

@@ -66,6 +66,11 @@ var (
 	PrivateKeyFilePath string
 	PrivateKeyFile     string
 	Clientemail        string
+	
+	//rados unique
+	Chunksize string
+	Poolname  string
+	Username  string
 )
 
 // Clair service config parameters
@@ -335,6 +340,24 @@ func SetConfig(path string) error {
 			Clientemail = clientemail
 		} else {
 			err = fmt.Errorf("Clientemail value is null")
+		}
+	case "rados":
+		if chunksize := conf.String(Backend + "::" + "chunksize"); chunksize != "" {
+			Chunksize = chunksize
+		} else {
+			err = fmt.Errorf("Chunksize value is null")
+		}
+
+		if poolname := conf.String(Backend + "::" + "poolname"); poolname != "" {
+			Poolname = poolname
+		} else {
+			err = fmt.Errorf("Poolname value is null")
+		}
+
+		if username := conf.String(Backend + "::" + "username"); username != "" {
+			Username = username
+		} else {
+			err = fmt.Errorf("Username value is null")
 		}
 	default:
 		err = fmt.Errorf("Not support %v", Backend)
