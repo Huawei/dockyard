@@ -23,6 +23,7 @@ func HeadBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte)
 	digest := ctx.Params(":digest")
 	tarsum := strings.Split(digest, ":")[1]
 
+	ctx.Resp.Header().Set("Content-Type", "application/json; charset=utf-8")
 	i := new(models.Image)
 	if exists, err := i.Get(tarsum); err != nil {
 		log.Info("[REGISTRY API V2] Failed to get tarsum %v: %v", tarsum, err.Error())
@@ -36,7 +37,7 @@ func HeadBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte)
 		return http.StatusNotFound, result
 	}
 
-	ctx.Resp.Header().Set("Content-Type", "application/x-gzip")
+	ctx.Resp.Header().Set("Content-Type", "application/octet-stream")
 	ctx.Resp.Header().Set("Docker-Content-Digest", digest)
 	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(i.Size))
 
@@ -58,6 +59,7 @@ func PostBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte)
 		uuid,
 		state)
 
+	ctx.Resp.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	ctx.Resp.Header().Set("Docker-Upload-Uuid", uuid)
 	ctx.Resp.Header().Set("Location", random)
 	ctx.Resp.Header().Set("Range", "0-0")
@@ -73,21 +75,21 @@ func PatchBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte
 	desc := ctx.Params(":uuid")
 	uuid := strings.Split(desc, "?")[0]
 
-	imagePathTmp := fmt.Sprintf("%v/%v", setting.ImagePath, uuid)
-	layerfileTmp := fmt.Sprintf("%v/%v/layer", setting.ImagePath, uuid)
+	imagePathTmp := module.GetImagePath(uuid, setting.APIVERSION_V2)
+	layerPathTmp := module.GetLayerPath(uuid, "layer", setting.APIVERSION_V2)
 
 	//saving specific tarsum every times is in order to split the same tarsum in HEAD handler
 	if !utils.IsDirExist(imagePathTmp) {
 		os.MkdirAll(imagePathTmp, os.ModePerm)
 	}
 
-	if _, err := os.Stat(layerfileTmp); err == nil {
-		os.Remove(layerfileTmp)
+	if _, err := os.Stat(layerPathTmp); err == nil {
+		os.Remove(layerPathTmp)
 	}
 
 	data, _ := ctx.Req.Body().Bytes()
-	if err := ioutil.WriteFile(layerfileTmp, data, 0777); err != nil {
-		log.Error("[REGISTRY API V2] Failed to save layer file %v: %v", layerfileTmp, err.Error())
+	if err := ioutil.WriteFile(layerPathTmp, data, 0777); err != nil {
+		log.Error("[REGISTRY API V2] Failed to save layer %v: %v", layerPathTmp, err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Failed to save layer file"})
 		return http.StatusInternalServerError, result
@@ -102,6 +104,7 @@ func PatchBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte
 		uuid,
 		state)
 
+	ctx.Resp.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	ctx.Resp.Header().Set("Docker-Upload-Uuid", uuid)
 	ctx.Resp.Header().Set("Location", random)
 	ctx.Resp.Header().Set("Range", fmt.Sprintf("0-%v", len(data)-1))
@@ -117,15 +120,15 @@ func PutBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 	digest := ctx.Query("digest")
 	tarsum := strings.Split(digest, ":")[1]
 
-	imagePathTmp := fmt.Sprintf("%v/%v", setting.ImagePath, uuid)
-	layerfileTmp := fmt.Sprintf("%v/%v/layer", setting.ImagePath, uuid)
-	imagePath := fmt.Sprintf("%v/tarsum/%v", setting.ImagePath, tarsum)
-	layerfile := fmt.Sprintf("%v/tarsum/%v/layer", setting.ImagePath, tarsum)
+	imagePathTmp := module.GetImagePath(uuid, setting.APIVERSION_V2)
+	layerPathTmp := module.GetLayerPath(uuid, "layer", setting.APIVERSION_V2)
+	imagePath := module.GetImagePath(tarsum, setting.APIVERSION_V2)
+	layerPath := module.GetLayerPath(tarsum, "layer", setting.APIVERSION_V2)
 
 	reqbody, _ := ctx.Req.Body().Bytes()
-	layerlen, err := module.CopyImgLayer(imagePathTmp, layerfileTmp, imagePath, layerfile, reqbody)
+	layerlen, err := module.SaveLayerLocal(imagePathTmp, layerPathTmp, imagePath, layerPath, reqbody)
 	if err != nil {
-		log.Error("[REGISTRY API V2] Failed to save layer file %v: %v", layerfile, err.Error())
+		log.Error("[REGISTRY API V2] Failed to save layer %v: %v", layerPath, err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Failed to save layer file"})
 		return http.StatusInternalServerError, result
@@ -133,7 +136,7 @@ func PutBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 
 	//saving specific tarsum every times is in order to split the same tarsum in HEAD handler
 	i := new(models.Image)
-	i.Path, i.Size = layerfile, int64(layerlen)
+	i.Path, i.Size = layerPath, int64(layerlen)
 	if err := i.Save(tarsum); err != nil {
 		log.Error("[REGISTRY API V2] Failed to save tarsum %v: %v", tarsum, err.Error())
 
@@ -148,6 +151,7 @@ func PutBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 		ctx.Params(":repository"),
 		digest)
 
+	ctx.Resp.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	ctx.Resp.Header().Set("Docker-Content-Digest", digest)
 	ctx.Resp.Header().Set("Location", random)
 
@@ -189,7 +193,7 @@ func GetBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 		return http.StatusInternalServerError, result
 	}
 
-	ctx.Resp.Header().Set("Content-Type", "application/x-gzip")
+	ctx.Resp.Header().Set("Content-Type", "application/octet-stream")
 	ctx.Resp.Header().Set("Docker-Content-Digest", digest)
 	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(file)))
 
