@@ -1,4 +1,4 @@
-package googlecloud
+package gcs
 
 import (
 	"io"
@@ -15,6 +15,7 @@ var (
 	upFileName   string = "/tmp/gcs_test.txt"
 	downFileName string = "/tmp/new_gcs_test.txt"
 	fileContent  string = "Just for test gcs.\n Congratulations! U are sucess."
+	testconf            = "../../conf/containerops.conf"
 )
 
 func newTestFile(t *testing.T) (f *os.File, err error) {
@@ -42,11 +43,13 @@ func TestGcssave(t *testing.T) {
 		t.Error(err)
 	}
 
-	err = setting.SetConfig("../../../conf/containerops.conf")
+	err = setting.SetConfig(testconf)
 	if err != nil {
 		t.Error(err)
 	}
-	retUrl, err := googlecloudsave(upFileName)
+
+	g := new(gcsdesc)
+	retUrl, err := g.Save(upFileName)
 	if err != nil {
 		t.Error(err)
 	}

@@ -7,16 +7,19 @@ import (
 	"github.com/containerops/dockyard/utils/setting"
 )
 
+var testconf = "../../conf/containerops.conf"
+
 func Test_qiniusave(t *testing.T) {
 	var err error
 	var url string
 
-	if err = setting.SetConfig("../../../conf/containerops.conf"); err != nil {
+	if err = setting.SetConfig(testconf); err != nil {
 		t.Error(err)
 	}
 
 	file := "qiniu_test.go"
-	url, err = qiniusave(file)
+	q := new(qiniudesc)
+	url, err = q.Save(file)
 	if err != nil {
 		t.Error(err)
 	}

@@ -1,27 +1,31 @@
 package backend
 
 import (
-	"github.com/containerops/dockyard/backend/driver"
-	_ "github.com/containerops/dockyard/backend/driver/aliyun"
-	_ "github.com/containerops/dockyard/backend/driver/amazons3"
-	_ "github.com/containerops/dockyard/backend/driver/googlecloud"
-	_ "github.com/containerops/dockyard/backend/driver/oss"
-	_ "github.com/containerops/dockyard/backend/driver/qcloud"
-	_ "github.com/containerops/dockyard/backend/driver/qiniu"
-	_ "github.com/containerops/dockyard/backend/driver/upyun"
-	"github.com/containerops/dockyard/utils/setting"
+	"fmt"
+
+	_ "github.com/containerops/dockyard/backend/aliyun"
+	"github.com/containerops/dockyard/backend/factory"
+	_ "github.com/containerops/dockyard/backend/gcs"
+	_ "github.com/containerops/dockyard/backend/oss"
+	_ "github.com/containerops/dockyard/backend/qcloud"
+	_ "github.com/containerops/dockyard/backend/qiniu"
+	_ "github.com/containerops/dockyard/backend/s3"
+	_ "github.com/containerops/dockyard/backend/upyun"
 )
 
-var Sc driver.ShareChannel
+var Drv factory.DrvInterface
 
-func InitBackend() {
-	initfunc, existed := driver.Drv[setting.BackendDriver]
-	if !existed {
-		return
+func RegisterDriver(driver string) error {
+	if Drv != nil {
+		return fmt.Errorf("Only support one driver at one time")
 	}
-	initfunc()
 
-	//Init goroutine
-	Sc = *driver.NewShareChannel()
-	Sc.Open()
+	for k, v := range factory.Drivers {
+		if k == driver && v != nil {
+			Drv = factory.Drivers[k]
+			return nil
+		}
+	}
+
+	return fmt.Errorf("Invalid driver %v", driver)
 }

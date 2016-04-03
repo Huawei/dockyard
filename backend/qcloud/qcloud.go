@@ -17,16 +17,39 @@ import (
 	"strings"
 	"time"
 
-	"github.com/containerops/dockyard/backend/driver"
+	"github.com/containerops/dockyard/backend/factory"
 	"github.com/containerops/dockyard/utils/setting"
 )
 
+type qclouddesc struct{}
+
 func init() {
-	driver.Register("qcloud", InitFunc)
+	factory.Register("qcloud", &qclouddesc{})
 }
 
-func InitFunc() {
-	driver.InjectReflect.Bind("qcloudsave", qcloudsave)
+func (q *qclouddesc) Save(file string) (url string, err error) {
+	var key string
+	//get the filename from the file , eg,get "1.txt" from /home/liugenping/1.txt
+	for _, key = range strings.Split(file, "/") {
+
+	}
+	fin, err := os.Open(file)
+	if err != nil {
+		return "", err
+	}
+	defer fin.Close()
+	fileName := key
+	requestUrl := "http://" + setting.Endpoint + "/" + "files" + "/" + "v1" + "/" + setting.QcloudAccessID + "/" + setting.Bucket + "/" + fileName
+	url, err = GetRequest(fin, file, requestUrl)
+	return url, err
+}
+
+func (q *qclouddesc) Get(file string) ([]byte, error) {
+	return []byte(""), nil
+}
+
+func (q *qclouddesc) Delete(file string) error {
+	return nil
 }
 
 //according to data format of qcloud restful api
@@ -52,23 +75,6 @@ func Sign(plainText string, secretKey string) (sign string) {
 	signObj := string(hmacObj.Sum(nil)) + plainText
 	sign = base64.StdEncoding.EncodeToString([]byte(signObj))
 	return
-}
-
-func qcloudsave(file string) (url string, err error) {
-	var key string
-	//get the filename from the file , eg,get "1.txt" from /home/liugenping/1.txt
-	for _, key = range strings.Split(file, "/") {
-
-	}
-	fin, err := os.Open(file)
-	if err != nil {
-		return "", err
-	}
-	defer fin.Close()
-	fileName := key
-	requestUrl := "http://" + setting.Endpoint + "/" + "files" + "/" + "v1" + "/" + setting.QcloudAccessID + "/" + setting.Bucket + "/" + fileName
-	url, err = GetRequest(fin, file, requestUrl)
-	return url, err
 }
 
 func GenerateSign() (sign string) {
@@ -322,11 +328,11 @@ func CliDo(req *http.Request) (url string, err error) {
 	}
 	Qrsp := qrsp{}
 	err = json.Unmarshal(out, &Qrsp)
-	if Qrsp.Code == 0 {
+	if Qrsp.Code == 0 || Qrsp.Code == -4018 {
 		url = Qrsp.Data.Access_url
 	}
-	if Qrsp.Code == -4018 {
-		return "file exists", errors.New("file exists")
-	}
+	//	if Qrsp.Code == -4018 {
+	//		return "file exists", errors.New("file exists")
+	//	}
 	return url, nil
 }

@@ -1,4 +1,4 @@
-package googlecloud
+package gcs
 
 import (
 	"io/ioutil"
@@ -11,19 +11,17 @@ import (
 	"golang.org/x/oauth2/jwt"
 	"google.golang.org/api/storage/v1"
 
-	"github.com/containerops/dockyard/backend/driver"
+	"github.com/containerops/dockyard/backend/factory"
 	"github.com/containerops/dockyard/utils/setting"
 )
 
+type gcsdesc struct{}
+
 func init() {
-	driver.Register("googlecloudsave", InitFunc)
+	factory.Register("gcs", &gcsdesc{})
 }
 
-func InitFunc() {
-	driver.InjectReflect.Bind("googlecloudsave", googlecloudsave)
-}
-
-func googlecloudsave(file string) (url string, err error) {
+func (g *gcsdesc) Save(file string) (url string, err error) {
 
 	privateKey, err := ioutil.ReadFile(setting.PrivateKeyFilePath + setting.PrivateKeyFile)
 	if err != nil {
@@ -67,4 +65,12 @@ func googlecloudsave(file string) (url string, err error) {
 	} else {
 		return retUrl, nil
 	}
+}
+
+func (g *gcsdesc) Get(file string) ([]byte, error) {
+	return []byte(""), nil
+}
+
+func (g *gcsdesc) Delete(file string) error {
+	return nil
 }
