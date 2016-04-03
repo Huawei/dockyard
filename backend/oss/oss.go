@@ -13,7 +13,7 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/containerops/dockyard/backend/driver"
+	"github.com/containerops/dockyard/backend/factory"
 	"github.com/containerops/dockyard/utils/setting"
 )
 
@@ -29,15 +29,13 @@ type Fileinfo struct {
 	Modtime string `json:"modTime"`
 }
 
+type ossdesc struct{}
+
 func init() {
-	driver.Register("oss", InitFunc)
+	factory.Register("oss", &ossdesc{})
 }
 
-func InitFunc() {
-	driver.InjectReflect.Bind("osssave", osssave)
-}
-
-func osssave(filepath string) (url string, err error) {
+func (o *ossdesc) Save(filepath string) (url string, err error) {
 	//TODO: define the naming rules of path
 	path := filepath
 	partSize := setting.PartSizeMB * 1024 * 1024
@@ -113,7 +111,7 @@ func osssave(filepath string) (url string, err error) {
 	return filepath, nil
 }
 
-func ossgetfileinfo(filepath string) error {
+func (o *ossdesc) Get(filepath string) ([]byte, error) {
 	var apiserveraddr string
 	switch setting.ListenMode {
 	case "https":
@@ -125,16 +123,16 @@ func ossgetfileinfo(filepath string) error {
 	header["Path"] = []string{filepath}
 	result, statusCode, err := call("GET", apiserveraddr, "/oss/api/file/info", nil, header)
 	if statusCode != http.StatusOK {
-		return fmt.Errorf("statusCode error: %d", statusCode, ", error: ", err)
+		return []byte(""), fmt.Errorf("statusCode error: %d", statusCode, ", error: ", err)
 	}
 	if err != nil {
-		return fmt.Errorf("error: ", err)
+		return []byte(""), fmt.Errorf("error: ", err)
 	}
 	fmt.Printf("fileinfo: %s\n", string(result))
-	return nil
+	return result, nil
 }
 
-func ossdownload(tag string, path string) error {
+func (o *ossdesc) Download(tag string, path string) error {
 	var apiserveraddr string
 	switch setting.ListenMode {
 	case "https":
@@ -196,7 +194,7 @@ func ossdownload(tag string, path string) error {
 	return nil
 }
 
-func ossdel(filepath string) error {
+func (o *ossdesc) Delete(filepath string) error {
 	var apiserveraddr string
 	switch setting.ListenMode {
 	case "https":

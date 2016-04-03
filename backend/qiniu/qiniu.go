@@ -7,22 +7,18 @@ import (
 	"github.com/qiniu/api.v6/io"
 	"github.com/qiniu/api.v6/rs"
 
-	"github.com/containerops/dockyard/backend/driver"
+	"github.com/containerops/dockyard/backend/factory"
 	"github.com/containerops/dockyard/utils/setting"
 )
 
+type qiniudesc struct{}
+
 func init() {
-	driver.Register("qiniu", InitFunc)
+	factory.Register("qiniu", &qiniudesc{})
 }
 
-func InitFunc() {
-	driver.InjectReflect.Bind("qiniusave", qiniusave)
-}
-
-func qiniusave(file string) (url string, err error) {
-
+func (q *qiniudesc) Save(file string) (url string, err error) {
 	var key string
-
 	for _, key = range strings.Split(file, "/") {
 
 	}
@@ -44,4 +40,12 @@ func qiniusave(file string) (url string, err error) {
 		return url, nil
 	}
 
+}
+
+func (q *qiniudesc) Get(file string) ([]byte, error) {
+	return []byte(""), nil
+}
+
+func (q *qiniudesc) Delete(file string) error {
+	return nil
 }

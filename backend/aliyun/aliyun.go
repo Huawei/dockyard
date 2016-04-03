@@ -5,19 +5,17 @@ import (
 	"strings"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
-	"github.com/containerops/dockyard/backend/driver"
+	"github.com/containerops/dockyard/backend/factory"
 	"github.com/containerops/dockyard/utils/setting"
 )
 
+type aliyundesc struct{}
+
 func init() {
-	driver.Register("aliyun", InitFunc)
+	factory.Register("aliyun", &aliyundesc{})
 }
 
-func InitFunc() {
-	driver.InjectReflect.Bind("aliyunsave", aliyunsave)
-}
-
-func aliyunsave(file string) (url string, err error) {
+func (a *aliyundesc) Save(file string) (url string, err error) {
 
 	client, err := oss.New(setting.Endpoint, setting.AccessKeyID, setting.AccessKeysecret)
 	if err != nil {
@@ -59,4 +57,12 @@ func aliyunsave(file string) (url string, err error) {
 	} else {
 		return url, nil
 	}
+}
+
+func (a *aliyundesc) Get(file string) ([]byte, error) {
+	return []byte(""), nil
+}
+
+func (a *aliyundesc) Delete(file string) error {
+	return nil
 }

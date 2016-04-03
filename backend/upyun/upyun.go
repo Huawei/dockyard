@@ -7,24 +7,19 @@ import (
 
 	"github.com/upyun/go-sdk/upyun"
 
-	"github.com/containerops/dockyard/backend/driver"
+	"github.com/containerops/dockyard/backend/factory"
 	"github.com/containerops/dockyard/utils/setting"
 )
 
+type upyundesc struct{}
+
 func init() {
-	driver.Register("upyun", InitFunc)
+	factory.Register("upyun", &upyundesc{})
 }
 
-func InitFunc() {
-	driver.InjectReflect.Bind("upyunsave", upyunsave)
-}
-
-func upyunsave(file string) (url string, err error) {
-
+func (u *upyundesc) Save(file string) (url string, err error) {
 	var key string
-
 	for _, key = range strings.Split(file, "/") {
-
 	}
 
 	opath := "/" + setting.Bucket + "/" + key
@@ -63,4 +58,12 @@ func upyunsave(file string) (url string, err error) {
 		return "", err
 	}
 	return url, nil
+}
+
+func (u *upyundesc) Get(file string) ([]byte, error) {
+	return []byte(""), nil
+}
+
+func (u *upyundesc) Delete(file string) error {
+	return nil
 }

@@ -1,4 +1,4 @@
-package amazons3
+package s3
 
 import (
 	"crypto/hmac"
@@ -11,19 +11,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/containerops/dockyard/backend/driver"
+	"github.com/containerops/dockyard/backend/factory"
 	"github.com/containerops/dockyard/utils/setting"
 )
 
+type s3desc struct{}
+
 func init() {
-	driver.Register("amazons3", InitFunc)
+	factory.Register("s3", &s3desc{})
 }
 
-func InitFunc() {
-	driver.InjectReflect.Bind("amazons3save", amazons3save)
-}
-
-func amazons3save(file string) (url string, err error) {
+func (s *s3desc) Save(file string) (url string, err error) {
 
 	var key string
 
@@ -51,7 +49,7 @@ func amazons3save(file string) (url string, err error) {
 
 	fmt.Println(requstUrl)
 
-	amazons3Sign(r, key, setting.AccessKeyID, setting.AccessKeysecret)
+	sign(r, key, setting.AccessKeyID, setting.AccessKeysecret)
 	_, err = http.DefaultClient.Do(r)
 	if err != nil {
 		return "", err
@@ -62,16 +60,24 @@ func amazons3save(file string) (url string, err error) {
 
 }
 
-func amazons3Sign(r *http.Request, key string, accessKeyId string, accessKeySecret string) {
-
-	plainText := amazons3cloudMakePlainText(r, key)
-	h := hmac.New(sha1.New, []byte(accessKeySecret))
-	h.Write([]byte(plainText))
-	sign := base64.StdEncoding.EncodeToString(h.Sum(nil))
-	r.Header.Set("Authorization", "AWS "+accessKeyId+":"+sign)
+func (s *s3desc) Get(file string) ([]byte, error) {
+	return []byte(""), nil
 }
 
-func amazons3cloudMakePlainText(r *http.Request, key string) (plainText string) {
+func (s *s3desc) Delete(file string) error {
+	return nil
+}
+
+func sign(r *http.Request, key string, accessKeyId string, accessKeySecret string) {
+
+	plainText := makePlainText(r, key)
+	h := hmac.New(sha1.New, []byte(accessKeySecret))
+	h.Write([]byte(plainText))
+	signature := base64.StdEncoding.EncodeToString(h.Sum(nil))
+	r.Header.Set("Authorization", "AWS "+accessKeyId+":"+signature)
+}
+
+func makePlainText(r *http.Request, key string) (plainText string) {
 
 	plainText = r.Method + "\n"
 	plainText += r.Header.Get("content-md5") + "\n"
