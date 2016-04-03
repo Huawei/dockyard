@@ -177,17 +177,9 @@ func GetBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 		return http.StatusNotFound, result
 	}
 
-	layerfile := i.Path
-	if _, err := os.Stat(layerfile); err != nil {
-		log.Error("[REGISTRY API V2] File path %v is invalid: %v", layerfile, err.Error())
-
-		result, _ := json.Marshal(map[string]string{"message": "File path is invalid"})
-		return http.StatusInternalServerError, result
-	}
-
-	file, err := ioutil.ReadFile(layerfile)
+	layer, err := module.DownloadLayer(i.Path)
 	if err != nil {
-		log.Error("[REGISTRY API V2] Failed to read layer file %v: %v", layerfile, err.Error())
+		log.Error("[REGISTRY API V2] Failed to get layer: %v", err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Failed to read layer file"})
 		return http.StatusInternalServerError, result
@@ -195,7 +187,7 @@ func GetBlobsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) 
 
 	ctx.Resp.Header().Set("Content-Type", "application/octet-stream")
 	ctx.Resp.Header().Set("Docker-Content-Digest", digest)
-	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(file)))
+	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(layer)))
 
-	return http.StatusOK, file
+	return http.StatusOK, layer
 }

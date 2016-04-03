@@ -14,6 +14,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"github.com/containerops/dockyard/backend"
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/dockyard/utils"
 )
@@ -63,6 +64,85 @@ func ParseManifest(data []byte, namespace, repository, tag string) (error, int64
 	}
 
 	return nil, schemaVersion
+}
+
+func GetTarsumlist(data []byte) ([]string, error) {
+	var tarsumlist []string
+	var layers = []string{"", "fsLayers", "layers"}
+	var tarsums = []string{"", "blobSum", "digest"}
+
+	var manifest map[string]interface{}
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		return []string{}, err
+	}
+
+	schemaVersion := int64(manifest["schemaVersion"].(float64))
+	if schemaVersion == 2 {
+		confblobsum := manifest["config"].(map[string]interface{})["digest"].(string)
+		tarsum := strings.Split(confblobsum, ":")[1]
+		tarsumlist = append(tarsumlist, tarsum)
+	}
+
+	section := layers[schemaVersion]
+	item := tarsums[schemaVersion]
+	for i := len(manifest[section].([]interface{})) - 1; i >= 0; i-- {
+		blobsum := manifest[section].([]interface{})[i].(map[string]interface{})[item].(string)
+		tarsum := strings.Split(blobsum, ":")[1]
+		tarsumlist = append(tarsumlist, tarsum)
+	}
+
+	return tarsumlist, nil
+}
+
+//Upload the layer of image to object storage service,support to analyzed docker V1/V2 manifest now
+//consider recycling resources while save to oss failure,get and delete should be support soon
+func UploadLayer(tarsumlist []string) error {
+	if backend.Drv == nil {
+		return nil
+	}
+
+	if len(tarsumlist) <= 0 {
+		return fmt.Errorf("no blobs")
+	}
+
+	for _, tarsum := range tarsumlist {
+		i := new(models.Image)
+		if exists, err := i.Get(tarsum); err != nil {
+			return err
+		} else if !exists {
+			return fmt.Errorf("not found tarsum")
+		}
+
+		if _, err := backend.Drv.Save(i.Path); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func DownloadLayer(layerpath string) ([]byte, error) {
+	var content []byte
+	var err error
+
+	content, err = ioutil.ReadFile(layerpath)
+	if err != nil {
+		return []byte(""), err
+
+		//consider recycling resources while save to oss failure,get and delete should be support soon
+		/*
+			if backend.Drv == nil {
+				return []byte(""), fmt.Errorf("Read file failure: %v", err.Error())
+			}
+
+			content, err = backend.Drv.Get(layerpath)
+			if err != nil {
+				return []byte(""), fmt.Errorf("Failed to download layer: %v", err.Error())
+			}
+		*/
+	}
+
+	return content, nil
 }
 
 func SaveLayerLocal(srcPath, srcFile, dstPath, dstFile string, reqbody []byte) (int, error) {
