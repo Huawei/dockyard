@@ -66,7 +66,7 @@ var (
 	PrivateKeyFilePath string
 	PrivateKeyFile     string
 	Clientemail        string
-	
+
 	//rados unique
 	Chunksize string
 	Poolname  string

@@ -10,12 +10,12 @@ import (
 )
 
 var (
-	r = &radosdesc{}
-	RadosBinary	 string = "rados"
-	username 	 string = "client."
-	poolname	 string = ""
-	upFileName   string = "/tmp/rados_test.txt"
-	fileContent  string = "Just for test rados.\n Congratulations! U are sucess."
+	r                  = &radosdesc{}
+	RadosBinary string = "rados"
+	username    string = "client."
+	poolname    string = ""
+	upFileName  string = "/tmp/rados_test.txt"
+	fileContent string = "Just for test rados.\n Congratulations! U are sucess."
 )
 
 func TestFileInit(t *testing.T) {
@@ -77,7 +77,7 @@ func TestRadosDelete(t *testing.T) {
 	}
 
 	//Print all object in pool
-	buf, err := exec.Command(RadosBinary, "-p", poolname, "ls", "-n", username).CombinedOutput() 
+	buf, err := exec.Command(RadosBinary, "-p", poolname, "ls", "-n", username).CombinedOutput()
 	if err != nil {
 		t.Error(err)
 	}
