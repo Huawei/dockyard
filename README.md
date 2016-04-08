@@ -2,7 +2,7 @@
 ![Dockyard](external/images/dockyard.jpg "Dockyard - Container Registry And Container Volume Mangaement")
 
 ## What is Dockyard ?
-Dockyard is a container registry storing and distributing container image include [Docker Image](https://github.com/docker/distribution/tree/master/docs/spec), [App Container Image](https://github.com/appc/spec/blob/master/spec/aci.md) and [OCI](https://opencontaienrs.org) Image(*on the road*). It's key features and goals include:
+Dockyard is a container registry storing and distributing container image include [Docker Image](https://github.com/docker/distribution/tree/master/docs/spec), [App Container Image](https://github.com/appc/spec/blob/master/spec/aci.md) and [OCI Image](https://github.com/opencontainer/image-spec). It's key features and goals include:
 - Converting image format between above formats.
 - Container image encryption, verification and vulnerability analytsis.
 - Multi supported distribute protocols include Docker Registry V1 & V2 and App Container Image Discovery.
