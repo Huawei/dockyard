@@ -1,47 +1,32 @@
+/*
+Copyright 2015 The ContainerOps Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package web
 
 import (
-	"fmt"
-	"strings"
-
 	"gopkg.in/macaron.v1"
 
-	"github.com/containerops/dockyard/backend"
 	"github.com/containerops/dockyard/middleware"
-	"github.com/containerops/dockyard/models"
-	"github.com/containerops/dockyard/oss"
 	"github.com/containerops/dockyard/router"
-	"github.com/containerops/dockyard/utils/db"
-	"github.com/containerops/dockyard/utils/setting"
 )
 
 func SetDockyardMacaron(m *macaron.Macaron) {
-	if err := db.RegisterDriver(setting.DBDriver); err != nil {
-		fmt.Printf("Register database driver error: %s\n", err.Error())
-	} else {
-		db.Drv.RegisterModel(new(models.Repository), new(models.Tag), new(models.Image))
-		err := db.Drv.InitDB(setting.DBDriver, setting.DBUser, setting.DBPasswd, setting.DBURI, setting.DBName, setting.DBDB)
-		if err != nil {
-			fmt.Printf("Connect database error: %s\n", err.Error())
-		}
-	}
-
-	backend.InitBackend()
-
-	if err := middleware.Initfunc(); err != nil {
-		fmt.Printf("Init middleware error: %s\n", err.Error())
-	}
-
 	//Setting Middleware
 	middleware.SetMiddlewares(m)
 
 	//Setting Router
 	router.SetRouters(m)
-
-	//Start Object Storage Service if sets in conf
-	if strings.EqualFold(setting.OssSwitch, "enable") {
-		ossobj := oss.Instance()
-		ossobj.StartOSS()
-	}
-
 }

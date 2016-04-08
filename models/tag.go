@@ -1,49 +1,17 @@
+/*
+Copyright 2015 The ContainerOps Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package models
-
-import (
-	"time"
-
-	"github.com/containerops/dockyard/utils/db"
-)
-
-type Tag struct {
-	Id         int64     `json:"id" orm:"auto"`
-	Namespace  string    `json:"namespace" orm:"varchar(255)"`
-	Repository string    `json:"repository" orm:"varchar(255)"`
-	Tag        string    `json:"tag" orm:"varchar(255)"`
-	ImageId    string    `json:"imageid" orm:"varchar(255)"`
-	Manifest   string    `json:"manifest" orm:"null;type(text)"`
-	Schema     int64     `json:"schema" orm:"default(0)"`
-	Memo       string    `json:"memo" orm:"null;type(text)"`
-	Created    time.Time `json:"created" orm:"auto_now_add;type(datetime)"`
-	Updated    time.Time `json:"updated" orm:"auto_now;type(datetime)"`
-}
-
-func (t *Tag) TableUnique() [][]string {
-	return [][]string{
-		[]string{"Namespace", "Repository", "Tag"},
-	}
-}
-
-func (t *Tag) Get(namespace, repository, tag string) (bool, error) {
-	t.Namespace, t.Repository, t.Tag = namespace, repository, tag
-	return db.Drv.Get(t, namespace, repository, tag)
-}
-
-func (t *Tag) Save(namespace, repository, tag string) error {
-	tg := Tag{Namespace: namespace, Repository: repository, Tag: tag}
-	exists, err := tg.Get(namespace, repository, tag)
-	if err != nil {
-		return err
-	}
-
-	t.Namespace, t.Repository, t.Tag = namespace, repository, tag
-	if !exists {
-		err = db.Drv.Insert(t)
-	} else {
-		err = db.Drv.Update(t)
-	}
-
-	return err
-
-}
