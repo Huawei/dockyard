@@ -32,6 +32,14 @@ func PutManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 		manifest, _ = ctx.Req.Body().Bytes()
 	}
 
+	tarsumlist, err := module.GetTarsumlist(manifest)
+	if err != nil {
+		log.Error("[REGISTRY API V2] Failed to get tarsum in manifest")
+
+		result, _ := json.Marshal(map[string]string{"message": "Failed to get manifest tarsum"})
+		return http.StatusBadRequest, result
+	}
+
 	digest, err := signature.DigestManifest(manifest)
 	if err != nil {
 		log.Error("[REGISTRY API V2] Failed to get manifest digest: %v", err.Error())
@@ -63,8 +71,16 @@ func PutManifestsV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []by
 		repository,
 		digest)
 
+	ctx.Resp.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	ctx.Resp.Header().Set("Docker-Content-Digest", digest)
 	ctx.Resp.Header().Set("Location", random)
+
+	if err := module.UploadLayer(tarsumlist); err != nil {
+		log.Error("[REGISTRY API V2] Failed to upload layer: %v", err)
+
+		result, _ := json.Marshal(map[string]string{"message": "Failed to upload layer"})
+		return http.StatusBadRequest, result
+	}
 
 	var status = []int{http.StatusBadRequest, http.StatusAccepted, http.StatusCreated}
 	result, _ := json.Marshal(map[string]string{})
@@ -92,7 +108,7 @@ func GetTagsListV2Handler(ctx *macaron.Context, log *logs.BeeLogger) (int, []byt
 		log.Error("[REGISTRY API V2] Repository %v/%v tags list is empty", namespace, repository)
 
 		result, _ := json.Marshal(map[string]string{"message": "Tags list is empty"})
-		return http.StatusInternalServerError, result
+		return http.StatusNotFound, result
 	}
 	data["tags"] = tagslist
 

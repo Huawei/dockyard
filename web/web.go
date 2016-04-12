@@ -26,7 +26,11 @@ func SetDockyardMacaron(m *macaron.Macaron) {
 		}
 	}
 
-	backend.InitBackend()
+	if setting.Backend != "" {
+		if err := backend.RegisterDriver(setting.Backend); err != nil {
+			fmt.Printf("Register backend driver error: %s\n", err.Error())
+		}
+	}
 
 	if err := middleware.Initfunc(); err != nil {
 		fmt.Printf("Init middleware error: %s\n", err.Error())

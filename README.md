@@ -2,27 +2,30 @@
 ![Dockyard](external/images/dockyard.jpg "Dockyard - Container Registry And Container Volume Mangaement")
 
 ## What is Dockyard ?
-Dockyard is a container registry with volume management function for Docker, rkt or other container engines. Its features include:
-- Image storage and meta discovery for popular container runtime such as docker and rkt.
-- Image distribution by P2P protocol.
-- Public and private repositories for users and organizations.
-- Built-in object storage engine and drivers.
-- Built-in object storage service.
-- Built-in container volume management for runtime with distributed file system.
-- Convert image object to distributed file-system for container mount and start directly.
-- Container image encryption and verification.
+Dockyard is a container registry storing and distributing container image include [Docker Image](https://github.com/docker/distribution/tree/master/docs/spec), [App Container Image](https://github.com/appc/spec/blob/master/spec/aci.md) and [OCI](https://opencontaienrs.org) Image(*on the road*). It's key features and goals include:
+- Converting image format between above formats.
+- Container image encryption, verification and vulnerability analytsis.
+- Multi supported distribute protocols include Docker Registry V1 & V2 and App Container Image Discovery.
+- Custome distribute protocol by framework base HTTPS and peer to peer. 
+- Authentication in distributing process and authorization for public and private container image.
+- Supporting mainstream object storage service like Amazon S3, Google Cloud Storage. 
+- Built-in object storage service for deployment convenience.
+- Volume management with distributed file system and block-based shared storage such as Amazon EBS, OpenStack Cinder.
+- Web UI portal for all functions above.
 
-## How it works
+## Why it matters ?
+Confused by docker registry v1 and v2? Helpless to face different container images(e.g. Docker or rkt)? Too lazy to deal with container image storage problems? Do not worry, Dockyard is coming for you. Please have a cup of tea and wait for this whole thing to blow over.
+
+With dockyard you can manage your container images as freely as you can, you need not to concern with different container engines, and you will not be locked in by docker hub. Just throw these tricky work to Dockyard and focus on your main business.
+
+## The Dockyard's Story :)
+
+## How it design and work ?
 The architecture of Dockyard illustrated as below:
 
 ![arch](docs/arch.png "architecture")
 
 Please refer to [design](docs/design.md) for more information.
-
-## Why it matters
-Confused by docker registry v1 and v2? Helpless to face different container images(e.g. Docker or rkt)? Too lazy to deal with container image storage problems? Do not worry, Dockyard is coming for you. Please have a cup of tea and wait for this whole thing to blow over.
-
-With dockyard you can manage your container images as freely as you can, you need not to concern with different container engines, and you will not be locked in by docker hub. Just throw these tricky work to Dockyard and focus on your main business.
 
 ## Current Status
 Please watch this space for updates on the progress.

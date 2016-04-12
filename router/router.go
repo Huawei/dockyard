@@ -76,4 +76,6 @@ func SetRouters(m *macaron.Macaron) {
 			m.Delete("/file", apiserver.DeleteFile)
 		})
 	})
+
+	m.Get("/announce", handler.AnnounceHandler)
 }
