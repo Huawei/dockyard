@@ -17,6 +17,10 @@ func init() {
 	factory.Register("upyun", &upyundesc{})
 }
 
+func (u *upyundesc) New() (factory.DrvInterface, error) {
+	return &upyundesc{}, nil
+}
+
 func (u *upyundesc) Save(file string) (url string, err error) {
 	var key string
 	for _, key = range strings.Split(file, "/") {

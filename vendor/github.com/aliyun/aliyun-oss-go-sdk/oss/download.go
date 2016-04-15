@@ -327,7 +327,7 @@ func (cp *downloadCheckpoint) prepare(bucket *Bucket, objectKey, filePath string
 
 func (cp *downloadCheckpoint) complete(cpFilePath string) error {
 	os.Remove(cpFilePath)
-    return nil
+	return nil
 }
 
 // 并发带断点的下载

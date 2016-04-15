@@ -1,6 +1,8 @@
 package qiniu
 
 import (
+	"strings"
+
 	"github.com/qiniu/api.v6/conf"
 	"github.com/qiniu/api.v6/io"
 	"github.com/qiniu/api.v6/rs"
@@ -15,18 +17,27 @@ func init() {
 	factory.Register("qiniu", &qiniudesc{})
 }
 
+func (q *qiniudesc) New() (factory.DrvInterface, error) {
+	return &qiniudesc{}, nil
+}
+
 func (q *qiniudesc) Save(file string) (url string, err error) {
+	var key string
+	for _, key = range strings.Split(file, "/") {
+
+	}
+
 	conf.ACCESS_KEY = setting.AccessKeyID
 	conf.SECRET_KEY = setting.AccessKeysecret
 
-	url = "http://" + setting.Endpoint + "/" + file
+	url = "http://" + setting.Endpoint + "/" + key
 
 	putPolicy := rs.PutPolicy{Scope: setting.Bucket}
 	uptoken := putPolicy.Token(nil)
 
 	var ret io.PutRet
 	var extra = &io.PutExtra{}
-	err = io.PutFile(nil, &ret, uptoken, file, file, extra)
+	err = io.PutFile(nil, &ret, uptoken, key, file, extra)
 	if err != nil {
 		return "", err
 	} else {

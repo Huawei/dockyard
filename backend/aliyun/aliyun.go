@@ -9,10 +9,30 @@ import (
 	"github.com/containerops/dockyard/utils/setting"
 )
 
-type aliyundesc struct{}
+type aliyundesc struct {
+	Cli    *oss.Client
+	Bucket *oss.Bucket
+}
 
 func init() {
 	factory.Register("aliyun", &aliyundesc{})
+}
+
+func (a *aliyundesc) New() (factory.DrvInterface, error) {
+	client, err := oss.New(setting.Endpoint, setting.AccessKeyID, setting.AccessKeysecret)
+	if err != nil {
+		return nil, err
+	}
+
+	bucket, err := client.Bucket(setting.Bucket)
+	if err != nil {
+		return nil, err
+	}
+
+	return &aliyundesc{
+		Cli:    client,
+		Bucket: bucket,
+	}, nil
 }
 
 func (a *aliyundesc) Save(file string) (url string, err error) {

@@ -1,85 +1,218 @@
 package rados
 
 import (
+	"io/ioutil"
+	"math/rand"
 	"os"
-	"os/exec"
+	"path"
 	"strings"
 	"testing"
+
+	. "gopkg.in/check.v1"
 
 	"github.com/containerops/dockyard/utils/setting"
 )
 
-var (
-	r                  = &radosdesc{}
-	RadosBinary string = "rados"
-	username    string = "client."
-	poolname    string = ""
-	upFileName  string = "/tmp/rados_test.txt"
-	fileContent string = "Just for test rados.\n Congratulations! U are sucess."
-)
+// Test hooks up gocheck into the "go test" runner.
+func Test(t *testing.T) { TestingT(t) }
 
-func TestFileInit(t *testing.T) {
-	file, err := os.Create(upFileName)
-	if err != nil {
-		t.Error(err)
-	}
-
-	ret, err := file.WriteString(fileContent)
-	if err != nil {
-		t.Error(err)
-		t.Fatalf("RADOS_TEST Write String ret =  %v", ret)
-	}
-
-	if err = setting.SetConfig("../../conf/containerops.conf"); err != nil {
-		t.Error(err)
-	}
-	username += setting.Username
-	poolname += setting.Poolname
+type RadosDriverSuite struct {
+	driver *radosdesc
 }
 
-//Unit test for rados
-func TestRadosSave(t *testing.T) {
-	var err error
+var _ = Suite(&RadosDriverSuite{})
 
-	_, err = r.Save(upFileName)
-	if err != nil {
-		t.Error(err)
+// Run once when the suite starts running
+func (s *RadosDriverSuite) SetUpSuite(c *C) {
+	if err := setting.SetConfig("../../conf/containerops.conf"); err != nil {
+		c.Assert(err, IsNil)
 	}
+	radosDriver, err := s.driver.New()
+	c.Assert(err, IsNil)
+	s.driver = radosDriver.(*radosdesc)
 
-	//Print all object in pool
-	buf, err := exec.Command(RadosBinary, "-p", poolname, "ls", "-n", username).CombinedOutput()
-	if err != nil {
-		t.Error(err)
-	}
-	t.Log(string(buf))
+	c.Log("test bucket started")
 }
 
-func TestRadosGet(t *testing.T) {
-	var err error
+// Run once after all tests or benchmarks have finished running
+func (s *RadosDriverSuite) TearDownSuite(c *C) {
+	// Delete Objects
+	objects, err := s.driver.listObjects()
+	c.Assert(err, IsNil)
 
-	buf, err := r.Get(upFileName)
-	if err != nil {
-		t.Error(err)
+	for _, object := range objects {
+		err = s.driver.Ioctx.Delete(object)
+		c.Assert(err, IsNil)
 	}
 
-	isEqual := strings.EqualFold(fileContent, string(buf))
-	if !isEqual {
-		t.Fatalf("Testing fail, content of uploadFile is not the same as the content of downloadFile")
+	c.Log("test bucket completed")
+}
+
+// Run before each test or benchmark starts running
+func (s *RadosDriverSuite) SetUpTest(c *C) {
+	// Ensures that storage drivers have no object
+	objects, err := s.driver.listObjects()
+	c.Assert(err, IsNil)
+
+	for _, object := range objects {
+		err = s.driver.Ioctx.Delete(object)
+		c.Assert(err, IsNil)
 	}
 }
 
-func TestRadosDelete(t *testing.T) {
-	var err error
+// Run once after all tests or benchmarks have finished running
+func (s *RadosDriverSuite) TearDownTest(c *C) {
+	err := os.RemoveAll("/tmp/test")
+	c.Assert(err, IsNil)
+}
 
-	err = r.Delete(upFileName)
-	if err != nil {
-		t.Error(err)
-	}
+// TestWriteRead1 tests a simple write-read workflow.
+func (s *RadosDriverSuite) TestWriteRead1(c *C) {
+	filename := "/tmp/test" + randomPath(32)
+	contents := []byte("无言独上西楼，月如钩")
+	s.writeReadCompare(c, filename, contents)
+}
 
-	//Print all object in pool
-	buf, err := exec.Command(RadosBinary, "-p", poolname, "ls", "-n", username).CombinedOutput()
-	if err != nil {
-		t.Error(err)
+// TestWriteRead2 tests a simple write-read workflow with unicode data.
+func (s *RadosDriverSuite) TestWriteRead2(c *C) {
+	filename := "/tmp/test" + randomPath(32)
+	contents := []byte("\xc3\x9f")
+	s.writeReadCompare(c, filename, contents)
+}
+
+// TestWriteRead3 tests a simple write-read workflow with a small string.
+func (s *RadosDriverSuite) TestWriteRead3(c *C) {
+	filename := "/tmp/test" + randomPath(32)
+	contents := randomContents(32)
+	s.writeReadCompare(c, filename, contents)
+}
+
+// TestWriteRead4 tests a simple write-read workflow with 1MB of data.
+func (s *RadosDriverSuite) TestWriteRead4(c *C) {
+	filename := "/tmp/test" + randomPath(32)
+	contents := randomContents(1024 * 1024)
+	s.writeReadCompare(c, filename, contents)
+}
+
+// TestWriteReadNonUTF8 tests that non-utf8 data may be written to the storage
+// driver safely.
+func (s *RadosDriverSuite) TestWriteReadNonUTF8(c *C) {
+	filename := "/tmp/test" + randomPath(32)
+	contents := []byte{0x80, 0x80, 0x80, 0x80}
+	s.writeReadCompare(c, filename, contents)
+}
+
+// TestTruncate tests that putting smaller contents than an original file does
+// remove the excess contents.
+func (s *RadosDriverSuite) TestTruncate(c *C) {
+	filename := "/tmp/test" + randomPath(32)
+	contents := randomContents(1024 * 1024)
+	s.writeReadCompare(c, filename, contents)
+
+	contents = randomContents(1024)
+	s.writeReadCompare(c, filename, contents)
+}
+
+// TestReadNonexistent tests reading content from an empty path.
+func (s *RadosDriverSuite) TestReadNonexistent(c *C) {
+	filename := "/tmp/test" + randomPath(32)
+	_, err := s.driver.Get(filename)
+	c.Assert(err, NotNil)
+	c.Assert(strings.Contains(err.Error(), "rados"), Equals, true)
+}
+
+// TestDelete checks that the delete operation removes data from the storage
+// driver
+func (s *RadosDriverSuite) TestDelete(c *C) {
+	filename := "/tmp/test" + randomPath(32)
+	contents := randomContents(32)
+
+	directory := path.Dir(filename)
+	err := os.MkdirAll(directory, 0777)
+	c.Assert(err, IsNil)
+	err = ioutil.WriteFile(filename, contents, 0666)
+	c.Assert(err, IsNil)
+
+	_, err = s.driver.Save(filename)
+	c.Assert(err, IsNil)
+
+	err = s.driver.Delete(filename)
+	c.Assert(err, IsNil)
+
+	_, err = s.driver.Get(filename)
+	c.Assert(err, NotNil)
+	c.Assert(strings.Contains(err.Error(), "rados"), Equals, true)
+}
+
+// TestDeleteNonexistent checks that removing a nonexistent key fails.
+func (s *RadosDriverSuite) TestDeleteNonexistent(c *C) {
+	filename := randomPath(32)
+	err := s.driver.Delete(filename)
+	c.Assert(err, NotNil)
+	c.Assert(strings.Contains(err.Error(), "rados"), Equals, true)
+}
+
+func (s *RadosDriverSuite) writeReadCompare(c *C, filename string, contents []byte) {
+	directory := path.Dir(filename)
+	err := os.MkdirAll(directory, 0777)
+	c.Assert(err, IsNil)
+	err = ioutil.WriteFile(filename, contents, 0666)
+	c.Assert(err, IsNil)
+
+	_, err = s.driver.Save(filename)
+	c.Assert(err, IsNil)
+
+	readContents, err := s.driver.Get(filename)
+	c.Assert(err, IsNil)
+
+	c.Assert(readContents, DeepEquals, contents)
+}
+
+var filenameChars = []byte("abcdefghijklmnopqrstuvwxyz0123456789")
+var separatorChars = []byte("._-")
+
+func randomPath(length int64) string {
+	path := "/"
+	for int64(len(path)) < length {
+		chunkLength := rand.Int63n(length-int64(len(path))) + 1
+		chunk := randomFilename(chunkLength)
+		path += chunk
+		remaining := length - int64(len(path))
+		if remaining == 1 {
+			path += randomFilename(1)
+		} else if remaining > 1 {
+			path += "/"
+		}
 	}
-	t.Log(string(buf))
+	return path
+}
+
+func randomFilename(length int64) string {
+	b := make([]byte, length)
+	wasSeparator := true
+	for i := range b {
+		if !wasSeparator && i < len(b)-1 && rand.Intn(4) == 0 {
+			b[i] = separatorChars[rand.Intn(len(separatorChars))]
+			wasSeparator = true
+		} else {
+			b[i] = filenameChars[rand.Intn(len(filenameChars))]
+			wasSeparator = false
+		}
+	}
+	return string(b)
+}
+
+// randomBytes pre-allocates all of the memory sizes needed for the test. If
+// anything panics while accessing randomBytes, just make this number bigger.
+var randomBytes = make([]byte, 128<<20)
+
+func init() {
+	// increase the random bytes to the required maximum
+	for i := range randomBytes {
+		randomBytes[i] = byte(rand.Intn(2 << 8))
+	}
+}
+
+func randomContents(length int64) []byte {
+	return randomBytes[:length]
 }

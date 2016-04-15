@@ -21,6 +21,10 @@ func init() {
 	factory.Register("s3", &s3desc{})
 }
 
+func (factory *s3desc) New() (factory.DrvInterface, error) {
+	return &s3desc{}, nil
+}
+
 func (s *s3desc) Save(file string) (url string, err error) {
 
 	var key string
