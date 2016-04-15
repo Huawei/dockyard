@@ -17,13 +17,17 @@ import (
 var Drv factory.DrvInterface
 
 func RegisterDriver(driver string) error {
+	var err error
 	if Drv != nil {
 		return fmt.Errorf("Only support one driver at one time")
 	}
 
 	for k, v := range factory.Drivers {
 		if k == driver && v != nil {
-			Drv = factory.Drivers[k]
+			Drv, err = factory.Drivers[k].New()
+			if err != nil {
+				return err
+			}
 			return nil
 		}
 	}

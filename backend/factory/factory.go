@@ -5,6 +5,7 @@ import (
 )
 
 type DrvInterface interface {
+	New() (DrvInterface, error)
 	Get(file string) ([]byte, error)
 	Save(file string) (string, error)
 	Delete(file string) error

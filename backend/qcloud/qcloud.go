@@ -27,6 +27,10 @@ func init() {
 	factory.Register("qcloud", &qclouddesc{})
 }
 
+func (q *qclouddesc) New() (factory.DrvInterface, error) {
+	return &qclouddesc{}, nil
+}
+
 func (q *qclouddesc) Save(file string) (url string, err error) {
 	var key string
 	//get the filename from the file , eg,get "1.txt" from /home/liugenping/1.txt

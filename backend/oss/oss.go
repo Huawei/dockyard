@@ -35,6 +35,10 @@ func init() {
 	factory.Register("oss", &ossdesc{})
 }
 
+func (o *ossdesc) New() (factory.DrvInterface, error) {
+	return &ossdesc{}, nil
+}
+
 func (o *ossdesc) Save(filepath string) (url string, err error) {
 	//TODO: define the naming rules of path
 	path := filepath

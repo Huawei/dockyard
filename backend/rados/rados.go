@@ -1,18 +1,18 @@
 package rados
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
 
 	"github.com/ceph/go-ceph/rados"
+	"github.com/satori/go.uuid"
 
 	"github.com/containerops/dockyard/backend/factory"
+	"github.com/containerops/dockyard/utils"
 	"github.com/containerops/dockyard/utils/setting"
 )
 
@@ -23,28 +23,17 @@ const objectBlobPrefix = "blob:"
 const defaultChunkSize = 4 << 20
 const defaultXattrTotalSizeName = "total-size"
 
-// Max number of keys fetched from omap at each read operation
-const defaultKeysFetched = 1
-
-type radosdesc struct{}
-
 func init() {
 	factory.Register("rados", &radosdesc{})
 }
 
-type radosDriver struct {
+type radosdesc struct {
 	Conn      *rados.Conn
 	Ioctx     *rados.IOContext
 	Chunksize uint64
 }
 
-type driverParameters struct {
-	Poolname  string
-	Username  string
-	Chunksize uint64
-}
-
-func new() (*radosDriver, error) {
+func (d *radosdesc) New() (factory.DrvInterface, error) {
 	chunksize := uint64(defaultChunkSize)
 	if setting.Chunksize != "" {
 		if tmp, err := strconv.Atoi(setting.Chunksize); err != nil {
@@ -54,16 +43,10 @@ func new() (*radosDriver, error) {
 		}
 	}
 
-	params := driverParameters{
-		Poolname:  setting.Poolname,
-		Username:  setting.Username,
-		Chunksize: chunksize,
-	}
-
 	var err error
 	var conn *rados.Conn
-	if params.Username != "" {
-		conn, err = rados.NewConnWithUser(params.Username)
+	if setting.Username != "" {
+		conn, err = rados.NewConnWithUser(setting.Username)
 	} else {
 		conn, err = rados.NewConn()
 	}
@@ -79,217 +62,81 @@ func new() (*radosDriver, error) {
 		return nil, err
 	}
 
-	ioctx, err := conn.OpenIOContext(params.Poolname)
+	ioctx, err := conn.OpenIOContext(setting.Poolname)
 	if err != nil {
 		return nil, err
 	}
 
-	return &radosDriver{
+	return &radosdesc{
 		Ioctx:     ioctx,
 		Conn:      conn,
-		Chunksize: params.Chunksize,
+		Chunksize: chunksize,
 	}, nil
 }
 
-func (r *radosdesc) Save(file string) (string, error) {
-	//upload replicated file
+// file : the path of file to save
+func (d *radosdesc) Save(file string) (string, error) {
 	fp, err := os.Open(file)
 	if err != nil {
 		return "", err
 	}
 	defer fp.Close()
 
-	d, err := new()
+	info, err := fp.Stat()
 	if err != nil {
 		return "", err
 	}
+	fileSize := uint64(info.Size())
 
-	if _, err = d.WriteStream(file, 0, fp); err != nil {
-		return "", err
-	}
-
-	return "", nil
-}
-
-func (r *radosdesc) Put(path string, contents []byte) error {
-	d, err := new()
-	if err != nil {
-		return err
-	}
-
-	if _, err = d.WriteStream(path, 0, bytes.NewReader(contents)); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (r *radosdesc) Get(path string) ([]byte, error) {
-	d, err := new()
-	if err != nil {
-		return nil, err
-	}
-
-	rc, err := d.ReadStream(path, 0)
-	if err != nil {
-		return nil, err
-	}
-	defer rc.Close()
-
-	p, err := ioutil.ReadAll(rc)
-	if err != nil {
-		return nil, err
-	}
-
-	return p, nil
-}
-
-func (r *radosdesc) Delete(path string) error {
-	d, err := new()
-	if err != nil {
-		return err
-	}
-
-	return d.Delete(path)
-}
-
-// ReadStream retrieves an io.ReadCloser for the content stored at "path" with a
-// given byte offset.
-type readStreamReader struct {
-	Driver *radosDriver
-	Oid    string
-	Size   uint64
-	Offset uint64
-}
-
-func (r *readStreamReader) Close() error {
-	return nil
-}
-
-func (d *radosDriver) ReadStream(path string, offset int64) (io.ReadCloser, error) {
-	// get oid from filename
-	oid, err := d.getOid(path)
-	if err != nil {
-		return nil, err
-	}
-
-	// get object stat
-	stat, err := d.Stat(path)
-	if err != nil {
-		return nil, err
-	}
-
-	if offset > stat.Size() {
-		return nil, InvalidOffsetError{Path: path, Offset: offset}
-	}
-
-	return &readStreamReader{
-		Driver: d,
-		Oid:    oid,
-		Size:   uint64(stat.Size()),
-		Offset: uint64(offset),
-	}, nil
-}
-
-func (r *readStreamReader) Read(b []byte) (n int, err error) {
-	// Determine the part available to read
-	bufferOffset := uint64(0)
-	bufferSize := uint64(len(b))
-
-	// End of the object, read less than the buffer size
-	if bufferSize > r.Size-r.Offset {
-		bufferSize = r.Size - r.Offset
-	}
-
-	// Fill `b`
-	for bufferOffset < bufferSize {
-		// Get the offset in the object chunk
-		chunkedOid, chunkedOffset := r.Driver.getChunkNameFromOffset(r.Oid, r.Offset)
-
-		// Determine the best size to read
-		bufferEndOffset := bufferSize
-		if bufferEndOffset-bufferOffset > r.Driver.Chunksize-chunkedOffset {
-			bufferEndOffset = bufferOffset + (r.Driver.Chunksize - chunkedOffset)
-		}
-
-		// Read the chunk
-		n, err = r.Driver.Ioctx.Read(chunkedOid, b[bufferOffset:bufferEndOffset], chunkedOffset)
-		if err != nil {
-			return int(bufferOffset), err
-		}
-
-		bufferOffset += uint64(n)
-		r.Offset += uint64(n)
-	}
-
-	// EOF if the offset is at the end of the object
-	if r.Offset == r.Size {
-		return int(bufferOffset), io.EOF
-	}
-
-	return int(bufferOffset), nil
-}
-
-func (d *radosDriver) WriteStream(path string, offset int64, reader io.Reader) (totalRead int64, err error) {
 	buf := make([]byte, d.Chunksize)
-	totalRead = 0
+	writeUp := false
+	totalRead := uint64(0)
 
-	oid, err := d.getOid(path)
+	//get object id from Omap
+	oid, err := d.getOid(file)
 	if err != nil {
-		switch err.(type) {
-		// Trying to write new object, generate new blob identifier for it
-		case PathNotFoundError:
-			oid = d.generateOid()
-			err = d.putOid(path, oid)
-			if err != nil {
-				return 0, err
-			}
-		default:
-			return 0, err
+		oid = objectBlobPrefix + utils.MD5(uuid.NewV4().String())
+		if err = d.setOid(file, oid); err != nil {
+			return "", err
 		}
 	} else {
 		// Check total object size only for existing ones
 		totalSize, err := d.getXattrTotalSize(oid)
 		if err != nil {
-			return 0, err
+			return "", err
 		}
+		// If new object is smaller, delete old one
+		if totalSize > fileSize {
+			for offset := uint64(0); offset < totalSize; offset += d.Chunksize {
+				chunkName := d.getChunkName(oid, offset)
 
-		// If offset if after the current object size, fill the gap with zeros
-		for totalSize < uint64(offset) {
-			sizeToWrite := d.Chunksize
-			if totalSize-uint64(offset) < sizeToWrite {
-				sizeToWrite = totalSize - uint64(offset)
+				err = d.Ioctx.Delete(chunkName)
+				if err != nil {
+					return "", err
+				}
 			}
-
-			chunkName, chunkOffset := d.getChunkNameFromOffset(oid, uint64(totalSize))
-			err = d.Ioctx.Write(chunkName, buf[:sizeToWrite], uint64(chunkOffset))
-			if err != nil {
-				return totalRead, err
-			}
-
-			totalSize += sizeToWrite
 		}
 	}
 
-	// Writer
+	// Write
 	for {
-		// Align to chunk size
 		sizeRead := uint64(0)
-		sizeToRead := uint64(offset+totalRead) % d.Chunksize
-		if sizeToRead == 0 {
-			sizeToRead = d.Chunksize
-		}
 
-		// Read from `reader`
-		for sizeRead < sizeToRead {
-			nn, err := reader.Read(buf[sizeRead:sizeToRead])
-			sizeRead += uint64(nn)
+		// Read from fp
+		for i := 3; sizeRead < d.Chunksize; i-- {
+			n, err := fp.Read(buf[sizeRead:])
+			sizeRead += uint64(n)
 			if err != nil {
 				if err != io.EOF {
-					return totalRead, err
+					return "", err
 				}
 
+				writeUp = true
 				break
+			}
+
+			if i == 0 {
+				return "", fmt.Errorf("Not read enough data")
 			}
 		}
 
@@ -299,73 +146,66 @@ func (d *radosDriver) WriteStream(path string, offset int64, reader io.Reader) (
 		}
 
 		// Write chunk object
-		chunkName, chunkOffset := d.getChunkNameFromOffset(oid, uint64(offset+totalRead))
-		err = d.Ioctx.Write(chunkName, buf[:sizeRead], uint64(chunkOffset))
-
-		if err != nil {
-			return totalRead, err
+		chunkName := d.getChunkName(oid, totalRead)
+		if err = d.Ioctx.Write(chunkName, buf[:sizeRead], 0); err != nil {
+			return "", err
 		}
+		totalRead += sizeRead
 
 		// Update total object size as xattr in the first chunk of the object
-		err = d.setXattrTotalSize(oid, uint64(offset+totalRead)+sizeRead)
+		err = d.setXattrTotalSize(oid, uint64(totalRead))
 		if err != nil {
-			return totalRead, err
+			return "", err
 		}
 
-		totalRead += int64(sizeRead)
-
 		// End of file
-		if sizeRead < sizeToRead {
+		if writeUp {
 			break
 		}
 	}
 
-	return totalRead, nil
-
+	return "", nil
 }
 
-// Stat retrieves the FileInfo for the given path, including the current size
-func (d *radosDriver) Stat(path string) (FileInfo, error) {
-	// get oid from filename
-	oid, err := d.getOid(path)
+func (d *radosdesc) Get(objectPath string) ([]byte, error) {
+	// Get oid from filename
+	oid, err := d.getOid(objectPath)
 	if err != nil {
 		return nil, err
 	}
-
-	// the path is a virtual directory?
 	if oid == "" {
-		return FileInfoInternal{
-			FileInfoFields: FileInfoFields{
-				Path:  path,
-				Size:  0,
-				IsDir: true,
-			},
-		}, nil
+		return nil, fmt.Errorf("Is virtual directory not file")
 	}
 
-	// stat first chunk
-	stat, err := d.Ioctx.Stat(oid + "-0")
-	if err != nil {
-		return nil, err
-	}
-
-	// get total size of chunked object
+	// Get total size of object from Omap
 	totalSize, err := d.getXattrTotalSize(oid)
 	if err != nil {
 		return nil, err
 	}
 
-	return FileInfoInternal{
-		FileInfoFields: FileInfoFields{
-			Path:    path,
-			Size:    int64(totalSize),
-			ModTime: stat.ModTime,
-		},
-	}, nil
+	buf := make([]byte, totalSize)
+	readOffset := uint64(0)
+
+	for readNum := d.Chunksize; readNum == d.Chunksize; {
+		// Read chunk object
+		chunkName := d.getChunkName(oid, readOffset)
+		n, err := d.Ioctx.Read(chunkName, buf[readOffset:], 0)
+		if err != nil {
+			return nil, err
+		}
+		readNum = uint64(n)
+		readOffset += uint64(readNum)
+	}
+
+	if readOffset != totalSize {
+		return buf, fmt.Errorf("File corrupted")
+	}
+
+	return buf, nil
 }
 
-// Delete recursively deletes all objects stored at "path" and its subpaths.
-func (d *radosDriver) Delete(objectPath string) error {
+// Delete deletes all objects stored at "path" and its subpaths.
+func (d *radosdesc) Delete(objectPath string) error {
 	// Get oid
 	oid, err := d.getOid(objectPath)
 	if err != nil {
@@ -374,7 +214,7 @@ func (d *radosDriver) Delete(objectPath string) error {
 
 	// Deleting virtual directory
 	if oid == "" {
-		objects, err := d.listDirectoryOid(objectPath)
+		objects, err := d.Ioctx.GetAllOmapValues(objectPath, "", "", 1)
 		if err != nil {
 			return err
 		}
@@ -393,7 +233,7 @@ func (d *radosDriver) Delete(objectPath string) error {
 		}
 
 		for offset := uint64(0); offset < totalSize; offset += d.Chunksize {
-			chunkName, _ := d.getChunkNameFromOffset(oid, offset)
+			chunkName := d.getChunkName(oid, offset)
 
 			err = d.Ioctx.Delete(chunkName)
 			if err != nil {
@@ -411,13 +251,17 @@ func (d *radosDriver) Delete(objectPath string) error {
 	return nil
 }
 
-// Generate a blob identifier
-func (d *radosDriver) generateOid() string {
-	return objectBlobPrefix + Generate().String()
+// List all objects in driver
+func (d *radosdesc) listObjects() ([]string, error) {
+	objectList := []string{}
+	err := d.Ioctx.ListObjects(func(oid string) {
+		objectList = append(objectList, oid)
+	})
+	return objectList, err
 }
 
-// Reference a object and its hierarchy
-func (d *radosDriver) putOid(objectPath string, oid string) error {
+// Save object identifier and its hierarchy in Omap
+func (d *radosdesc) setOid(objectPath, oid string) error {
 	directory := path.Dir(objectPath)
 	base := path.Base(objectPath)
 	createParentReference := true
@@ -434,7 +278,6 @@ func (d *radosDriver) putOid(objectPath string, oid string) error {
 	oids := map[string][]byte{
 		base: []byte(oid),
 	}
-
 	// Reference object
 	err := d.Ioctx.SetOmap(directory, oids)
 	if err != nil {
@@ -443,31 +286,29 @@ func (d *radosDriver) putOid(objectPath string, oid string) error {
 
 	// Esure parent virtual directories
 	if createParentReference {
-		return d.putOid(directory, "")
+		return d.setOid(directory, "")
 	}
 
 	return nil
 }
 
-func (d *radosDriver) getOid(objectPath string) (string, error) {
+func (d *radosdesc) getOid(objectPath string) (string, error) {
 	directory := path.Dir(objectPath)
 	base := path.Base(objectPath)
 
 	files, err := d.Ioctx.GetOmapValues(directory, "", base, 1)
-	if (err != nil) || (files[base] == nil) {
-		return "", PathNotFoundError{Path: objectPath}
+	if err != nil {
+		return "", err
+	}
+	if files[base] == nil {
+		return "", fmt.Errorf("rados: Not found")
 	}
 
 	return string(files[base]), nil
 }
 
-// List the objects of a virtual directory
-func (d *radosDriver) listDirectoryOid(path string) (list map[string][]byte, err error) {
-	return d.Ioctx.GetAllOmapValues(path, "", "", defaultKeysFetched)
-}
-
 // Remove a file from the files hierarchy
-func (d *radosDriver) deleteOid(objectPath string) error {
+func (d *radosdesc) deleteOid(objectPath string) error {
 	// Remove object reference
 	directory := path.Dir(objectPath)
 	base := path.Base(objectPath)
@@ -498,18 +339,13 @@ func (d *radosDriver) deleteOid(objectPath string) error {
 	return nil
 }
 
-// Takes an offset in an chunked object and return the chunk name and a new
-// offset in this chunk object
-func (d *radosDriver) getChunkNameFromOffset(oid string, offset uint64) (string, uint64) {
-	chunkID := offset / d.Chunksize
-	chunkedOid := oid + "-" + strconv.FormatInt(int64(chunkID), 10)
-	chunkedOffset := offset % d.Chunksize
-
-	return chunkedOid, chunkedOffset
+func (d *radosdesc) getChunkName(oid string, totalRead uint64) string {
+	id := totalRead / d.Chunksize
+	return oid + "-" + strconv.FormatInt(int64(id), 10)
 }
 
 // Set the total size of a chunked object `oid`
-func (d *radosDriver) setXattrTotalSize(oid string, size uint64) error {
+func (d *radosdesc) setXattrTotalSize(oid string, size uint64) error {
 	// Convert uint64 `size` to []byte
 	xattr := make([]byte, binary.MaxVarintLen64)
 	binary.LittleEndian.PutUint64(xattr, size)
@@ -518,17 +354,12 @@ func (d *radosDriver) setXattrTotalSize(oid string, size uint64) error {
 	return d.Ioctx.SetXattr(oid+"-0", defaultXattrTotalSizeName, xattr)
 }
 
-func (d *radosDriver) getXattrTotalSize(oid string) (uint64, error) {
+func (d *radosdesc) getXattrTotalSize(oid string) (uint64, error) {
 	// Fetch xattr as []byte
 	xattr := make([]byte, binary.MaxVarintLen64)
-	xattrLength, err := d.Ioctx.GetXattr(oid+"-0", defaultXattrTotalSizeName, xattr)
+	_, err := d.Ioctx.GetXattr(oid+"-0", defaultXattrTotalSizeName, xattr)
 	if err != nil {
 		return 0, err
-	}
-
-	if xattrLength != len(xattr) {
-		fmt.Printf("object %s xattr length mismatch: %d != %d", oid, xattrLength, len(xattr))
-		return 0, PathNotFoundError{Path: oid}
 	}
 
 	// Convert []byte as uint64

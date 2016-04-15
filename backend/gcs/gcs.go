@@ -21,6 +21,10 @@ func init() {
 	factory.Register("gcs", &gcsdesc{})
 }
 
+func (g *gcsdesc) New() (factory.DrvInterface, error) {
+	return &gcsdesc{}, nil
+}
+
 func (g *gcsdesc) Save(file string) (url string, err error) {
 
 	privateKey, err := ioutil.ReadFile(setting.PrivateKeyFilePath + setting.PrivateKeyFile)
