@@ -4,7 +4,7 @@
 ## What is Dockyard ?
 Dockyard is a container registry storing and distributing container image include [Docker Image](https://github.com/docker/distribution/tree/master/docs/spec), [App Container Image](https://github.com/appc/spec/blob/master/spec/aci.md) and [OCI](https://opencontaienrs.org) Image(*on the road*). It's key features and goals include:
 - Converting image format between above formats.
-- Container image encryption, verification and vulnerability analytsis.
+- Container image encryption, verification and vulnerability analysis.
 - Multi supported distribute protocols include Docker Registry V1 & V2 and App Container Image Discovery.
 - Custome distribute protocol by framework base HTTPS and peer to peer. 
 - Authentication in distributing process and authorization for public and private container image.
