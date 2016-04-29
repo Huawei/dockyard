@@ -1,4 +1,4 @@
-# Dockyard - Container Registry And Container Volume Mangaement
+# Dockyard - Container Registry And Container Volume Management
 ![Dockyard](external/images/dockyard.jpg "Dockyard - Container Registry And Container Volume Mangaement")
 
 ## What is Dockyard
