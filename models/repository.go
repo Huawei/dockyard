@@ -129,6 +129,9 @@ func (r *Repository) PutTagFromManifests(image, namespace, repository, tag, mani
 	}
 
 	t := new(Tag)
+	if _, err := t.Get(namespace, repository, tag); err != nil {
+		return err
+	}
 	t.Tag = tag
 	t.ImageId = image
 	t.Namespace = namespace
