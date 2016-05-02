@@ -1,6 +1,7 @@
 package orm
 
 import (
+	"database/sql"
 	"fmt"
 	"reflect"
 
@@ -21,6 +22,26 @@ func (od *ormdrv) RegisterModel(models ...interface{}) {
 }
 
 func (od *ormdrv) InitDB(driver, user, passwd, uri, name string, partition int64) error {
+	switch driver {
+	case "mysql":
+		dsm := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", user, passwd, uri, "mysql")
+		db, err := sql.Open("mysql", dsm)
+		if err != nil {
+			return err
+		}
+
+		if err := db.Ping(); err != nil {
+			return err
+		}
+
+		cmd := "CREATE DATABASE IF NOT EXISTS " + name
+		if _, err := db.Exec(cmd); err != nil {
+			return err
+		}
+	default:
+		//
+	}
+
 	ds := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", user, passwd, uri, name)
 	if err := orm.RegisterDataBase("default", driver, ds, 0, 0); err != nil {
 		return err
