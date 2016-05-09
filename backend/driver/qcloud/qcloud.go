@@ -300,6 +300,7 @@ func GetRequest(fin *os.File, file string, requestUrl string) (url string, err e
 		header.Set("Authorization", GenerateSign())
 		req.Header = header
 		url, err = CliDo(req)
+		return url, err
 	}
 	return
 }

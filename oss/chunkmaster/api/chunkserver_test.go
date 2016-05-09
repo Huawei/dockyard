@@ -48,7 +48,7 @@ func TestChunkserverInitServerHandler(t *testing.T) {
 		t.Errorf("TestChunkserverInitServerHandler error: %v, respCode: %d", err, respCode)
 	}
 
-	t.Log("respData: %v", string(respData))
+	t.Log("respData: ", string(respData))
 }
 
 func TestReportChunkserverInfoHandler(t *testing.T) {
@@ -74,5 +74,5 @@ func TestReportChunkserverInfoHandler(t *testing.T) {
 	if err != nil || respCode != http.StatusOK {
 		t.Errorf("TestReportChunkserverInfoHandler error: %v, respCode: %d", err, respCode)
 	}
-	t.Log("reportChunkserverInfo success, respData: %v", respData)
+	t.Log("reportChunkserverInfo success, respData: ", respData)
 }

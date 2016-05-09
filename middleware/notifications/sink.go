@@ -49,7 +49,7 @@ retry:
 			return Error{ErrSinkClosed, http.StatusInternalServerError}
 		}
 
-		fmt.Errorf("retryingsink: error writing events: %v, retrying", err.Err)
+		fmt.Printf("retryingsink: error writing events: %v, retrying", err.Err)
 		rs.wait(rs.failures.backoff)
 		goto retry
 	}

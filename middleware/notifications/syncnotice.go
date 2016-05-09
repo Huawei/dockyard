@@ -15,7 +15,7 @@ func newSyncNotice(sinks ...Sink) *syncNotice {
 func (b *syncNotice) Close() error {
 	for _, sink := range b.sinks {
 		if err := sink.Close(); err != nil {
-			fmt.Errorf("syncNotice: fail to close sink: %v, err: %v", sink, err)
+			fmt.Printf("syncNotice: fail to close sink %v, err: %v", sink, err)
 		}
 	}
 
@@ -30,7 +30,7 @@ func (b *syncNotice) Write(events ...Event) (finalErr Error) {
 	writeFunc := func(sink Sink) {
 		err := sink.Write(events...)
 		if err.Err != nil {
-			fmt.Errorf("syncNotice: error writing events to %v", sink, err.Err)
+			fmt.Printf("syncNotice: error writing events %v, err: %v", sink, err.Err)
 		}
 
 		closed <- err

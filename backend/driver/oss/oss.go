@@ -87,7 +87,7 @@ func osssave(filepath string) (url string, err error) {
 			end = (k + 1) * partSize
 			err := postFile(path, fileBody[begin:end], k, int64(begin), int64(end), false)
 			if err != nil {
-				fmt.Errorf("oss save file error: %v \n", err)
+				fmt.Printf("oss save file error: %v \n", err)
 			}
 			result[k] = 1
 		}(k)
@@ -109,7 +109,7 @@ func osssave(filepath string) (url string, err error) {
 			return "", fmt.Errorf("oss save file error, fragment %d error", i)
 		}
 	}
-	fmt.Printf("oss save file %v finish", filepath)
+	fmt.Printf("oss save file %s finish", filepath)
 	return filepath, nil
 }
 
@@ -125,10 +125,10 @@ func ossgetfileinfo(filepath string) error {
 	header["Path"] = []string{filepath}
 	result, statusCode, err := call("GET", apiserveraddr, "/oss/api/file/info", nil, header)
 	if statusCode != http.StatusOK {
-		return fmt.Errorf("statusCode error: %d", statusCode, ", error: ", err)
+		return fmt.Errorf("statusCode error: %d, error: %v", statusCode, err)
 	}
 	if err != nil {
-		return fmt.Errorf("error: ", err)
+		return fmt.Errorf("error: %v", err)
 	}
 	fmt.Printf("fileinfo: %s\n", string(result))
 	return nil
@@ -147,12 +147,12 @@ func ossdownload(tag string, path string) error {
 	header["Path"] = []string{tag}
 	result, statusCode, err := call("GET", apiserveraddr, "/oss/api/file/info", nil, header)
 	if statusCode != http.StatusOK {
-		return fmt.Errorf("statusCode error: %d", statusCode, ", error: ", err)
+		return fmt.Errorf("statusCode error: %d, error : %v", statusCode, err)
 	}
 	result = bytes.TrimPrefix(result, []byte("{\"fragment-info\":"))
 	result = bytes.TrimSuffix(result, []byte("}"))
 
-	// tranform fileinfo data from json format to Fileinfo struct
+	// transform fileinfo data from json format to Fileinfo struct
 	var files []Fileinfo
 	json.Unmarshal([]byte(result), &files)
 	fragNum := len(files)
@@ -171,7 +171,7 @@ func ossdownload(tag string, path string) error {
 		// sent http request and get data
 		data, statusCode, err := call("GET", apiserveraddr, "/oss/api/file", nil, headerfile)
 		if statusCode != http.StatusOK {
-			return fmt.Errorf("statusCode error: %d", statusCode, ", error: ", err)
+			return fmt.Errorf("statusCode error: %d, error : %v", statusCode, err)
 		}
 		data_frag[file.Index] = data
 	}
@@ -210,10 +210,10 @@ func ossdel(filepath string) error {
 	_, statusCode, err := call("DELETE", apiserveraddr, "/oss/api/file", nil, header)
 
 	if statusCode != http.StatusNoContent {
-		return fmt.Errorf("statusCode error: %d", statusCode, ", error: ", err)
+		return fmt.Errorf("statusCode error: %d, error : %v", statusCode, err)
 	}
 	if err != nil {
-		return fmt.Errorf("error: ", err)
+		return fmt.Errorf("error: %v", err)
 	}
 	return nil
 }

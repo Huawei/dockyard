@@ -3,7 +3,6 @@ package docker
 import (
 	"os/exec"
 	"testing"
-
 	//"github.com/containerops/dockyard/test"
 )
 
@@ -42,7 +41,9 @@ func TestPushRepoWithSingleTag(t *testing.T) {
 	}
 
 	cmd = exec.Command(DockerBinary, "rmi", repoDest)
-	out, err = ParseCmdCtx(cmd)
+	if out, err = ParseCmdCtx(cmd); err != nil {
+		t.Fatalf("Romove image %v failed: [Info]%v, [Error]%v", repoDest, out, err)
+	}
 }
 
 func TestPushRepoWithMultipleTags(t *testing.T) {
@@ -74,6 +75,8 @@ func TestPushRepoWithMultipleTags(t *testing.T) {
 	for _, v := range repotags {
 		tag := repoDest + ":" + v
 		cmd = exec.Command(DockerBinary, "rmi", tag)
-		out, err = ParseCmdCtx(cmd)
+		if out, err = ParseCmdCtx(cmd); err != nil {
+			t.Fatalf("Romove image %v failed: [Info]%v, [Error]%v", repoDest, out, err)
+		}
 	}
 }

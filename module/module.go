@@ -97,7 +97,7 @@ func CopyImgLayer(srcPath, srcFile, dstPath, dstFile string, reqbody []byte) (in
 func parseIP(ipStr string) net.IP {
 	ip := net.ParseIP(ipStr)
 	if ip == nil {
-		fmt.Errorf("Invalid remote IP address: %q", ipStr)
+		fmt.Printf("Invalid remote IP address: %q", ipStr)
 	}
 	return ip
 }

@@ -20,9 +20,8 @@ func Test_ClairService(t *testing.T) {
 	if err := InitClair(); err != nil {
 		t.Log("Clair service init failed!")
 		return
-	} else {
-		fmt.Println("Success in init clair service")
 	}
+	fmt.Println("Success in init clair service")
 	var h History
 	h.ID = "123"
 	h.Parent = ""

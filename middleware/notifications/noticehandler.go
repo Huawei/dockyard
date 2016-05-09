@@ -87,7 +87,7 @@ func (n *notification) Handler(ctx *macaron.Context) {
 		req := newReqRecord(utils.EncodeBasicAuth(namespace, "headblobsv2"), ctx.Req.Request)
 		requrl, err := module.NewURLBuilderFromRequest(ctx.Req.Request).BuildBlobURL(repo, desc.Digest)
 		if err != nil {
-			fmt.Errorf("[REGISTRY API V2] Head blobs and get request URL failed, error:: %v", err.Error())
+			fmt.Printf("[REGISTRY API V2] Head blobs and get request URL failed, error:: %v", err.Error())
 		}
 
 		b := newBridge(requrl, actor, req, notice)
@@ -123,7 +123,7 @@ func (n *notification) Handler(ctx *macaron.Context) {
 			req := newReqRecord(utils.EncodeBasicAuth(namespace, "getblobsv2"), ctx.Req.Request)
 			requrl, err := module.NewURLBuilderFromRequest(ctx.Req.Request).BuildBlobURL(repo, desc.Digest)
 			if err != nil {
-				fmt.Errorf("[REGISTRY API V2] Get blobs and get request URL failed, error:: %v", err.Error())
+				fmt.Printf("[REGISTRY API V2] Get blobs and get request URL failed, error:: %v", err.Error())
 			}
 
 			b := newBridge(requrl, actor, req, notice)
@@ -146,13 +146,13 @@ func (n *notification) Handler(ctx *macaron.Context) {
 
 			digest, err := signature.DigestManifest([]byte(t.Manifest))
 			if err != nil {
-				fmt.Errorf("[REGISTRY API V2] Get manifest digest failed: %v", err.Error())
+				fmt.Printf("[REGISTRY API V2] Get manifest digest failed: %v", err.Error())
 				return
 			}
 
 			var sm SignedManifest
 			if err := json.Unmarshal([]byte(t.Manifest), &sm); err != nil {
-				fmt.Errorf("Unmarshal manifest error")
+				fmt.Printf("Unmarshal manifest error")
 			}
 
 			sm.Raw = make([]byte, len(t.Manifest), len(t.Manifest))
@@ -161,7 +161,7 @@ func (n *notification) Handler(ctx *macaron.Context) {
 			req := newReqRecord(utils.EncodeBasicAuth(namespace, "getmanifestv2"), ctx.Req.Request)
 			requrl, err := module.NewURLBuilderFromRequest(ctx.Req.Request).BuildManifestURL(sm.Name, digest)
 			if err != nil {
-				fmt.Errorf("[REGISTRY API V2] Get manifest and get request URL failed, error:: %v", err.Error())
+				fmt.Printf("[REGISTRY API V2] Get manifest and get request URL failed, error:: %v", err.Error())
 			}
 
 			b := newBridge(requrl, actor, req, notice)
@@ -194,7 +194,7 @@ func (n *notification) Handler(ctx *macaron.Context) {
 			req := newReqRecord(utils.EncodeBasicAuth(namespace, "putblobsv2"), ctx.Req.Request)
 			requrl, err := module.NewURLBuilderFromRequest(ctx.Req.Request).BuildBlobURL(repo, desc.Digest)
 			if err != nil {
-				fmt.Errorf("[REGISTRY API V2] Get blobs and get request URL failed, error:: %v", err.Error())
+				fmt.Printf("[REGISTRY API V2] Get blobs and get request URL failed, error:: %v", err.Error())
 			}
 
 			b := newBridge(requrl, actor, req, notice)
@@ -216,7 +216,7 @@ func (n *notification) Handler(ctx *macaron.Context) {
 
 			var sm SignedManifest
 			if err := json.Unmarshal(buf, &sm); err != nil {
-				fmt.Errorf("Unmarshal manifest error")
+				fmt.Printf("Unmarshal manifest error")
 			}
 
 			sm.Raw = make([]byte, len(buf), len(buf))
@@ -224,13 +224,13 @@ func (n *notification) Handler(ctx *macaron.Context) {
 
 			digest, err := signature.DigestManifest(buf)
 			if err != nil {
-				fmt.Errorf("[REGISTRY API V2] Get manifest digest failed: %v", err.Error())
+				fmt.Printf("[REGISTRY API V2] Get manifest digest failed: %v", err.Error())
 				//return http.StatusBadRequest, result
 			}
 			req := newReqRecord(utils.EncodeBasicAuth(namespace, "putmanifestv2"), ctx.Req.Request)
 			requrl, err := module.NewURLBuilderFromRequest(ctx.Req.Request).BuildManifestURL(sm.Name, digest)
 			if err != nil {
-				fmt.Errorf("[REGISTRY API V2] Put manifest and get request URL failed, error:: %v", err.Error())
+				fmt.Printf("[REGISTRY API V2] Put manifest and get request URL failed, error:: %v", err.Error())
 			}
 
 			b := newBridge(requrl, actor, req, notice)

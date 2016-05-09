@@ -228,7 +228,7 @@ func (this *oss) Registerservers() error {
 		regserver := node2metaserver(nodetmp)
 		exist, err := api.IsChunkServerExsist(&regserver)
 		if err != nil {
-			fmt.Errorf("check ChunkServer is Exist error", err)
+			fmt.Printf("check ChunkServer is Exist error: %v", err)
 		}
 		if exist {
 			fmt.Printf("[OSS]chunkserver [%v:%v] is already exsist, will NOT register\n", regserver.Ip, regserver.Port)
@@ -369,7 +369,7 @@ func StartLocalServer(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	if err != nil || os.IsNotExist(err) {
 		os.MkdirAll(datadir, 0777)
 	}
-	// excecute chunkserver start script in a new goroutine, if failed, send https request to notify master node
+	// execute chunkserver start script in a new goroutine, if failed, send https request to notify master node
 	go func() {
 		cmd := exec.Command("./oss/chunkserver/install.sh", "-i", ip, "-p", port, "-m", masterip, "-n", masterport, "-c", chunknum, "-g", groupid, "-d", datadir, "-e", errlogdir)
 		cmd.Stdout = &stdout

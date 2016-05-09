@@ -127,7 +127,7 @@ func MatchsContentType(contentType, expectedType string) bool {
 	mimetype, _, err := mime.ParseMediaType(contentType)
 
 	if err != nil {
-		fmt.Errorf("Error parsing media type: %s error: %s", contentType, err.Error())
+		fmt.Printf("Error parsing media type: %s error: %s", contentType, err.Error())
 	}
 
 	return err == nil && mimetype == expectedType

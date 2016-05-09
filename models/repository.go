@@ -27,7 +27,7 @@ type Repository struct {
 
 func (r *Repository) TableUnique() [][]string {
 	return [][]string{
-		[]string{"Namespace", "Repository"},
+		{"Namespace", "Repository"},
 	}
 }
 

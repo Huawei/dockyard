@@ -234,12 +234,12 @@ func getOneNormalChunkServer(mi *meta.MetaInfo) (*chunkserver.ChunkServer, error
 	fmt.Printf("[OSS]metainfo: %s \n", mi)
 	metaInfoValue, err := metaDriver.GetFragmentMetaInfo(mi.Path, mi.Value.Index, mi.Value.Start, mi.Value.End)
 	if err != nil {
-		fmt.Errorf("[OSS]GetFragmentMetaInfo: %s, error: %s \n", mi, err)
+		fmt.Printf("[OSS]GetFragmentMetaInfo: %s, error: %s \n", mi, err)
 		return nil, err
 	}
 
 	if metaInfoValue == nil {
-		fmt.Errorf("[OSS]fragment metainfo not found, path: %s, index: %d, start: %d, end: %d \n",
+		fmt.Printf("[OSS]fragment metainfo not found, path: %s, index: %d, start: %d, end: %d \n",
 			mi.Path, mi.Value.Index, mi.Value.Start, mi.Value.End)
 		return nil, fmt.Errorf("[OSS]fragment metainfo not found \n")
 	}
@@ -252,7 +252,7 @@ func getOneNormalChunkServer(mi *meta.MetaInfo) (*chunkserver.ChunkServer, error
 	groups := GetChunkServerGroups()
 	servers, ok := groups.GroupMap[groupId]
 	if !ok {
-		fmt.Errorf("[OSS]getOneNormalChunkServer do not exist group: %s \n", groupId)
+		fmt.Printf("[OSS]getOneNormalChunkServer do not exist group: %s \n", groupId)
 		return nil, fmt.Errorf("[OSS]do not exist group: %s \n", groupId)
 	}
 
@@ -270,7 +270,7 @@ func getOneNormalChunkServer(mi *meta.MetaInfo) (*chunkserver.ChunkServer, error
 			return &server, nil
 		}
 	}
-	fmt.Errorf("[OSS]can not find an available chunkserver, metainfo: %s \n", mi)
+	fmt.Printf("[OSS]can not find an available chunkserver, metainfo: %s \n", mi)
 	return nil, fmt.Errorf("[OSS]can not find an available chunkserver")
 }
 
@@ -285,7 +285,7 @@ func checkErrorAndConnPool(err error, chunkServer *chunkserver.ChunkServer, conn
 	if "EOF" == err.Error() {
 		err := connPools.CheckConnPool(chunkServer)
 		if err != nil {
-			fmt.Errorf("CheckConnPool error: %v \n", err)
+			fmt.Printf("CheckConnPool error: %v \n", err)
 		}
 	}
 }
@@ -306,7 +306,7 @@ func uploadFileReadParam(header *http.Header) (*meta.MetaInfo, string, error) {
 
 	start, end, err := splitRange(bytesRange)
 	if err != nil {
-		fmt.Errorf("[OSS]splitRange error: %s \n", err)
+		fmt.Printf("[OSS]splitRange error: %s \n", err)
 		return nil, version, err
 	}
 
@@ -317,7 +317,7 @@ func uploadFileReadParam(header *http.Header) (*meta.MetaInfo, string, error) {
 
 	index, err := strconv.ParseUint(fragmentIndex, 10, 64)
 	if err != nil {
-		fmt.Errorf("[OSS]parse fragmentIndex error: %s \n", err)
+		fmt.Printf("[OSS]parse fragmentIndex error: %s \n", err)
 		return nil, version, err
 	}
 
@@ -336,7 +336,7 @@ func uploadFileReadParam(header *http.Header) (*meta.MetaInfo, string, error) {
 func ossupload(data []byte, metaInfo *meta.MetaInfo) (int, error) {
 	chunkServers, err := selectChunkServerGroupComplex(int64(metaInfo.Value.End - metaInfo.Value.Start))
 	if err != nil {
-		fmt.Errorf("[OSS][upload] select ChunkServerGroup error: %s \n", err)
+		fmt.Printf("[OSS][upload] select ChunkServerGroup error: %s \n", err)
 		return http.StatusInternalServerError, err
 	}
 
@@ -344,14 +344,14 @@ func ossupload(data []byte, metaInfo *meta.MetaInfo) (int, error) {
 
 	fileId, err := getFid()
 	if err != nil {
-		fmt.Errorf("[OSS][upload] get fileId error: %s \n", err)
+		fmt.Printf("[OSS][upload] get fileId error: %s \n", err)
 		return http.StatusInternalServerError, err
 	}
 
 	var rangeSize uint64
 	rangeSize = metaInfo.Value.End - metaInfo.Value.Start
 	if len(data) != int(rangeSize) {
-		fmt.Errorf("[OSS]the data length is: %d, rangeSize is: %d \n", len(data), rangeSize)
+		fmt.Printf("[OSS]the data length is: %d, rangeSize is: %d \n", len(data), rangeSize)
 		return http.StatusBadRequest, fmt.Errorf("length of data: %d != range: %d \n", len(data), rangeSize)
 	}
 
@@ -374,7 +374,7 @@ func ossupload(data []byte, metaInfo *meta.MetaInfo) (int, error) {
 	fmt.Printf("[OSS]upload result, num: %d \n", normal)
 	err = handlePostResult(ch, normal)
 	if err != nil {
-		fmt.Errorf("[OSS]upload error: %s \n", err)
+		fmt.Printf("[OSS]upload error: %s \n", err)
 		return http.StatusInternalServerError, err
 	}
 
@@ -387,7 +387,7 @@ func ossupload(data []byte, metaInfo *meta.MetaInfo) (int, error) {
 
 func selectChunkServerGroupComplex(size int64) ([]chunkserver.ChunkServer, error) {
 	if size <= 0 {
-		fmt.Errorf("[OSS]data size: %d <= 0 \n")
+		fmt.Printf("[OSS]data size: %d <= 0 \n", size)
 		return nil, fmt.Errorf("data size: %d <= 0 \n", size)
 	}
 
@@ -404,7 +404,7 @@ func selectChunkServerGroupComplex(size int64) ([]chunkserver.ChunkServer, error
 		var writingCount = 0
 
 		length := len(servers)
-		// skip empty group and transfering... group
+		// skip empty group and transferring... group
 		if length == 0 || servers[0].GlobalStatus != chunkserver.GLOBAL_NORMAL_STATUS {
 			continue
 		}
@@ -447,7 +447,7 @@ func selectChunkServerGroupComplex(size int64) ([]chunkserver.ChunkServer, error
 	}
 
 	if selectNum == 0 {
-		fmt.Errorf("[OSS]selectNum == 0, there's not an avaiable chunkserver \n")
+		fmt.Printf("[OSS]selectNum == 0, there's not an avaiable chunkserver \n")
 		return nil, fmt.Errorf("[OSS]there's not an avaiable chunkserver \n")
 	}
 
@@ -460,7 +460,7 @@ func selectChunkServerGroupComplex(size int64) ([]chunkserver.ChunkServer, error
 	resultGroupId, err := minHeap.GetElementGroupId(index)
 
 	if err != nil {
-		fmt.Errorf("[OSS]can not find an available chunkserver: %s \n", err)
+		fmt.Printf("[OSS]can not find an available chunkserver: %s \n", err)
 		return nil, fmt.Errorf("[OSS]can not find an available chunkserver \n")
 	}
 
@@ -474,7 +474,7 @@ func postFileConcurrence(chunkServer *chunkserver.ChunkServer, data []byte, c ch
 
 	connPools := GetConnectionPools()
 	if connPools == nil {
-		fmt.Errorf("[OSS]connectionPools is nil \n")
+		fmt.Printf("[OSS]connectionPools is nil \n")
 		c <- "connectionPools is nil"
 		return
 	}
@@ -486,7 +486,7 @@ func postFileConcurrence(chunkServer *chunkserver.ChunkServer, data []byte, c ch
 	fmt.Printf("[OSS]connection is: %v \n", conn)
 
 	if err != nil {
-		fmt.Errorf("[OSS]can not get connection: %s \n", err.Error())
+		fmt.Printf("[OSS]can not get connection: %s \n", err.Error())
 		c <- err.Error()
 		return
 	}
@@ -494,7 +494,7 @@ func postFileConcurrence(chunkServer *chunkserver.ChunkServer, data []byte, c ch
 	fmt.Printf("[OSS]begin to upload data \n")
 	err = chunkServer.PutData(data, conn.(*chunkserver.PooledConn), fileId)
 	if err != nil {
-		fmt.Errorf("[OSS]upload data failed: %s \n", err)
+		fmt.Printf("[OSS]upload data failed: %s \n", err)
 		conn.Close()
 		connectionPools.ReleaseConn(conn)
 		c <- err.Error()
@@ -518,7 +518,7 @@ func getFid() (uint64, error) {
 		var init int32 = 0
 		swapped := atomic.CompareAndSwapInt32(&getFidRetryCount, init, count)
 		if !swapped {
-			fmt.Errorf("[OSS]another goroutine is trying to get fid, waiting \n")
+			fmt.Printf("[OSS]another goroutine is trying to get fid, waiting \n")
 			filedId, err := fids.GetFidWait()
 			if err != nil {
 				return 0, err
@@ -526,20 +526,20 @@ func getFid() (uint64, error) {
 			return filedId, nil
 		}
 
-		fmt.Println("[OSS]=== try to get fid range === begin === \n")
+		fmt.Println("[OSS]=== try to get fid range === begin === ")
 		defer atomic.CompareAndSwapInt32(&getFidRetryCount, count, init)
 
 		err1 := GetFidRange(false)
-		fmt.Println("[OSS]=== try to get fid range === end === \n")
+		fmt.Println("[OSS]=== try to get fid range === end === ")
 
 		if err1 != nil {
-			fmt.Errorf("[OSS]getFid try to get fid failed: %v \n", err1)
+			fmt.Printf("[OSS]getFid try to get fid failed: %v \n", err1)
 			return 0, err1
 		}
 
 		fileId, err1 = fids.GetFid()
 		if err1 != nil {
-			fmt.Errorf("[OSS]getFid error: %v \n", err1)
+			fmt.Printf("[OSS]getFid error: %v \n", err1)
 			return 0, err1
 		}
 	}
@@ -554,12 +554,12 @@ func GetFidRange(mergeWait bool) error {
 
 	byteData, statusCode, err := util.Call("GET", "http://"+MasterUrl+":"+MasterPort, "/cm/v1/chunkmaster/fid", nil, nil)
 	if err != nil {
-		fmt.Errorf("[OSS]GetChunkServerInfo response code: %d, err: %s \n", statusCode, err)
+		fmt.Printf("[OSS]GetChunkServerInfo response code: %d, err: %s \n", statusCode, err)
 		return err
 	}
 
 	if statusCode != http.StatusOK {
-		fmt.Errorf("[OSS]response code: %d \n", statusCode)
+		fmt.Printf("[OSS]response code: %d \n", statusCode)
 		return fmt.Errorf("statusCode error: %d \n", statusCode)
 	}
 
@@ -568,7 +568,7 @@ func GetFidRange(mergeWait bool) error {
 	newFids := chunkserver.NewFids()
 	err = json.Unmarshal(byteData, &newFids)
 	if err != nil {
-		fmt.Errorf("[OSS]GetFidRange json.Unmarshal response data error: %s \n", err)
+		fmt.Printf("[OSS]GetFidRange json.Unmarshal response data error: %s \n", err)
 		return err
 	}
 
@@ -579,19 +579,19 @@ func GetFidRange(mergeWait bool) error {
 func GetChunkServerInfo() error {
 	byteData, statusCode, err := util.Call("GET", "http://"+MasterUrl+":"+MasterPort, "/cm/v1/chunkmaster/route", nil, nil)
 	if err != nil {
-		fmt.Errorf("[OSS]GetChunkServerInfo response code: %d, error: %v \n", statusCode, err)
+		fmt.Printf("[OSS]GetChunkServerInfo response code: %d, error: %v \n", statusCode, err)
 		return err
 	}
 
 	if statusCode != http.StatusOK {
-		fmt.Errorf("[OSS]response code: %d \n", statusCode)
+		fmt.Printf("[OSS]response code: %d \n", statusCode)
 		return fmt.Errorf("[OSS]statusCode error: %d \n", statusCode)
 	}
 
 	infos := make(map[string][]chunkserver.ChunkServer)
 	err = json.Unmarshal(byteData, &infos)
 	if err != nil {
-		fmt.Errorf("[OSS]json.Unmarshal response data error: %s", err)
+		fmt.Printf("[OSS]json.Unmarshal response data error: %s", err)
 		return err
 	}
 	handleChunkServerInfo(infos)
@@ -719,7 +719,7 @@ func GetFidRangeTicker() {
 		case <-timer.C:
 			err := GetFidRange(true)
 			if err != nil {
-				fmt.Errorf("GetFidRange error: %v \n", err)
+				fmt.Printf("GetFidRange error: %v \n", err)
 			}
 		}
 	}
@@ -732,7 +732,7 @@ func GetChunkServerInfoTicker() {
 		case <-timer.C:
 			err := GetChunkServerInfo()
 			if err != nil {
-				fmt.Errorf("GetChunkServerInfoTicker error: %s \n", err)
+				fmt.Printf("GetChunkServerInfoTicker error: %s \n", err)
 			}
 		}
 	}
@@ -743,7 +743,7 @@ func handlePostResult(ch chan string, size int) error {
 	var failed = false
 
 	if ch == nil {
-		fmt.Errorf("ch is nil  \n")
+		fmt.Printf("ch is nil  \n")
 		return fmt.Errorf("handlePostResult ch is nil ")
 	}
 
@@ -757,7 +757,7 @@ func handlePostResult(ch chan string, size int) error {
 	}
 
 	if failed {
-		fmt.Errorf("handlePostResult failed: %s \n", result)
+		fmt.Printf("handlePostResult failed: %s \n", result)
 		return fmt.Errorf(result)
 	}
 

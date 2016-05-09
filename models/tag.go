@@ -21,7 +21,7 @@ type Tag struct {
 
 func (t *Tag) TableUnique() [][]string {
 	return [][]string{
-		[]string{"Namespace", "Repository", "Tag"},
+		{"Namespace", "Repository", "Tag"},
 	}
 }
 
