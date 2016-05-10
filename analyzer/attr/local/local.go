@@ -173,7 +173,7 @@ func getTarFileBytes(file *os.File, path string) ([]byte, error) {
 	}
 
 	if fileBytes == nil {
-		return nil, fmt.Errorf("file %q not found", path)
+		return nil, fmt.Errorf("file %s not found", path)
 	}
 
 	return fileBytes, nil

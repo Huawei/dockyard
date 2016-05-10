@@ -128,7 +128,7 @@ func (cs *ChunkServer) GetData(miv *meta.MetaInfoValue, conn *PooledConn) ([]byt
 
 	_, err := conn.Write(output.Bytes())
 	if err != nil {
-		fmt.Errorf("write socket error %s\n", err)
+		log.Errorf("write socket error %s\n", err)
 		return nil, err
 	}
 

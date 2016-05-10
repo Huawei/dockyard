@@ -369,7 +369,7 @@ func StartLocalServer(ctx *macaron.Context, log *logs.BeeLogger) (int, []byte) {
 	if err != nil || os.IsNotExist(err) {
 		os.MkdirAll(datadir, 0777)
 	}
-	// excecute chunkserver start script in a new goroutine, if failed, send https request to notify master node
+	// execute chunkserver start script in a new goroutine, if failed, send https request to notify master node
 	go func() {
 		cmd := exec.Command("./oss/chunkserver/install.sh", "-i", ip, "-p", port, "-m", masterip, "-n", masterport, "-c", chunknum, "-g", groupid, "-d", datadir, "-e", errlogdir)
 		cmd.Stdout = &stdout
