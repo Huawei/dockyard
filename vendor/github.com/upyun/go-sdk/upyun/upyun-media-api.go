@@ -63,7 +63,7 @@ func (upm *UpYunMedia) makeMediaAuth(kwargs map[string]string) string {
 }
 
 // Send Media Tasks Reqeust
-func (upm *UpYunMedia) PostTasks(src, notify, accept string,
+func (upm *UpYunMedia) PostTasks(src, notify string,
 	tasks []map[string]interface{}) ([]string, error) {
 	data, err := json.Marshal(tasks)
 	if err != nil {
@@ -75,7 +75,6 @@ func (upm *UpYunMedia) PostTasks(src, notify, accept string,
 		"source":      src,
 		"notify_url":  notify,
 		"tasks":       base64Str(data),
-		"accept":      accept,
 	}
 
 	resp, err := upm.doMediaRequest("POST", "/pretreatment", kwargs)

@@ -44,7 +44,7 @@ func ReadHeader(r *bufio.Reader) (*Resp, error) {
 
 	var data []byte = make([]byte, len)
 	if data == nil {
-		return nil, fmt.Errorf("malloc %s B error", len)
+		return nil, fmt.Errorf("malloc %d B error", len)
 	}
 
 	resp := &Resp{

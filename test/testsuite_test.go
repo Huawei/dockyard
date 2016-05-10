@@ -4,11 +4,6 @@ import (
 	"fmt"
 	"os/exec"
 	"testing"
-
-	//"github.com/astaxie/beego/config"
-
-	//"github.com/containerops/dockyard/test/docker"
-	//"github.com/containerops/wrench/utils"
 )
 
 type Handler func(t *testing.T)

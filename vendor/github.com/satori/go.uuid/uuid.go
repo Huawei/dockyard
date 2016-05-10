@@ -227,37 +227,30 @@ func (u UUID) MarshalText() (text []byte, err error) {
 // "urn:uuid:6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 func (u *UUID) UnmarshalText(text []byte) (err error) {
 	if len(text) < 32 {
-		err = fmt.Errorf("uuid: UUID string too short: %s", text)
+		err = fmt.Errorf("uuid: invalid UUID string: %s", text)
 		return
 	}
 
-	t := text[:]
-
-	if bytes.Equal(t[:9], urnPrefix) {
-		t = t[9:]
-	} else if t[0] == '{' {
-		t = t[1:]
+	if bytes.Equal(text[:9], urnPrefix) {
+		text = text[9:]
+	} else if text[0] == '{' {
+		text = text[1:]
 	}
 
 	b := u[:]
 
 	for _, byteGroup := range byteGroups {
-		if t[0] == '-' {
-			t = t[1:]
+		if text[0] == '-' {
+			text = text[1:]
 		}
 
-		if len(t) < byteGroup {
-			err = fmt.Errorf("uuid: UUID string too short: %s", text)
-			return
-		}
-
-		_, err = hex.Decode(b[:byteGroup/2], t[:byteGroup])
+		_, err = hex.Decode(b[:byteGroup/2], text[:byteGroup])
 
 		if err != nil {
 			return
 		}
 
-		t = t[byteGroup:]
+		text = text[byteGroup:]
 		b = b[byteGroup/2:]
 	}
 
