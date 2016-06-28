@@ -14,30 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package router
+package handler
 
 import (
-	"gopkg.in/macaron.v1"
+	"encoding/json"
+	"net/http"
 
-	"github.com/containerops/dockyard/handler"
+	"gopkg.in/macaron.v1"
 )
 
-func SetRouters(m *macaron.Macaron) {
-	m.Get("/", handler.IndexV1Handler)
-
-	//Docker Registry V1
-
-	//Docker Registry V2
-
-	//Appc Discovery
-	m.Group("/appc", func() {
-		//Discovery
-		m.Get("/:namespace/:repository/?ac-discovery=1", handler.AppcDiscoveryV1Handler)
-	})
-
-	//Software Discovery
-
-	//VM Image Discovery
-
-	//Management APIs
+/*
+  If the client like rkt is looking for plumbing repository in user/org named "gitter".
+  The URL looks like:
+    https://containerops.com/appc/gitter/plumbing?ac-discovery=1
+*/
+func AppcDiscoveryV1Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
 }
