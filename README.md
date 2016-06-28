@@ -87,7 +87,6 @@ go get -u -v github.com/go-sql-driver/mysql
 go get -u -v github.com/golang/protobuf/proto
 go get -u -v github.com/gorilla/context
 go get -u -v github.com/gorilla/mux
-go get -u -v github.com/huawei-openlab/newdb/orm
 go get -u -v github.com/qiniu/api.v6
 go get -u -v github.com/qiniu/bytes
 go get -u -v github.com/qiniu/rpc
@@ -105,6 +104,7 @@ go get -u -v gopkg.in/bsm/ratelimit.v1
 go get -u -v gopkg.in/ini.v1
 go get -u -v gopkg.in/macaron.v1
 go get -u -v gopkg.in/redis.v3
+go get -u -v github.com/jinzhu/gorm
 ```
 
 ## How to involve
