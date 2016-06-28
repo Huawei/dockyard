@@ -77,34 +77,34 @@ server {
 ## Update The Libraries Dependencies
 
 ```
-go get -u github.com/Unknwon/com
-go get -u github.com/aliyun/aliyun-oss-go-sdk/oss
-go get -u github.com/astaxie/beego
-go get -u github.com/codegangsta/cli
-go get -u github.com/docker/libtrust
-go get -u github.com/go-macaron/inject
-go get -u github.com/go-sql-driver/mysql
-go get -u github.com/golang/protobuf/proto
-go get -u github.com/gorilla/context
-go get -u github.com/gorilla/mux
-go get -u github.com/huawei-openlab/newdb/orm
-go get -u github.com/qiniu/api.v6
-go get -u github.com/qiniu/bytes
-go get -u github.com/qiniu/rpc
-go get -u github.com/satori/go.uuid
-go get -u github.com/upyun/go-sdk/upyun
-go get -u golang.org/x/crypto/cast5
-go get -u golang.org/x/crypto/openpgp
-go get -u golang.org/x/oauth2
-go get -u google.golang.org/api/gensupport
-go get -u google.golang.org/api/googleapi
-go get -u google.golang.org/api/storage/v1
-go get -u google.golang.org/cloud/compute/metadata
-go get -u google.golang.org/cloud/internal
-go get -u gopkg.in/bsm/ratelimit.v1
-go get -u gopkg.in/ini.v1
-go get -u gopkg.in/macaron.v1
-go get -u gopkg.in/redis.v3
+go get -u -v github.com/Unknwon/com
+go get -u -v github.com/aliyun/aliyun-oss-go-sdk/oss
+go get -u -v github.com/astaxie/beego
+go get -u -v github.com/codegangsta/cli
+go get -u -v github.com/docker/libtrust
+go get -u -v github.com/go-macaron/inject
+go get -u -v github.com/go-sql-driver/mysql
+go get -u -v github.com/golang/protobuf/proto
+go get -u -v github.com/gorilla/context
+go get -u -v github.com/gorilla/mux
+go get -u -v github.com/huawei-openlab/newdb/orm
+go get -u -v github.com/qiniu/api.v6
+go get -u -v github.com/qiniu/bytes
+go get -u -v github.com/qiniu/rpc
+go get -u -v github.com/satori/go.uuid
+go get -u -v github.com/upyun/go-sdk/upyun
+go get -u -v golang.org/x/crypto/cast5
+go get -u -v golang.org/x/crypto/openpgp
+go get -u -v golang.org/x/oauth2
+go get -u -v google.golang.org/api/gensupport
+go get -u -v google.golang.org/api/googleapi
+go get -u -v google.golang.org/api/storage/v1
+go get -u -v google.golang.org/cloud/compute/metadata
+go get -u -v google.golang.org/cloud/internal
+go get -u -v gopkg.in/bsm/ratelimit.v1
+go get -u -v gopkg.in/ini.v1
+go get -u -v gopkg.in/macaron.v1
+go get -u -v gopkg.in/redis.v3
 ```
 
 ## How to involve
