@@ -31,8 +31,10 @@ func SetRouters(m *macaron.Macaron) {
 
 	//Appc Discovery
 	m.Group("/appc", func() {
-		//Discovery
-		m.Get("/:namespace/:repository/?ac-discovery=1", handler.AppcDiscoveryV1Handler)
+		m.Group("/v1", func() {
+			//Discovery
+			m.Get("/:namespace/:repository/?ac-discovery=1", handler.AppcDiscoveryV1Handler)
+		})
 	})
 
 	//Software Discovery
