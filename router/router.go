@@ -53,6 +53,8 @@ func SetRouters(m *macaron.Macaron) {
 	//Docker Registry V2
 	m.Group("/v2", func() {
 		m.Get("/", handler.GetPingV2Handler)
+		m.Get("/_catalog", handler.GetCatalogV2Handler)
+
 		m.Head("/:namespace/:repository/blobs/:digest", handler.HeadBlobsV2Handler)
 		m.Post("/:namespace/:repository/blobs/uploads", handler.PostBlobsV2Handler)
 		m.Patch("/:namespace/:repository/blobs/uploads/:uuid", handler.PatchBlobsV2Handler)
@@ -61,6 +63,8 @@ func SetRouters(m *macaron.Macaron) {
 		m.Put("/:namespace/:repository/manifests/:tag", handler.PutManifestsV2Handler)
 		m.Get("/:namespace/:repository/tags/list", handler.GetTagsListV2Handler)
 		m.Get("/:namespace/:repository/manifests/:tag", handler.GetManifestsV2Handler)
+		m.Delete("/:namespace/:repository/blobs/:digest", handler.DeleteBlobsV2Handler)
+		m.Delete("/:namespace/:repository/manifests/:reference", handler.DeleteManifestsV2Handler)
 	})
 
 	//Appc Discovery
