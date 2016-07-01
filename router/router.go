@@ -85,6 +85,10 @@ func SetRouters(m *macaron.Macaron) {
 		m.Group("/v1", func() {
 			//Discovery
 			m.Get("/:namespace/:repository/?ac-discovery=1", handler.AppcDiscoveryV1Handler)
+
+			//Pull
+			m.Get("/:namespace/:repository/pubkeys", handler.AppcGetPubkeysV1Handler)
+			m.Get("/:namespace/:repository/:os/:arch/:aci", handler.AppcGetACIV1Handler)
 		})
 	})
 
