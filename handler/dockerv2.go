@@ -28,6 +28,11 @@ func GetPingV2Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusOK, result
 }
 
+func GetCatalogV2Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
+
 func HeadBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
@@ -64,6 +69,16 @@ func GetTagsListV2Handler(ctx *macaron.Context) (int, []byte) {
 }
 
 func GetManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
+
+func DeleteBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
+
+func DeleteManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
