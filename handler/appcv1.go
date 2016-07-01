@@ -32,3 +32,19 @@ func AppcDiscoveryV1Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
+
+/*
+  Get the Public Keys
+*/
+func AppcGetPubkeysV1Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
+
+/*
+  Get ACI file
+*/
+func AppcGetACIV1Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
