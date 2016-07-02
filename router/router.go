@@ -23,6 +23,7 @@ import (
 )
 
 func SetRouters(m *macaron.Macaron) {
+	//Web API
 	m.Get("/", handler.IndexV1Handler)
 
 	//Docker Registry V1
@@ -133,5 +134,5 @@ func SetRouters(m *macaron.Macaron) {
 		})
 	})
 
-	//Management APIs
+	//Admin APIs
 }
