@@ -80,21 +80,58 @@ func SetRouters(m *macaron.Macaron) {
 		m.Delete("/:repository/manifests/:reference", handler.DeleteManifestsV2LibraryHandler)
 	})
 
-	//Appc Discovery
-	m.Group("/appc", func() {
+	//App Discovery
+	m.Group("/app", func() {
 		m.Group("/v1", func() {
-			//Discovery
-			m.Get("/:namespace/:repository/?ac-discovery=1", handler.AppcDiscoveryV1Handler)
+			m.Group("/:namespace/:repository", func() {
+				//Discovery
+				m.Get("/?app-discovery=1", handler.AppDiscoveryV1Handler)
 
-			//Pull
-			m.Get("/:namespace/:repository/pubkeys", handler.AppcGetPubkeysV1Handler)
-			m.Get("/:namespace/:repository/:os/:arch/:aci", handler.AppcGetACIV1Handler)
+				//Pull
+				m.Get("/:os/:arch/:app", handler.AppGetFileV1Handler)
+
+				//Push
+				m.Post("/", handler.AppPostV1Handler)
+				m.Put("/:os/:arch/:app", handler.AppPutFileV1Handler)
+				m.Patch("/:os/:arch/:app", handler.AppPatchFileV1Handler)
+				m.Delete("/:os/:arch/:app", handler.AppDeleteFileV1Handler)
+			})
 		})
 	})
 
-	//Software Discovery
+	//Appc Discovery
+	m.Group("/appc", func() {
+		m.Group("/v1", func() {
+			m.Group("/:namespace/:repository", func() {
+				//Discovery
+				m.Get("/?ac-discovery=1", handler.AppcDiscoveryV1Handler)
+
+				//Pull
+				m.Get("/pubkeys", handler.AppcGetPubkeysV1Handler)
+				m.Get("/:os/:arch/:aci", handler.AppcGetACIV1Handler)
+			})
+
+		})
+	})
 
 	//VM Image Discovery
+	m.Group("/image", func() {
+		m.Group("/v1", func() {
+			m.Group("/:namespace/:repository", func() {
+				//Discovery
+				m.Get("/?image-discovery=1", handler.ImageDiscoveryV1Handler)
+
+				//Pull
+				m.Get("/:os/:arch/:image", handler.ImageGetFileV1Handler)
+
+				//Push
+				m.Post("/", handler.ImagePostV1Handler)
+				m.Put("/:os/:arch/:image", handler.ImagePutFileV1Handler)
+				m.Patch("/:os/:arch/:image", handler.ImagePatchFileV1Handler)
+				m.Delete("/:os/:arch/:image", handler.ImageDeleteFileV1Handler)
+			})
+		})
+	})
 
 	//Management APIs
 }
