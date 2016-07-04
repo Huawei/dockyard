@@ -1,16 +1,15 @@
-# Dockyard - Container Registry And Container Repository 
-![Dockyard](external/images/dockyard.jpg "Dockyard - Container Registry And Container Volume Mangaement")
+# Dockyard - Container And Artifact Repository 
 
 ## What is Dockyard ?
-Dockyard is a container registry storing and distributing container image include [Docker Image](https://github.com/docker/distribution/tree/master/docs/spec), [App Container Image](https://github.com/appc/spec/blob/master/spec/aci.md) and [OCI Image](https://github.com/opencontainer/image-spec). It's key features and goals include:
-- Converting image format between above formats.
-- Container image encryption, verification and vulnerability analytsis.
+Dockyard is a container and artifact repository storing and distributing container image, software artifact and virtual images of KVM or XEN. It's key features and goals include:
 - Multi supported distribute protocols include Docker Registry V1 & V2 and App Container Image Discovery.
+- Multi supported software artifact format include jar, war, tar and so on.
+- Multi supported virtual images of KVM, XEN, VirtualBox and so on.
+- Container image, software artifact and virtual images encryption, verification and vulnerability analytsis.
 - Custome distribute protocol by framework base HTTPS and peer to peer. 
-- Authentication in distributing process and authorization for public and private container image.
+- Authentication in distributing process and authorization for public and private repository.
 - Supporting mainstream object storage service like Amazon S3, Google Cloud Storage. 
 - Built-in object storage service for deployment convenience.
-- Volume management with distributed file system and block-based shared storage such as Amazon EBS, OpenStack Cinder.
 - Web UI portal for all functions above.
 
 ## Why it matters ?
