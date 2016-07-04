@@ -22,6 +22,9 @@ import (
 	"github.com/containerops/dockyard/handler"
 )
 
+/*
+  Dockyard Router Definition
+*/
 func SetRouters(m *macaron.Macaron) {
 	//Web API
 	m.Get("/", handler.IndexV1Handler)
@@ -94,7 +97,7 @@ func SetRouters(m *macaron.Macaron) {
 				//Push
 				m.Post("/", handler.AppPostV1Handler)
 				m.Put("/:os/:arch/:app", handler.AppPutFileV1Handler)
-				m.Patch("/:os/:arch/:app", handler.AppPatchFileV1Handler)
+				m.Patch("/:os/:arch/:app/:status", handler.AppPatchFileV1Handler)
 				m.Delete("/:os/:arch/:app", handler.AppDeleteFileV1Handler)
 			})
 		})
@@ -128,7 +131,7 @@ func SetRouters(m *macaron.Macaron) {
 				//Push
 				m.Post("/", handler.ImagePostV1Handler)
 				m.Put("/:os/:arch/:image", handler.ImagePutFileV1Handler)
-				m.Patch("/:os/:arch/:image", handler.ImagePatchFileV1Handler)
+				m.Patch("/:os/:arch/:image/:status", handler.ImagePatchFileV1Handler)
 				m.Delete("/:os/:arch/:image", handler.ImageDeleteFileV1Handler)
 			})
 		})
