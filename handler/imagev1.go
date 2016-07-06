@@ -23,7 +23,17 @@ import (
 	"gopkg.in/macaron.v1"
 )
 
+func ImageGlobalSearchV1Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
+
 func ImageDiscoveryV1Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
+
+func ImageScopedSearchV1Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
@@ -39,6 +49,11 @@ func ImagePostV1Handler(ctx *macaron.Context) (int, []byte) {
 }
 
 func ImagePutFileV1Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
+
+func ImagePutManifestV1Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
