@@ -95,7 +95,7 @@ func SetRouters(m *macaron.Macaron) {
 				m.Get("/?app-discovery=1", handler.AppDiscoveryV1Handler)
 
 				//Scoped Search
-				m.Get("/search", handler.AppScopedSearchV1Handlers)
+				m.Get("/search", handler.AppScopedSearchV1Handler)
 
 				//Pull
 				m.Get("/:os/:arch/:app", handler.AppGetFileV1Handler)
@@ -136,7 +136,7 @@ func SetRouters(m *macaron.Macaron) {
 				m.Get("/?image-discovery=1", handler.ImageDiscoveryV1Handler)
 
 				//Scoped Search
-				m.Get("/search", handler.ImageScopedSearchV1Handlers)
+				m.Get("/search", handler.ImageScopedSearchV1Handler)
 
 				//Pull
 				m.Get("/:os/:arch/:image", handler.ImageGetFileV1Handler)
