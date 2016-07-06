@@ -87,9 +87,15 @@ func SetRouters(m *macaron.Macaron) {
 	//App Discovery
 	m.Group("/app", func() {
 		m.Group("/v1", func() {
+			//Global Search
+			m.Get("/search", handler.AppGlobalSearchV1Handler)
+
 			m.Group("/:namespace/:repository", func() {
 				//Discovery
 				m.Get("/?app-discovery=1", handler.AppDiscoveryV1Handler)
+
+				//Scoped Search
+				m.Get("/search", handler.AppScopedSearchV1Handlers)
 
 				//Pull
 				m.Get("/:os/:arch/:app", handler.AppGetFileV1Handler)
@@ -97,6 +103,7 @@ func SetRouters(m *macaron.Macaron) {
 				//Push
 				m.Post("/", handler.AppPostV1Handler)
 				m.Put("/:os/:arch/:app", handler.AppPutFileV1Handler)
+				m.Put("/:os/:arch/:app/manifests", handler.AppPutManifestV1Handler)
 				m.Patch("/:os/:arch/:app/:status", handler.AppPatchFileV1Handler)
 				m.Delete("/:os/:arch/:app", handler.AppDeleteFileV1Handler)
 			})
@@ -121,9 +128,15 @@ func SetRouters(m *macaron.Macaron) {
 	//VM Image Discovery
 	m.Group("/image", func() {
 		m.Group("/v1", func() {
+			//Global Search
+			m.Get("/search", handler.ImageGlobalSearchV1Handler)
+
 			m.Group("/:namespace/:repository", func() {
 				//Discovery
 				m.Get("/?image-discovery=1", handler.ImageDiscoveryV1Handler)
+
+				//Scoped Search
+				m.Get("/search", handler.ImageScopedSearchV1Handlers)
 
 				//Pull
 				m.Get("/:os/:arch/:image", handler.ImageGetFileV1Handler)
@@ -131,6 +144,7 @@ func SetRouters(m *macaron.Macaron) {
 				//Push
 				m.Post("/", handler.ImagePostV1Handler)
 				m.Put("/:os/:arch/:image", handler.ImagePutFileV1Handler)
+				m.Put("/:os/:arch/:app/manifests", handler.ImagePutManifestV1Handler)
 				m.Patch("/:os/:arch/:image/:status", handler.ImagePatchFileV1Handler)
 				m.Delete("/:os/:arch/:image", handler.ImageDeleteFileV1Handler)
 			})

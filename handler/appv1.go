@@ -23,7 +23,19 @@ import (
 	"gopkg.in/macaron.v1"
 )
 
+//Example: curl https://containerops.me/app/v1/search?namespace=genedna&repository=tidb
+func AppGlobalSearchV1Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
+
 func AppDiscoveryV1Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
+
+//Example: curl https://containerops.me/app/v1/genedna/tidb/search?version=beta
+func AppScopedSearchV1Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
@@ -39,6 +51,11 @@ func AppPostV1Handler(ctx *macaron.Context) (int, []byte) {
 }
 
 func AppPutFileV1Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
+
+func AppPutManifestV1Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
