@@ -76,7 +76,7 @@ The Update Framework (TUF) helps developers to secure new or existing software u
   To the `app` protocal, it will be something like 'app://localhost:8080/v1/dliang/dockyard/centos/x86/dyclient.rpm'.
 
 ### Repo URL
-  Syntax of repo url should be `[:protocal](#protocal)://url:port/[:version](#version)/[:namespace/:repository](#namespace-and-repository)`
+  Syntax of repo url should be [:protocal](#protocal)://url:port/[:version](#version)/[:namespace/:repository](#namespace-and-repository)
   ```
 	app://localhost:8080/v1/dliang/dockyard
 
