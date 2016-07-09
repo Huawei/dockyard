@@ -151,5 +151,43 @@ func SetRouters(m *macaron.Macaron) {
 		})
 	})
 
+	//Sync APIS
+	m.Group("/sync", func() {
+		m.Group("/v1", func() {
+			//Server Ping
+			m.Get("/ping", handler.SyncGetPingV1Handler)
+
+			m.Group("/master", func() {
+				//Server Sync Of Master
+				m.Post("/registry", handler.SyncMasterPostRegistryV1Handler)
+				m.Delete("/registry", handler.SyncMasterDeleteRegistryV1Handler)
+
+				//Data Sync
+				m.Get("/list", handler.SyncMasterListDataV1Handler)
+
+				//File Sync
+			})
+
+			m.Group("/slave", func() {
+				//Server Sync Of Slaver
+				m.Post("/registry", handler.SyncSlavePostRegistryV1Handler)
+				m.Put("/registry", handler.SyncSlavePutRegistryV1Handler)
+				m.Delete("/registry", handler.SyncSlaveDeleteRegistryV1Handler)
+
+				m.Put("/mode", handler.SyncSlavePutModeRegistryV1Handler)
+
+				//Data Sync
+
+				//File Sync
+			})
+		})
+	})
+
 	//Admin APIs
+	m.Group("/admin", func() {
+		m.Group("/v1", func() {
+			//Server Status
+			m.Get("/status", handler.AdminGetStatusV1Handler)
+		})
+	})
 }
