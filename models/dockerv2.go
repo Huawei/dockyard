@@ -22,17 +22,18 @@ import (
 
 //
 type DockerV2 struct {
-	Id          int64      `json:"id" gorm:"primary_key"`
-	Namespace   string     `json:"namespace" sql:"not null;type:varchar(255)"`
-	Repository  string     `json:"repository" sql:"not null;type:varchar(255)"`
-	JSON        string     `json:"json" sql:"null;type:text"`
-	Agent       string     `json:"agent" sql:"null;type:text"`
-	Description string     `json:"description" sql:"null;type:text"`
-	Size        int64      `json:"size" sql:"default:0"`
-	Locked      bool       `json:"locked" sql:"default:false"`
-	CreatedAt   time.Time  `json:"created" sql:""`
-	UpdatedAt   time.Time  `json:"updated" sql:""`
-	DeletedAt   *time.Time `json:"deleted" sql:"index"`
+	Id            int64      `json:"id" gorm:"primary_key"`
+	Namespace     string     `json:"namespace" sql:"not null;type:varchar(255)"`
+	Repository    string     `json:"repository" sql:"not null;type:varchar(255)"`
+	SchemaVersion string     `json:"schemaversion" sql:"not null;type:varchar(255)"`
+	Manifest      string     `json:"manifest" sql:"null;type:text"`
+	Agent         string     `json:"agent" sql:"null;type:text"`
+	Description   string     `json:"description" sql:"null;type:text"`
+	Size          int64      `json:"size" sql:"default:0"`
+	Locked        bool       `json:"locked" sql:"default:false"`
+	CreatedAt     time.Time  `json:"created" sql:""`
+	UpdatedAt     time.Time  `json:"updated" sql:""`
+	DeletedAt     *time.Time `json:"deleted" sql:"index"`
 }
 
 //
@@ -42,16 +43,17 @@ func (*DockerV2) TableName() string {
 
 //
 type DockerImageV2 struct {
-	Id        int64      `json:"id" gorm:"primary_key"`
-	ImageId   string     `json:"imageid" sql:"unique;type:varchar(255)"`
-	Checksum  string     `json:"checksum" sql:"null;unique;type:varchar(255)"`
-	Path      string     `json:"path" sql:"null;type:text"`
-	OSS       string     `json:"oss" sql:"null;type:text"`
-	Size      int64      `json:"size" sql:"default:0"`
-	Locked    bool       `json:"locked" sql:"default:false"`
-	CreatedAt time.Time  `json:"created" sql:""`
-	UpdatedAt time.Time  `json:"updated" sql:""`
-	DeletedAt *time.Time `json:"deleted" sql:"index"`
+	Id              int64      `json:"id" gorm:"primary_key"`
+	ImageId         string     `json:"imageid" sql:"unique;type:varchar(255)"`
+	BlobSum         string     `json:"blobsum" sql:"null;unique;type:varchar(255)"`
+	V1Compatibility string     `json:"v1compatibility" sql:"null;type:text"`
+	Path            string     `json:"path" sql:"null;type:text"`
+	OSS             string     `json:"oss" sql:"null;type:text"`
+	Size            int64      `json:"size" sql:"default:0"`
+	Locked          bool       `json:"locked" sql:"default:false"`
+	CreatedAt       time.Time  `json:"created" sql:""`
+	UpdatedAt       time.Time  `json:"updated" sql:""`
+	DeletedAt       *time.Time `json:"deleted" sql:"index"`
 }
 
 //
