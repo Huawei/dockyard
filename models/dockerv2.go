@@ -17,60 +17,62 @@ limitations under the License.
 package models
 
 import (
-  "time"
+	"time"
 )
 
 //
 type DockerV2 struct {
-  Id          int64      `json:"id" gorm:"primary_key"` 
-  Namespace   string     `json:"namespace" sql:"not null;type:varchar(255)"` 
- 	Repository  string     `json:"repository" sql:"not null;type:varchar(255)"` 
- 	JSON        string     `json:"json" sql:"null;type:text"` 
- 	Agent       string     `json:"agent" sql:"null;type:text"`
-  Description string     `json:"description" sql:"null;type:text"`    
-  Size        int64      `json:"size" sql:""`
- 	CreatedAt   time.Time  `json:"created" sql:""`
- 	UpdatedAt   time.Time  `json:"updated" sql:""` 
-  DeletedAt   *time.Time `json:"deleted" sql:"index"` 
-} 
-
-//
-func (*DockerV2) TableName() string {
-  return "docker_V2"
+	Id          int64      `json:"id" gorm:"primary_key"`
+	Namespace   string     `json:"namespace" sql:"not null;type:varchar(255)"`
+	Repository  string     `json:"repository" sql:"not null;type:varchar(255)"`
+	JSON        string     `json:"json" sql:"null;type:text"`
+	Agent       string     `json:"agent" sql:"null;type:text"`
+	Description string     `json:"description" sql:"null;type:text"`
+	Size        int64      `json:"size" sql:"default:0"`
+	Locked      bool       `json:"locked" sql:"default:false"`
+	CreatedAt   time.Time  `json:"created" sql:""`
+	UpdatedAt   time.Time  `json:"updated" sql:""`
+	DeletedAt   *time.Time `json:"deleted" sql:"index"`
 }
 
 //
-type DockerImageV2 struct { 
-  Id        int64      `json:"id" gorm:"primary_key"` 
- 	ImageId   string     `json:"imageid" sql:"unique;type:varchar(255)"` 
-  Checksum   string     `json:"checksum" sql:"null;unique;type:varchar(255)"` 
- 	Path      string     `json:"path" sql:"null;type:text"`
-  OSS       string     `json:"oss" sql:"null;type:text"` 
- 	Size      int64      `json:"size" sql:""` 
- 	CreatedAt time.Time  `json:"created" sql:""`
- 	UpdatedAt time.Time  `json:"updated" sql:""` 
-  DeletedAt *time.Time `json:"deleted" sql:"index"`  
+func (*DockerV2) TableName() string {
+	return "docker_V2"
+}
+
+//
+type DockerImageV2 struct {
+	Id        int64      `json:"id" gorm:"primary_key"`
+	ImageId   string     `json:"imageid" sql:"unique;type:varchar(255)"`
+	Checksum  string     `json:"checksum" sql:"null;unique;type:varchar(255)"`
+	Path      string     `json:"path" sql:"null;type:text"`
+	OSS       string     `json:"oss" sql:"null;type:text"`
+	Size      int64      `json:"size" sql:"default:0"`
+	Locked    bool       `json:"locked" sql:"default:false"`
+	CreatedAt time.Time  `json:"created" sql:""`
+	UpdatedAt time.Time  `json:"updated" sql:""`
+	DeletedAt *time.Time `json:"deleted" sql:"index"`
 }
 
 //
 func (*DockerImageV2) TableName() string {
-  return "docker_image_v2"
+	return "docker_image_v2"
 }
 
 //
-type DockerTagV2 struct { 
-  Id         int64      `json:"id" gorm:"primary_key"` 
-  DockerV2   int64      `json:"dockerv2" sql:"not null"`  
- 	Tag        string     `json:"tag" sql:"not null;type:varchar(255)"` 
- 	ImageId    string     `json:"imageid" sql:"not null;type:varchar(255)"` 
- 	Manifest   string     `json:"manifest" sql:"null;type:text"` 
- 	Schema     int64      `json:"schema" sql:""` 
- 	CreatedAt  time.Time  `json:"created" sql:""`
- 	UpdatedAt  time.Time  `json:"updated" sql:""` 
-  DeletedAt  *time.Time `json:"deleted" sql:"index"` 
-} 
+type DockerTagV2 struct {
+	Id        int64      `json:"id" gorm:"primary_key"`
+	DockerV2  int64      `json:"dockerv2" sql:"not null"`
+	Tag       string     `json:"tag" sql:"not null;type:varchar(255)"`
+	ImageId   string     `json:"imageid" sql:"not null;type:varchar(255)"`
+	Manifest  string     `json:"manifest" sql:"null;type:text"`
+	Schema    int64      `json:"schema" sql:""`
+	CreatedAt time.Time  `json:"created" sql:""`
+	UpdatedAt time.Time  `json:"updated" sql:""`
+	DeletedAt *time.Time `json:"deleted" sql:"index"`
+}
 
 //
 func (*DockerTagV2) TableName() string {
-  return "docker_tag_V2"
+	return "docker_tag_V2"
 }
