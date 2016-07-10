@@ -65,8 +65,32 @@ func SyncSlavePutModeRegistryV1Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusOK, result
 }
 
-//Get the list of data from master.
-func SyncMasterListDataV1Handler(ctx *macaron.Context) (int, []byte) {
+//Get the list of data from slave
+func SyncSlaveListDataV1Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
+
+//
+func SyncMasterPutModeRegistryV1Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
+
+//
+func SyncSlavePutManifestsV1Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
+
+//
+func SyncSlavePutFileV1Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
+
+//
+func SyncSlavePutStatusV1Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }

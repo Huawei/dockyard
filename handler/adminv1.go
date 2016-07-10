@@ -27,3 +27,18 @@ func AdminGetStatusV1Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
+
+func AdminGetConfigV1Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
+
+func AdminSetConfigV1Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
+
+func AdminPostMaintenance(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
