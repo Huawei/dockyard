@@ -40,31 +40,43 @@ func AppScopedSearchV1Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusOK, result
 }
 
+//
+func AppGetListAppV1Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
+
+//
 func AppGetFileV1Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
 
+//
 func AppPostV1Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
 
+//
 func AppPutFileV1Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
 
+//
 func AppPutManifestV1Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
 
+//
 func AppPatchFileV1Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
 
+//
 func AppDeleteFileV1Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
