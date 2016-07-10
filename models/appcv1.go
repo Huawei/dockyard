@@ -17,42 +17,44 @@ limitations under the License.
 package models
 
 import (
-  "time"
+	"time"
 )
 
 //
 type AppcV1 struct {
-  Id          int64      `json:"id" gorm:"primary_key"`
-  Namespace   string     `json:"namespace" sql:"not null;type:varchar(255)"` 
-  Repository  string     `json:"repository" sql:"not null;type:varchar(255)"`
-  Description string     `json:"description" sql:"null;type:text"`
-  Keys        string     `json:"keys" sql:"null;type:text"` 
-  Size        int64      `json:"size" sql:""`  
-  CreatedAt   time.Time  `json:"created" sql:""`
-  UpdatedAt   time.Time  `json:"updated" sql:""` 
-  DeletedAt   *time.Time `json:"deleted" sql:"index"`  
+	Id          int64      `json:"id" gorm:"primary_key"`
+	Namespace   string     `json:"namespace" sql:"not null;type:varchar(255)"`
+	Repository  string     `json:"repository" sql:"not null;type:varchar(255)"`
+	Description string     `json:"description" sql:"null;type:text"`
+	Keys        string     `json:"keys" sql:"null;type:text"`
+	Size        int64      `json:"size" sql:"default:0"`
+	Locked      bool       `json:"locked" sql:"default:false"`
+	CreatedAt   time.Time  `json:"created" sql:""`
+	UpdatedAt   time.Time  `json:"updated" sql:""`
+	DeletedAt   *time.Time `json:"deleted" sql:"index"`
 }
 
 //
 func (*AppcV1) TableName() string {
-  return "appc_v1"
+	return "appc_v1"
 }
 
 //
 type ACIv1 struct {
-  Id          int64      `json:"id" gorm:"primary_key"`
-  AppcV1      int64      `json:"appcv1" sql:"not null"`
-  OS          string     `json:"os" sql:"null;type:varchar(255)"`
-  Arch        string     `json:"arch" sql:"null;type:varchar(255)"`
-  Name        string     `json:"name" sql:"not null;type:text"`
-  OSS         string     `json:"name" sql:"null;type:text"`  
-  Path        string     `json:"arch" sql:"null;type:text"`
-  Size        int64      `json:"size" sql:""`  
-  CreatedAt   time.Time  `json:"created" sql:""`
-  UpdatedAt   time.Time  `json:"updated" sql:""` 
-  DeletedAt   *time.Time `json:"deleted" sql:"index"`    
+	Id        int64      `json:"id" gorm:"primary_key"`
+	AppcV1    int64      `json:"appcv1" sql:"not null"`
+	OS        string     `json:"os" sql:"null;type:varchar(255)"`
+	Arch      string     `json:"arch" sql:"null;type:varchar(255)"`
+	Name      string     `json:"name" sql:"not null;type:text"`
+	OSS       string     `json:"name" sql:"null;type:text"`
+	Path      string     `json:"arch" sql:"null;type:text"`
+	Size      int64      `json:"size" sql:"default:0"`
+	Locked    bool       `json:"locked" sql:"default:false"`
+	CreatedAt time.Time  `json:"created" sql:""`
+	UpdatedAt time.Time  `json:"updated" sql:""`
+	DeletedAt *time.Time `json:"deleted" sql:"index"`
 }
 
 func (*ACIv1) TableName() string {
-  return "aci_v1"
+	return "aci_v1"
 }
