@@ -26,7 +26,7 @@ type ImageV1 struct {
 	Namespace   string     `json:"namespace" sql:"not null;type:varchar(255)"`
 	Repository  string     `json:"repository" sql:"not null;type:varchar(255)"`
 	Description string     `json:"description" sql:"null;type:text"`
-	Manifest    string     `json:"manifest" sql:"null;type:text"`
+	Manifests   string     `json:"manifests" sql:"null;type:text"`
 	Type        string     `json:"type" sql:"not null;type:varchar(255)"`
 	Keys        string     `json:"keys" sql:"null;type:text"`
 	Size        int64      `json:"size" sql:"default:0"`
