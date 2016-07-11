@@ -16,6 +16,24 @@ Dockyard is a container and artifact repository storing and distributing contain
 
 ## The Dockyard's Story :)
 
+## Runtime configuration
+
+```
+runmode = dev
+
+listenmode = https
+httpscertfile = cert/containerops/containerops.crt
+httpskeyfile = cert/containerops/containerops.key
+
+[log]
+filepath = log/backend.log
+level = info
+
+[database]
+driver = mysql
+uri = containerops:containerops@/containerops?charset=utf8&parseTime=True&loc=Asia%2FShanghai
+```
+
 #### Nginx configuration
 It's a Nginx config example. You can change **client_max_body_size** what limited upload file size. You should copy `containerops.me` keys from `cert/containerops.me` to `/etc/nginx`, then run **Dockyard** with `http` mode and listen on `127.0.0.1:9911`.
 

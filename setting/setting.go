@@ -21,33 +21,37 @@ import (
 	"os"
 
 	"github.com/astaxie/beego/config"
-)
-
-const (
-	DOCKERAPIV1 = iota
-	DOCKERAPIV2
-	RKTACI
+	"github.com/ngaut/log"
 )
 
 var (
-	//Global
-	AppName       string
-	Usage         string
-	Version       string
-	Author        string
-	Email         string
-	RunMode       string
-	ListenMode    string
-	HttpsCertFile string
-	HttpsKeyFile  string
-	LogPath       string
+	// Global Config
+	AppName string
+	Usage   string
+	Version string
+	Author  string
+	Email   string
+
+	// Runtime Config
+	RunMode        string
+	ListenMode     string
+	HttpsCertFile  string
+	HttpsKeyFile   string
+	LogPath        string
+	LogLevel       string
+	DatabaseDriver string
+	DatabaseURI    string
 )
 
+//
 func init() {
 	if err := setConfig("conf/containerops.conf"); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
+	//set log level
+	log.SetLevelByString(LogLevel)
 }
 
 func setConfig(path string) error {
@@ -87,6 +91,7 @@ func setConfig(path string) error {
 		return fmt.Errorf("Email config value is null")
 	}
 
+	//config runtime
 	if runmode := conf.String("runmode"); runmode != "" {
 		RunMode = runmode
 	} else if runmode == "" {
@@ -115,6 +120,24 @@ func setConfig(path string) error {
 		LogPath = logpath
 	} else if logpath == "" {
 		return fmt.Errorf("LogPath config value is null")
+	}
+
+	if loglevel := conf.String("log::level"); loglevel != "" {
+		LogLevel = loglevel
+	} else if loglevel == "" {
+		return fmt.Errorf("LogLevel config value is null")
+	}
+
+	if databasedriver := conf.String("database::driver"); databasedriver != "" {
+		DatabaseDriver = databasedriver
+	} else if databasedriver == "" {
+		return fmt.Errorf("Database Driver config value is null")
+	}
+
+	if databaseuri := conf.String("database::uri"); databaseuri != "" {
+		DatabaseURI = databaseuri
+	} else if databaseuri == "" {
+		return fmt.Errorf("Database URI config vaule is null")
 	}
 
 	return nil
