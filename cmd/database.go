@@ -17,7 +17,11 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/codegangsta/cli"
+
+	"github.com/containerops/dockyard/models"
 )
 
 var CmdDatabase = cli.Command{
@@ -25,9 +29,26 @@ var CmdDatabase = cli.Command{
 	Usage:       "database utils for backend database",
 	Description: "Dockyard run base SQL database like MySQL, database command provide some utils of migrate, backup, config and so on.",
 	Action:      runDatabase,
-	Flags:       []cli.Flag{},
+	Flags: []cli.Flag{
+		cli.StringFlag{
+			Name:  "action",
+			Usage: "Action，[sync/backup/restore]",
+		},
+	},
 }
 
 func runDatabase(c *cli.Context) {
+	if len(c.String("action")) > 0 {
+		action := c.String("action")
 
+		switch action {
+		case "sync":
+			if err := models.Sync(); err != nil {
+				fmt.Println("Init database struct error, ", err.Error())
+			}
+			break
+		default:
+			break
+		}
+	}
 }

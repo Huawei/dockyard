@@ -25,6 +25,10 @@ import (
 	"github.com/containerops/dockyard/setting"
 )
 
+func init() {
+	//
+}
+
 func main() {
 	app := cli.NewApp()
 
