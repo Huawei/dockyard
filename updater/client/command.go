@@ -34,3 +34,48 @@ var initCommand = cli.Command{
 		}
 	},
 }
+
+var addCommand = cli.Command{
+	Name:  "add",
+	Usage: "add a repository url",
+
+	Action: func(context *cli.Context) {
+		var duc dyUpdaterConfig
+		url := context.Args().Get(0)
+		if err := duc.Add(url); err == nil {
+			fmt.Printf("Success in adding %s.\n", url)
+		} else {
+			fmt.Println(err)
+		}
+	},
+}
+
+var removeCommand = cli.Command{
+	Name:  "remove",
+	Usage: "remove a repository url",
+
+	Action: func(context *cli.Context) {
+		var duc dyUpdaterConfig
+		url := context.Args().Get(0)
+		if err := duc.Remove(url); err == nil {
+			fmt.Printf("Success in removing %s.\n", url)
+		} else {
+			fmt.Println(err)
+		}
+	},
+}
+
+var listCommand = cli.Command{
+	Name:  "list",
+	Usage: "list the saved repositories or appliances of a certain repository",
+
+	Action: func(context *cli.Context) {
+		var duc dyUpdaterConfig
+		if err := duc.Load(); err != nil {
+			fmt.Println(err)
+		}
+		for _, repo := range duc.Repos {
+			fmt.Println(repo)
+		}
+	},
+}
