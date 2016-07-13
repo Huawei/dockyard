@@ -16,8 +16,12 @@ install: man
 	install -d -m 755 $(PREFIX)/share/bash-completion/completions
 	install -m 644 completions/bash/duc $(PREFIX)/share/bash-completion/completions
 
+uninstall:
+	rm -f $(PREFIX)/share/man/man1/duc.1 $(PREFIX)/share/bash-completion/completions/duc
 clean:
 	rm -f duc duc.1
+
+
 
 .PHONY: test .gofmt .govet .golint
 

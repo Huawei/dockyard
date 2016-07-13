@@ -31,6 +31,9 @@ func main() {
 
 	app.Commands = []cli.Command{
 		initCommand,
+		addCommand,
+		removeCommand,
+		listCommand,
 	}
 
 	app.Run(os.Args)
