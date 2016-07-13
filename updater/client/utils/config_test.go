@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package main
+package utils
 
 import (
 	"io/ioutil"
@@ -41,7 +41,7 @@ func TestInitConfig(t *testing.T) {
 	defer os.RemoveAll(tmpHome)
 	defer os.Setenv("HOME", savedHome)
 
-	var conf dyUpdaterConfig
+	var conf DyUpdaterClientConfig
 	err := conf.Init()
 	assert.Nil(t, err, "Fail to init config")
 	err = conf.Init()
@@ -56,7 +56,7 @@ func TestLoadConfig(t *testing.T) {
 	defer os.Setenv("HOME", savedHome)
 	os.Setenv("HOME", filepath.Join(filepath.Dir(path), testHome))
 
-	var conf dyUpdaterConfig
+	var conf DyUpdaterClientConfig
 	err := conf.Load()
 	assert.Nil(t, err, "Fail to load config")
 	assert.Equal(t, conf.DefaultServer, "containerops.me", "Fail to load 'DefaultServer'")
@@ -68,7 +68,7 @@ func TestAddRemoveConfig(t *testing.T) {
 	defer os.RemoveAll(tmpHome)
 	defer os.Setenv("HOME", savedHome)
 
-	var conf dyUpdaterConfig
+	var conf DyUpdaterClientConfig
 	invalidURL := ""
 	validURL := "app://containerops/official/duc.rpm"
 
