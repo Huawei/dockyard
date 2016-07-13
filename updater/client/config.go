@@ -17,29 +17,37 @@ limitations under the License.
 package main
 
 import (
+	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"os"
 	"path/filepath"
-
-	"github.com/astaxie/beego/config"
 
 	"github.com/containerops/dockyard/utils"
 )
 
 var (
-	ErrorsDUCConfigExist = errors.New("dockyard update client configuration is already exist")
+	ErrorsDUCConfigExist  = errors.New("dockyard update client configuration is already exist")
+	ErrorsDUCInvalidRepo  = errors.New("invalid repository url")
+	ErrorsDUCRepoExist    = errors.New("repository is already exist")
+	ErrorsDUCRepoNotExist = errors.New("repository is not exist")
 )
 
 const (
-	topDir       = ".dockyard"
-	configDriver = "ini"
-	configName   = "config.ini"
-	cacheDir     = "cache"
+	topDir     = ".dockyard"
+	configName = "config.json"
+	cacheDir   = "cache"
 )
 
 type dyUpdaterConfig struct {
 	DefaultServer string
 	CacheDir      string
+	Repos         []string
+}
+
+func (dyc *dyUpdaterConfig) exist() bool {
+	configFile := filepath.Join(os.Getenv("HOME"), topDir, configName)
+	return utils.IsFileExist(configFile)
 }
 
 func (dyc *dyUpdaterConfig) Init() error {
@@ -48,37 +56,32 @@ func (dyc *dyUpdaterConfig) Init() error {
 		return errors.New("Cannot get home directory")
 	}
 
-	topURL := filepath.Join(homeDir, topDir)
-	if !utils.IsDirExist(topURL) {
-		if err := os.Mkdir(topURL, os.ModePerm); err != nil {
-			return err
-		}
+	if dyc.exist() {
+		return ErrorsDUCConfigExist
 	}
 
+	topURL := filepath.Join(homeDir, topDir)
 	cacheURL := filepath.Join(topURL, cacheDir)
 	if !utils.IsDirExist(cacheURL) {
-		if err := os.Mkdir(cacheURL, os.ModePerm); err != nil {
+		if err := os.MkdirAll(cacheURL, os.ModePerm); err != nil {
 			return err
 		}
 	}
 
-	configFile := filepath.Join(topURL, configName)
-	if utils.IsFileExist(configFile) {
-		return ErrorsDUCConfigExist
-	} else {
-		if _, err := os.Create(configFile); err != nil {
-			return err
-		}
-	}
+	dyc.CacheDir = cacheURL
 
-	if conf, err := config.NewConfig(configDriver, configFile); err != nil {
+	return dyc.save()
+}
+
+func (dyc *dyUpdaterConfig) save() error {
+	data, err := json.MarshalIndent(dyc, "", "\t")
+	if err != nil {
 		return err
-	} else {
-		conf.Set("DefaultServer", "localhost")
-		conf.Set("CacheDir", cacheURL)
-		if err := conf.SaveConfigFile(configFile); err != nil {
-			return err
-		}
+	}
+
+	configFile := filepath.Join(os.Getenv("HOME"), topDir, configName)
+	if err := ioutil.WriteFile(configFile, data, 0666); err != nil {
+		return err
 	}
 
 	return nil
@@ -90,16 +93,78 @@ func (dyc *dyUpdaterConfig) Load() error {
 		return errors.New("Cannot get home directory")
 	}
 
-	conf, err := config.NewConfig(configDriver, filepath.Join(homeDir, topDir, configName))
+	content, err := ioutil.ReadFile(filepath.Join(homeDir, topDir, configName))
 	if err != nil {
 		return err
 	}
 
-	dyc.DefaultServer = conf.String("DefaultServer")
-	dyc.CacheDir = conf.String("CacheDir")
+	if err := json.Unmarshal(content, &dyc); err != nil {
+		return err
+	}
+
 	if dyc.CacheDir == "" {
 		dyc.CacheDir = filepath.Join(homeDir, topDir, cacheDir)
 	}
 
 	return nil
+}
+
+func IsValidRepoURL(url string) bool {
+	if url == "" {
+		return false
+	}
+
+	return true
+}
+
+func (dyc *dyUpdaterConfig) Add(url string) error {
+	if !IsValidRepoURL(url) {
+		return ErrorsDUCInvalidRepo
+	}
+
+	var err error
+	if !dyc.exist() {
+		err = dyc.Init()
+	} else {
+		err = dyc.Load()
+	}
+	if err != nil {
+		return err
+	}
+
+	for _, repo := range dyc.Repos {
+		if repo == url {
+			return ErrorsDUCRepoExist
+		}
+	}
+	dyc.Repos = append(dyc.Repos, url)
+
+	return dyc.save()
+}
+
+func (dyc *dyUpdaterConfig) Remove(url string) error {
+	if !IsValidRepoURL(url) {
+		return ErrorsDUCInvalidRepo
+	}
+
+	if !dyc.exist() {
+		return ErrorsDUCRepoNotExist
+	}
+
+	if err := dyc.Load(); err != nil {
+		return err
+	}
+	found := false
+	for i, _ := range dyc.Repos {
+		if dyc.Repos[i] == url {
+			found = true
+			dyc.Repos = append(dyc.Repos[:i], dyc.Repos[i+1:]...)
+			break
+		}
+	}
+	if !found {
+		return ErrorsDUCRepoNotExist
+	}
+
+	return dyc.save()
 }
