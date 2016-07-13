@@ -22,7 +22,17 @@ duc is the "Dockyard Updater Client" working with Dockyard Server.
 
 # COMMANDS
 **init**
-  Initiate "~/.dockyard/config.ini" with the default settings.
+  Initiate "~/.dockyard/config.json" with the default settings.
+
+**add**
+  Add a repository url
+
+**remove**
+  Remove a repository url
+  
+**list**
+  List the saved repositories or appliances of a certain repository
+
 
 # HISTORY
 July 2016, Originally compiled by Liang Chenye (liangchenye at huawei dot com)

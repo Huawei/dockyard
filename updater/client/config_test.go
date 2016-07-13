@@ -25,24 +25,30 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestInitConfig tests the Init function
-func TestInitConfig(t *testing.T) {
+func createTmpHome(t *testing.T) (string, string) {
 	tmpHome, err := ioutil.TempDir("", "duc-test-")
 	assert.Nil(t, err, "Fail to create temp directory")
-	defer os.RemoveAll(tmpHome)
 
 	savedHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", savedHome)
 	os.Setenv("HOME", tmpHome)
 
+	return tmpHome, savedHome
+}
+
+// TestInitConfig tests the Init function
+func TestInitConfig(t *testing.T) {
+	tmpHome, savedHome := createTmpHome(t)
+	defer os.RemoveAll(tmpHome)
+	defer os.Setenv("HOME", savedHome)
+
 	var conf dyUpdaterConfig
-	err = conf.Init()
+	err := conf.Init()
 	assert.Nil(t, err, "Fail to init config")
 	err = conf.Init()
 	assert.Equal(t, err, ErrorsDUCConfigExist, "Should not init more than once")
 }
 
-// TestLoadConfig tests the testdata/home/.dockyard/config.ini file
+// TestLoadConfig tests the testdata/home/.dockyard/config.json file
 func TestLoadConfig(t *testing.T) {
 	_, path, _, _ := runtime.Caller(0)
 	testHome := "/testdata/home"
@@ -53,6 +59,30 @@ func TestLoadConfig(t *testing.T) {
 	var conf dyUpdaterConfig
 	err := conf.Load()
 	assert.Nil(t, err, "Fail to load config")
-	assert.Equal(t, conf.DefaultServer, "ductest.com", "Fail to load 'DefaultServer'")
-	assert.Equal(t, conf.CacheDir, "/tmp/justtest/cache", "Fail to load 'CacheDir'")
+	assert.Equal(t, conf.DefaultServer, "containerops.me", "Fail to load 'DefaultServer'")
+	assert.Equal(t, conf.CacheDir, "/tmp/containeropsCache", "Fail to load 'CacheDir'")
+}
+
+func TestAddRemoveConfig(t *testing.T) {
+	tmpHome, savedHome := createTmpHome(t)
+	defer os.RemoveAll(tmpHome)
+	defer os.Setenv("HOME", savedHome)
+
+	var conf dyUpdaterConfig
+	invalidURL := ""
+	validURL := "app://containerops/official/duc.rpm"
+
+	// 'add'
+	err := conf.Add(invalidURL)
+	assert.Equal(t, err, ErrorsDUCInvalidRepo)
+	err = conf.Add(validURL)
+	assert.Nil(t, err, "Failed to add repository")
+	err = conf.Add(validURL)
+	assert.Equal(t, err, ErrorsDUCRepoExist)
+
+	// 'remove'
+	err = conf.Remove(validURL)
+	assert.Nil(t, err, "Failed to remove repository")
+	err = conf.Remove(validURL)
+	assert.Equal(t, err, ErrorsDUCRepoNotExist)
 }

@@ -142,6 +142,9 @@ _duc() {
 
 	local commands=(
 		init
+		add
+		remove
+		list
 	)
 
 	# These options are valid as global options for all client commands
