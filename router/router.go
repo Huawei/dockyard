@@ -93,19 +93,19 @@ func SetRouters(m *macaron.Macaron) {
 				m.Get("/?app-discovery=1", handler.AppDiscoveryV1Handler)
 
 				// Scoped Search
-				m.Get("/search", handler.AppScopedSearchV1Handler)
+				m.Get("/search/:?tag", handler.AppScopedSearchV1Handler)
 				m.Get("/list", handler.AppGetListAppV1Handler)
 
 				// Pull
-				m.Get("/:os/:arch/:app", handler.AppGetFileV1Handler)
+				m.Get("/:os/:arch/:app/?:tag", handler.AppGetFileV1Handler)
 
 				// Push
 				m.Post("/", handler.AppPostV1Handler)
-				m.Put("/:os/:arch/:app/:tag", handler.AppPutFileV1Handler)
-				m.Put("/:os/:arch/:app/:tag/manifests", handler.AppPutManifestV1Handler)
-				m.Patch("/:os/:arch/:app/:tag/:status", handler.AppPatchFileV1Handler)
-				m.Delete("/:os/:arch/:app/:tag", handler.AppDeleteFileByTagV1Handler)
-				m.Delete("/:os/:arch/:app", handler.AppDeleteFileV1Handler)
+				m.Put("/:os/:arch/:app/?:tag", handler.AppPutFileV1Handler)
+				m.Put("/:os/:arch/:app/manifests/?:tag", handler.AppPutManifestV1Handler)
+				m.Patch("/:os/:arch/:app/:status/?:tag", handler.AppPatchFileV1Handler)
+				m.Delete("/:os/:arch/:app/?:tag", handler.AppDeleteFileByTagV1Handler)
+				m.Delete("/:os/:arch/:app/?:tag", handler.AppDeleteFileV1Handler)
 			})
 		})
 	})
@@ -136,18 +136,18 @@ func SetRouters(m *macaron.Macaron) {
 				m.Get("/?image-discovery=1", handler.ImageDiscoveryV1Handler)
 
 				// Scoped Search
-				m.Get("/search", handler.ImageScopedSearchV1Handler)
+				m.Get("/search/:?tag", handler.ImageScopedSearchV1Handler)
 				m.Get("/list", handler.ImageGetListV1Handler)
 
 				// Pull
-				m.Get("/:os/:arch/:image", handler.ImageGetFileV1Handler)
+				m.Get("/:os/:arch/:image/:?tag", handler.ImageGetFileV1Handler)
 
 				// Push
 				m.Post("/", handler.ImagePostV1Handler)
-				m.Put("/:os/:arch/:image/:tag", handler.ImagePutFileV1Handler)
-				m.Put("/:os/:arch/:image/:tag/manifests", handler.ImagePutManifestV1Handler)
-				m.Patch("/:os/:arch/:image/:tag/:status", handler.ImagePatchFileV1Handler)
-				m.Delete("/:os/:arch/:image/:tag", handler.ImageDeleteFileByTagV1Handler)
+				m.Put("/:os/:arch/:image/?:tag", handler.ImagePutFileV1Handler)
+				m.Put("/:os/:arch/:image/manifests/?:tag", handler.ImagePutManifestV1Handler)
+				m.Patch("/:os/:arch/:image/:status/?:tag", handler.ImagePatchFileV1Handler)
+				m.Delete("/:os/:arch/:image/?:tag", handler.ImageDeleteFileByTagV1Handler)
 				m.Delete("/:os/:arch/:image", handler.ImageDeleteFileV1Handler)
 			})
 		})
