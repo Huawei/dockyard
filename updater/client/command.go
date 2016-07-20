@@ -47,7 +47,7 @@ var addCommand = cli.Command{
 
 		if repo, err := utils.NewDUCRepo(context.Args().Get(0)); err != nil {
 			fmt.Println(err)
-		} else if err := duc.Add(repo); err != nil {
+		} else if err := duc.Add(repo.String()); err != nil {
 			fmt.Println(err)
 		} else {
 			fmt.Printf("Success in adding %s.\n", repo.String())
@@ -64,7 +64,7 @@ var removeCommand = cli.Command{
 
 		if repo, err := utils.NewDUCRepo(context.Args().Get(0)); err != nil {
 			fmt.Println(err)
-		} else if err := duc.Remove(repo); err != nil {
+		} else if err := duc.Remove(repo.String()); err != nil {
 			fmt.Println(err)
 		} else {
 			fmt.Printf("Success in removing %s.\n", repo.String())
@@ -79,22 +79,23 @@ var listCommand = cli.Command{
 	Action: func(context *cli.Context) {
 		var duc utils.DyUpdaterClientConfig
 
-		if len(content.Args()) == 0 {
+		if len(context.Args()) == 0 {
 			if err := duc.Load(); err != nil {
 				fmt.Println(err)
 			} else {
 				for _, repo := range duc.Repos {
-					fmt.Println(repo.String())
+					fmt.Println(repo)
 				}
 			}
-		} else if len(content.Args()) == 1 {
-			if repo, err := utils.NewDUCRepo(content.Args().Get(0)); err != nil {
+		} else if len(context.Args()) == 1 {
+			if repo, err := utils.NewDUCRepo(context.Args().Get(0)); err != nil {
 				fmt.Println(err)
 			} else {
-				for _, r := range repo.List() {
-					fmt.Println(r)
+				apps, _ := repo.List()
+				for _, app := range apps {
+					fmt.Println(app)
 				}
-				duc.Add(repo)
+				duc.Add(repo.String())
 			}
 		}
 	},
