@@ -78,12 +78,6 @@ func ImagePatchFileV1Handler(ctx *macaron.Context) (int, []byte) {
 }
 
 //
-func ImageDeleteFileByTagV1Handler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
-}
-
-//
 func ImageDeleteFileV1Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
