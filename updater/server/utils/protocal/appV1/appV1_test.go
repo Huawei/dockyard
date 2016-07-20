@@ -13,30 +13,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
-package main
+package appV1
 
 import (
-	"os"
+	"testing"
 
-	"github.com/codegangsta/cli"
-
-	_ "github.com/containerops/dockyard/updater/client/utils/repo/appV1"
+	"github.com/stretchr/testify/assert"
 )
 
-func main() {
-	app := cli.NewApp()
+// TestBasic tests the basic functions
+func TestBasic(t *testing.T) {
+	var appV1 DyUpdaterServerAppV1
 
-	app.Name = "duc"
-	app.Usage = "Dockyard Updater client"
-	app.Version = "0.0.1"
-
-	app.Commands = []cli.Command{
-		initCommand,
-		addCommand,
-		removeCommand,
-		listCommand,
-	}
-
-	app.Run(os.Args)
+	ok := appV1.Supported("appV1")
+	assert.Equal(t, ok, true, "Fail to get supported status")
+	ok = appV1.Supported("appInvalid")
+	assert.Equal(t, ok, false, "Fail to get supported status")
 }
