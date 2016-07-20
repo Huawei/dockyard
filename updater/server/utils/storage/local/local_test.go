@@ -16,7 +16,8 @@ limitations under the License.
 package local
 
 import (
-	"fmt"
+	"io/ioutil"
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -55,6 +56,58 @@ func TestBasic(t *testing.T) {
 func TestList(t *testing.T) {
 	l := loadTestData(t)
 	key := "containerops/official"
+	validCount := 0
+
 	apps, _ := l.List(key)
-	fmt.Println(apps)
+	for _, app := range apps {
+		if app == "appA" {
+			validCount++
+		} else if app == "appB" {
+			validCount++
+		}
+	}
+	assert.Equal(t, validCount, 2, "Fail to get right apps")
+}
+
+func TestPut(t *testing.T) {
+	tmpPath, err := ioutil.TempDir("", "dus-test-")
+	defer os.RemoveAll(tmpPath)
+	assert.Nil(t, err, "Fail to create temp dir")
+
+	data := "this is test appA"
+
+	var local DyUpdaterServerLocal
+	l, err := local.New(localPrefix + ":/" + tmpPath)
+	assert.Nil(t, err, "Fail to setup local repo")
+
+	invalidKey := "containerops/official"
+	err = l.Put(invalidKey, []byte(data))
+	assert.Equal(t, err, dus_utils.ErrorsDUSSInvalidKey)
+
+	validKey := "containerops/official/appA"
+	err = l.Put(validKey, []byte(data))
+	assert.Nil(t, err, "Fail to put key")
+
+	ret, _ := l.Get(validKey)
+	assert.Equal(t, string(ret), data, "Failed to store/retieve content")
+}
+
+func TestGet(t *testing.T) {
+	testMeta := dus_utils.Meta{Name: "appA"}
+	l := loadTestData(t)
+
+	key := "containerops/official/appA"
+	invalidKey := "containerops/official"
+
+	_, err := l.GetMeta(invalidKey)
+	assert.Equal(t, err, dus_utils.ErrorsDUSSInvalidKey)
+	meta, err := l.GetMeta(key)
+	assert.Nil(t, err, "Fail to load meta data")
+	assert.Equal(t, meta, testMeta, "Fail to get correct meta")
+
+	_, err = l.Get(invalidKey)
+	assert.Equal(t, err, dus_utils.ErrorsDUSSInvalidKey)
+	data, err := l.Get(key)
+	assert.Nil(t, err, "Fail to load file")
+	assert.Equal(t, string(data), "This is appA.\n", "Fail to get correct file")
 }
