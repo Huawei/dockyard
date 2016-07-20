@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package utils
 
 import (
 	"encoding/json"
@@ -23,7 +23,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/containerops/dockyard/utils"
+	dyutils "github.com/containerops/dockyard/utils"
 )
 
 var (
@@ -39,18 +39,18 @@ const (
 	cacheDir   = "cache"
 )
 
-type dyUpdaterConfig struct {
+type DyUpdaterClientConfig struct {
 	DefaultServer string
 	CacheDir      string
 	Repos         []string
 }
 
-func (dyc *dyUpdaterConfig) exist() bool {
+func (dyc *DyUpdaterClientConfig) exist() bool {
 	configFile := filepath.Join(os.Getenv("HOME"), topDir, configName)
-	return utils.IsFileExist(configFile)
+	return dyutils.IsFileExist(configFile)
 }
 
-func (dyc *dyUpdaterConfig) Init() error {
+func (dyc *DyUpdaterClientConfig) Init() error {
 	homeDir := os.Getenv("HOME")
 	if homeDir == "" {
 		return errors.New("Cannot get home directory")
@@ -62,7 +62,7 @@ func (dyc *dyUpdaterConfig) Init() error {
 
 	topURL := filepath.Join(homeDir, topDir)
 	cacheURL := filepath.Join(topURL, cacheDir)
-	if !utils.IsDirExist(cacheURL) {
+	if !dyutils.IsDirExist(cacheURL) {
 		if err := os.MkdirAll(cacheURL, os.ModePerm); err != nil {
 			return err
 		}
@@ -73,7 +73,7 @@ func (dyc *dyUpdaterConfig) Init() error {
 	return dyc.save()
 }
 
-func (dyc *dyUpdaterConfig) save() error {
+func (dyc *DyUpdaterClientConfig) save() error {
 	data, err := json.MarshalIndent(dyc, "", "\t")
 	if err != nil {
 		return err
@@ -87,7 +87,7 @@ func (dyc *dyUpdaterConfig) save() error {
 	return nil
 }
 
-func (dyc *dyUpdaterConfig) Load() error {
+func (dyc *DyUpdaterClientConfig) Load() error {
 	homeDir := os.Getenv("HOME")
 	if homeDir == "" {
 		return errors.New("Cannot get home directory")
@@ -117,7 +117,7 @@ func IsValidRepoURL(url string) bool {
 	return true
 }
 
-func (dyc *dyUpdaterConfig) Add(url string) error {
+func (dyc *DyUpdaterClientConfig) Add(url string) error {
 	if !IsValidRepoURL(url) {
 		return ErrorsDUCInvalidRepo
 	}
@@ -142,7 +142,7 @@ func (dyc *dyUpdaterConfig) Add(url string) error {
 	return dyc.save()
 }
 
-func (dyc *dyUpdaterConfig) Remove(url string) error {
+func (dyc *DyUpdaterClientConfig) Remove(url string) error {
 	if !IsValidRepoURL(url) {
 		return ErrorsDUCInvalidRepo
 	}

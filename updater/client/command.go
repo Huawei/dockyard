@@ -20,17 +20,20 @@ import (
 	"fmt"
 
 	"github.com/codegangsta/cli"
+
+	"github.com/containerops/dockyard/updater/client/utils"
 )
 
 var initCommand = cli.Command{
 	Name:  "init",
 	Usage: "initiate default setting",
 	Action: func(context *cli.Context) {
-		var duc dyUpdaterConfig
-		if err := duc.Init(); err == nil {
-			fmt.Println("Success in initiating Dockyard Updater Client configuration.")
-		} else {
+		var duc utils.DyUpdaterClientConfig
+
+		if err := duc.Init(); err != nil {
 			fmt.Println(err)
+		} else {
+			fmt.Println("Success in initiating Dockyard Updater Client configuration.")
 		}
 	},
 }
@@ -40,12 +43,14 @@ var addCommand = cli.Command{
 	Usage: "add a repository url",
 
 	Action: func(context *cli.Context) {
-		var duc dyUpdaterConfig
-		url := context.Args().Get(0)
-		if err := duc.Add(url); err == nil {
-			fmt.Printf("Success in adding %s.\n", url)
-		} else {
+		var duc utils.DyUpdaterClientConfig
+
+		if repo, err := utils.NewDUCRepo(context.Args().Get(0)); err != nil {
 			fmt.Println(err)
+		} else if err := duc.Add(repo); err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Printf("Success in adding %s.\n", repo.String())
 		}
 	},
 }
@@ -55,12 +60,14 @@ var removeCommand = cli.Command{
 	Usage: "remove a repository url",
 
 	Action: func(context *cli.Context) {
-		var duc dyUpdaterConfig
-		url := context.Args().Get(0)
-		if err := duc.Remove(url); err == nil {
-			fmt.Printf("Success in removing %s.\n", url)
-		} else {
+		var duc utils.DyUpdaterClientConfig
+
+		if repo, err := utils.NewDUCRepo(context.Args().Get(0)); err != nil {
 			fmt.Println(err)
+		} else if err := duc.Remove(repo); err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Printf("Success in removing %s.\n", repo.String())
 		}
 	},
 }
@@ -70,12 +77,25 @@ var listCommand = cli.Command{
 	Usage: "list the saved repositories or appliances of a certain repository",
 
 	Action: func(context *cli.Context) {
-		var duc dyUpdaterConfig
-		if err := duc.Load(); err != nil {
-			fmt.Println(err)
-		}
-		for _, repo := range duc.Repos {
-			fmt.Println(repo)
+		var duc utils.DyUpdaterClientConfig
+
+		if len(content.Args()) == 0 {
+			if err := duc.Load(); err != nil {
+				fmt.Println(err)
+			} else {
+				for _, repo := range duc.Repos {
+					fmt.Println(repo.String())
+				}
+			}
+		} else if len(content.Args()) == 1 {
+			if repo, err := utils.NewDUCRepo(content.Args().Get(0)); err != nil {
+				fmt.Println(err)
+			} else {
+				for _, r := range repo.List() {
+					fmt.Println(r)
+				}
+				duc.Add(repo)
+			}
 		}
 	},
 }
