@@ -23,6 +23,9 @@ import (
 
 	"github.com/codegangsta/cli"
 	"gopkg.in/macaron.v1"
+
+	_ "github.com/containerops/dockyard/updater/server/utils/protocal/appV1"
+	_ "github.com/containerops/dockyard/updater/server/utils/storage/local"
 )
 
 var webCommand = cli.Command{

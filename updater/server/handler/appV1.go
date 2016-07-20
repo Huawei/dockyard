@@ -21,10 +21,27 @@ import (
 	"net/http"
 
 	"gopkg.in/macaron.v1"
+
+	"github.com/containerops/dockyard/updater/server/utils"
 )
 
+type httpListRet struct {
+	Message string
+	Content []string
+}
+
+// List all the files in the namespace/repository
 func AppListFileMetaV1Handler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{"message": "App list file meta"})
+	namespace := ctx.Params(":namespace")
+	repository := ctx.Params(":repository")
+
+	appV1, _ := utils.NewDUSProtocal("appV1")
+	apps, _ := appV1.List(namespace + "/" + repository)
+	ret := httpListRet{
+		Message: "AppV1 List files",
+		Content: apps,
+	}
+	result, _ := json.Marshal(ret)
 	return http.StatusOK, result
 }
 
