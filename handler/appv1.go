@@ -77,6 +77,12 @@ func AppPatchFileV1Handler(ctx *macaron.Context) (int, []byte) {
 }
 
 //
+func AppDeleteFileByTagV1Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
+
+//
 func AppDeleteFileV1Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result

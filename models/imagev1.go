@@ -47,8 +47,10 @@ type VirtualV1 struct {
 	ImageV1   int64      `json:"imagev1" sql:"not null"`
 	OS        string     `json:"os" sql:"null;type:varchar(255)"`
 	Arch      string     `json:"arch" sql:"null;type:varchar(255)"`
-	Name      string     `json:"name" sql:"not null;type:text"`
-	OSS       string     `json:"name" sql:"null;type:text"`
+	Image     string     `json:"image" sql:"not null;varchar(255)" gorm:"unique_index:image_tag"`
+	Tag       string     `json:"tag" sql:"null;varchar(255)" gorm:"unique_index:image_tag"`
+	Manifests string     `json:"manifests" sql:"null;type:text"`
+	OSS       string     `json:"oss" sql:"null;type:text"`
 	Path      string     `json:"arch" sql:"null;type:text"`
 	Size      int64      `json:"size" sql:"default:0"`
 	Locked    bool       `json:"locked" sql:"default:false"`
