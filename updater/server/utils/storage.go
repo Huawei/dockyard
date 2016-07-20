@@ -19,6 +19,7 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"sync"
 )
 
@@ -29,6 +30,7 @@ type DyUpdaterServerStorage interface {
 	String() string
 	Supported(url string) bool
 	Get(key string) ([]byte, error)
+	GetMeta(key string) (Meta, error)
 	Put(key string, data []byte) error
 	List(key string) ([]string, error)
 }
@@ -37,7 +39,10 @@ var (
 	dusStoragesLock sync.Mutex
 	dusStorages     = make(map[string]DyUpdaterServerStorage)
 
+	keyRegexp = regexp.MustCompile(`^(.+)/(.+)/(.+)$`)
+
 	ErrorsDUSSNotSupported = errors.New("storage type is not supported")
+	ErrorsDUSSInvalidKey   = errors.New("invalid key detected")
 )
 
 // RegisterStorage provides a way to dynamically register an implementation of a
@@ -77,4 +82,8 @@ func NewDUSStorage(url string) (DyUpdaterServerStorage, error) {
 	}
 
 	return nil, ErrorsDUSPNotSupported
+}
+
+func ValidKey(key string) bool {
+	return keyRegexp.MatchString(key)
 }
