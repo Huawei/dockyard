@@ -17,13 +17,16 @@ limitations under the License.
 package local
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
 	dus_utils "github.com/containerops/dockyard/updater/server/utils"
+	dy_utils "github.com/containerops/dockyard/utils"
 )
 
 const (
@@ -62,14 +65,65 @@ func (dusl *DyUpdaterServerLocal) String() string {
 	return fmt.Sprintf("%s:/%s", localPrefix, dusl.Path)
 }
 
+// Key is "namespace/repository/appname"
 func (dusl *DyUpdaterServerLocal) Get(key string) ([]byte, error) {
-	return nil, nil
+	if !dus_utils.ValidKey(key) {
+		return nil, dus_utils.ErrorsDUSSInvalidKey
+	}
+
+	//TODO: now using data, need to hash it
+	dataFileName := "data"
+	file := filepath.Join(dusl.Path, key, dataFileName)
+	return ioutil.ReadFile(file)
 }
 
+// Key is "namespace/repository/appname"
+func (dusl *DyUpdaterServerLocal) GetMeta(key string) (meta dus_utils.Meta, err error) {
+	if !dus_utils.ValidKey(key) {
+		return meta, dus_utils.ErrorsDUSSInvalidKey
+	}
+
+	metaFileName := "meta.json"
+	filename := filepath.Join(dusl.Path, key, metaFileName)
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return dus_utils.Meta{}, err
+	}
+	err = json.Unmarshal(data, &meta)
+	return meta, err
+}
+
+// Key is "namespace/repository/appname"
 func (dusl *DyUpdaterServerLocal) Put(key string, content []byte) error {
+	if !dus_utils.ValidKey(key) {
+		return dus_utils.ErrorsDUSSInvalidKey
+	}
+
+	topDir := filepath.Join(dusl.Path, key)
+	if !dy_utils.IsDirExist(topDir) {
+		if err := os.MkdirAll(topDir, 0777); err != nil {
+			return err
+		}
+	}
+
+	dataFileName := "data"
+	dataFile := filepath.Join(topDir, dataFileName)
+	if err := ioutil.WriteFile(dataFile, content, 0644); err != nil {
+		return err
+	}
+
+	metaFileName := "meta.json"
+	metaFile := filepath.Join(topDir, metaFileName)
+	meta := dus_utils.GenerateMeta(key, content)
+	metaContent, _ := json.Marshal(meta)
+	if err := ioutil.WriteFile(metaFile, metaContent, 0644); err != nil {
+		os.RemoveAll(topDir)
+		return err
+	}
 	return nil
 }
 
+// Key is "namespace/repository"
 func (dusl *DyUpdaterServerLocal) List(key string) ([]string, error) {
 	path := filepath.Join(dusl.Path, key)
 	files, err := ioutil.ReadDir(path)
