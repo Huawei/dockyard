@@ -84,6 +84,6 @@ func NewDUSStorage(url string) (DyUpdaterServerStorage, error) {
 	return nil, ErrorsDUSPNotSupported
 }
 
-func ValidKey(key string) bool {
+func ValidStorageKey(key string) bool {
 	return keyRegexp.MatchString(key)
 }

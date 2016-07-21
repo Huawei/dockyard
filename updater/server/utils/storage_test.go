@@ -21,11 +21,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestKey
-func TestKey(t *testing.T) {
-	ok := ValidKey("a/b/c")
+// TestStorageKey
+func TestStorageKey(t *testing.T) {
+	ok := ValidStorageKey("a/b/c")
 	assert.Equal(t, ok, true, "Fail to verify correct key")
 
-	ok = ValidKey("a/b")
+	ok = ValidStorageKey("a/b")
 	assert.Equal(t, ok, false, "Fail to verify incorrect key")
 }
