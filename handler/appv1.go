@@ -53,6 +53,12 @@ func AppGetFileV1Handler(ctx *macaron.Context) (int, []byte) {
 }
 
 //
+func AppGetManifestsV1Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
+
+//
 func AppPostV1Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
