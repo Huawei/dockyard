@@ -54,6 +54,12 @@ func ImageGetFileV1Handler(ctx *macaron.Context) (int, []byte) {
 }
 
 //
+func ImageGetManifestsV1Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
+
+//
 func ImagePostV1Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
