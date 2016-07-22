@@ -17,27 +17,65 @@ limitations under the License.
 package utils
 
 import (
+	"crypto/sha1"
 	"fmt"
+	"reflect"
+	"time"
 )
 
 type Meta struct {
 	Name string
+	Hash string
+
+	Created time.Time
+	Expired time.Time
 }
 
-func GenerateMeta(file string, content []byte) (meta Meta) {
+const (
+	//The default life circle for a software is half a year
+	defaultLifecircle = time.Hour * 24 * 180
+)
+
+func GenerateMeta(file string, contentByte []byte) (meta Meta) {
 	meta.Name = file
-	fmt.Println("generate meta")
+	meta.Hash = fmt.Sprintf("%x", sha1.Sum(contentByte))
+	meta.Created = time.Now()
+	meta.Expired = meta.Created.Add(defaultLifecircle)
 	return
 }
 
+func (a Meta) GetHash() string {
+	return a.Hash
+}
+
+func (a Meta) IsExpired() bool {
+	return a.Expired.Before(time.Now())
+}
+
+func (a Meta) GetCreated() time.Time {
+	return a.Created
+}
+
+func (a *Meta) SetCreated(t time.Time) {
+	a.Created = t
+}
+
+func (a Meta) GetExpired() time.Time {
+	return a.Expired
+}
+
+func (a *Meta) SetExpired(t time.Time) {
+	a.Expired = t
+}
+
 func (a Meta) Compare(b Meta) int {
-	if a.Name == b.Name {
+	if reflect.DeepEqual(a, b) {
 		return 0
 	}
 
-	if a.Name > b.Name {
-		return 1
+	if a.Created.Before(b.Created) {
+		return -1
 	}
 
-	return -1
+	return 1
 }
