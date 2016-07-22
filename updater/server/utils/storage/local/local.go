@@ -66,20 +66,18 @@ func (dusl *DyUpdaterServerLocal) String() string {
 }
 
 // Key is "namespace/repository/appname"
-func (dusl *DyUpdaterServerLocal) Get(key string) ([]byte, error) {
-	if !dus_utils.ValidKey(key) {
+func (dusl *DyUpdaterServerLocal) Get(key string, hash string) ([]byte, error) {
+	if !dus_utils.ValidStorageKey(key) {
 		return nil, dus_utils.ErrorsDUSSInvalidKey
 	}
 
-	//TODO: now using data, need to hash it
-	dataFileName := "data"
-	file := filepath.Join(dusl.Path, key, dataFileName)
+	file := filepath.Join(dusl.Path, key, hash)
 	return ioutil.ReadFile(file)
 }
 
 // Key is "namespace/repository/appname"
 func (dusl *DyUpdaterServerLocal) GetMeta(key string) (meta dus_utils.Meta, err error) {
-	if !dus_utils.ValidKey(key) {
+	if !dus_utils.ValidStorageKey(key) {
 		return meta, dus_utils.ErrorsDUSSInvalidKey
 	}
 
@@ -95,7 +93,7 @@ func (dusl *DyUpdaterServerLocal) GetMeta(key string) (meta dus_utils.Meta, err 
 
 // Key is "namespace/repository/appname"
 func (dusl *DyUpdaterServerLocal) Put(key string, content []byte) error {
-	if !dus_utils.ValidKey(key) {
+	if !dus_utils.ValidStorageKey(key) {
 		return dus_utils.ErrorsDUSSInvalidKey
 	}
 
@@ -106,20 +104,22 @@ func (dusl *DyUpdaterServerLocal) Put(key string, content []byte) error {
 		}
 	}
 
-	dataFileName := "data"
-	dataFile := filepath.Join(topDir, dataFileName)
-	if err := ioutil.WriteFile(dataFile, content, 0644); err != nil {
+	metaFileName := "meta.json"
+	metaFile := filepath.Join(topDir, metaFileName)
+	meta := dus_utils.GenerateMeta(filepath.Base(key), content)
+	metaContent, _ := json.Marshal(meta)
+	if err := ioutil.WriteFile(metaFile, metaContent, 0644); err != nil {
 		return err
 	}
 
-	metaFileName := "meta.json"
-	metaFile := filepath.Join(topDir, metaFileName)
-	meta := dus_utils.GenerateMeta(key, content)
-	metaContent, _ := json.Marshal(meta)
-	if err := ioutil.WriteFile(metaFile, metaContent, 0644); err != nil {
+	// Using the 'hash' value to rename the original file
+	dataFileName := meta.GetHash()
+	dataFile := filepath.Join(topDir, dataFileName)
+	if err := ioutil.WriteFile(dataFile, content, 0644); err != nil {
 		os.RemoveAll(topDir)
 		return err
 	}
+
 	return nil
 }
 

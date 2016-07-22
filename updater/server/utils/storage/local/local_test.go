@@ -74,26 +74,29 @@ func TestPut(t *testing.T) {
 	defer os.RemoveAll(tmpPath)
 	assert.Nil(t, err, "Fail to create temp dir")
 
-	data := "this is test appA"
+	testData := "this is test DATA, you can put in anything here"
 
 	var local DyUpdaterServerLocal
 	l, err := local.New(localPrefix + ":/" + tmpPath)
 	assert.Nil(t, err, "Fail to setup local repo")
 
 	invalidKey := "containerops/official"
-	err = l.Put(invalidKey, []byte(data))
+	err = l.Put(invalidKey, []byte(testData))
 	assert.Equal(t, err, dus_utils.ErrorsDUSSInvalidKey)
 
 	validKey := "containerops/official/appA"
-	err = l.Put(validKey, []byte(data))
+	err = l.Put(validKey, []byte(testData))
 	assert.Nil(t, err, "Fail to put key")
 
-	ret, _ := l.Get(validKey)
-	assert.Equal(t, string(ret), data, "Failed to store/retieve content")
+	meta, err := l.GetMeta(validKey)
+	assert.Nil(t, err, "Fail to get meta data")
+
+	getData, err := l.Get(validKey, meta.GetHash())
+	assert.Nil(t, err, "Fail to load file")
+	assert.Equal(t, string(getData), testData, "Fail to get correct file")
 }
 
 func TestGet(t *testing.T) {
-	testMeta := dus_utils.Meta{Name: "appA"}
 	l := loadTestData(t)
 
 	key := "containerops/official/appA"
@@ -103,11 +106,11 @@ func TestGet(t *testing.T) {
 	assert.Equal(t, err, dus_utils.ErrorsDUSSInvalidKey)
 	meta, err := l.GetMeta(key)
 	assert.Nil(t, err, "Fail to load meta data")
-	assert.Equal(t, meta, testMeta, "Fail to get correct meta")
 
-	_, err = l.Get(invalidKey)
+	_, err = l.Get(invalidKey, "invalid hash")
 	assert.Equal(t, err, dus_utils.ErrorsDUSSInvalidKey)
-	data, err := l.Get(key)
+
+	data, err := l.Get(key, meta.Hash)
 	assert.Nil(t, err, "Fail to load file")
-	assert.Equal(t, string(data), "This is appA.\n", "Fail to get correct file")
+	assert.Equal(t, string(data), "this is test appA", "Fail to get correct file")
 }
