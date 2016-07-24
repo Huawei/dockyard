@@ -19,7 +19,7 @@ package main
 import (
 	"os"
 
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 
 	"github.com/containerops/dockyard/cmd"
 	"github.com/containerops/dockyard/setting"

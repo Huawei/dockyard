@@ -19,7 +19,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 
 	"github.com/containerops/dockyard/models"
 )
@@ -37,7 +37,7 @@ var CmdDatabase = cli.Command{
 	},
 }
 
-func runDatabase(c *cli.Context) {
+func runDatabase(c *cli.Context) error {
 	if len(c.String("action")) > 0 {
 		action := c.String("action")
 
@@ -51,4 +51,6 @@ func runDatabase(c *cli.Context) {
 			break
 		}
 	}
+
+	return nil
 }

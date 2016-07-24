@@ -17,7 +17,7 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 )
 
 var CmdOSS = cli.Command{
@@ -28,6 +28,6 @@ var CmdOSS = cli.Command{
 	Flags:       []cli.Flag{},
 }
 
-func runOSS(c *cli.Context) {
-
+func runOSS(c *cli.Context) error {
+	return nil
 }
