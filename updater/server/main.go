@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 	"gopkg.in/macaron.v1"
 
 	_ "github.com/containerops/dockyard/updater/server/utils/protocal/appV1"
@@ -52,7 +52,7 @@ var webCommand = cli.Command{
 	},
 }
 
-func runDUS(c *cli.Context) {
+func runDUS(c *cli.Context) error {
 	m := macaron.New()
 
 	SetRouters(m)
@@ -68,6 +68,8 @@ func runDUS(c *cli.Context) {
 	default:
 		break
 	}
+
+	return nil
 }
 
 func main() {

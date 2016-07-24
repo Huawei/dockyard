@@ -94,7 +94,7 @@ server {
 ## Update The Libraries Dependencies
 
 ```
-go get -u -v github.com/codegangsta/cli
+go get -u -v github.com/urfave/cli
 go get -u -v gopkg.in/macaron.v1
 go get -u -v github.com/jinzhu/gorm
 ```

@@ -19,7 +19,7 @@ package main
 import (
 	"os"
 
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 
 	_ "github.com/containerops/dockyard/updater/client/utils/repo/appV1"
 )

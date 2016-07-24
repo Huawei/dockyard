@@ -23,7 +23,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/dockyard/setting"
@@ -50,7 +50,7 @@ var CmdWeb = cli.Command{
 	},
 }
 
-func runWeb(c *cli.Context) {
+func runWeb(c *cli.Context) error {
 	m := macaron.New()
 
 	//Set Macaron Web Middleware And Routers
@@ -88,4 +88,6 @@ func runWeb(c *cli.Context) {
 	default:
 		break
 	}
+
+	return nil
 }

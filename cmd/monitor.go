@@ -17,7 +17,7 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 )
 
 var CmdMonitor = cli.Command{
@@ -28,6 +28,6 @@ var CmdMonitor = cli.Command{
 	Flags:       []cli.Flag{},
 }
 
-func runMonitor(c *cli.Context) {
-
+func runMonitor(c *cli.Context) error {
+	return nil
 }

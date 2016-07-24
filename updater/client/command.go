@@ -19,7 +19,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 
 	"github.com/containerops/dockyard/updater/client/utils"
 )
@@ -27,7 +27,7 @@ import (
 var initCommand = cli.Command{
 	Name:  "init",
 	Usage: "initiate default setting",
-	Action: func(context *cli.Context) {
+	Action: func(context *cli.Context) error {
 		var duc utils.DyUpdaterClientConfig
 
 		if err := duc.Init(); err != nil {
@@ -35,6 +35,8 @@ var initCommand = cli.Command{
 		} else {
 			fmt.Println("Success in initiating Dockyard Updater Client configuration.")
 		}
+
+		return nil
 	},
 }
 
@@ -42,7 +44,7 @@ var addCommand = cli.Command{
 	Name:  "add",
 	Usage: "add a repository url",
 
-	Action: func(context *cli.Context) {
+	Action: func(context *cli.Context) error {
 		var duc utils.DyUpdaterClientConfig
 
 		if repo, err := utils.NewDUCRepo(context.Args().Get(0)); err != nil {
@@ -52,6 +54,8 @@ var addCommand = cli.Command{
 		} else {
 			fmt.Printf("Success in adding %s.\n", repo.String())
 		}
+
+		return nil
 	},
 }
 
@@ -59,7 +63,7 @@ var removeCommand = cli.Command{
 	Name:  "remove",
 	Usage: "remove a repository url",
 
-	Action: func(context *cli.Context) {
+	Action: func(context *cli.Context) error {
 		var duc utils.DyUpdaterClientConfig
 
 		if repo, err := utils.NewDUCRepo(context.Args().Get(0)); err != nil {
@@ -69,6 +73,8 @@ var removeCommand = cli.Command{
 		} else {
 			fmt.Printf("Success in removing %s.\n", repo.String())
 		}
+
+		return nil
 	},
 }
 
@@ -76,7 +82,7 @@ var listCommand = cli.Command{
 	Name:  "list",
 	Usage: "list the saved repositories or appliances of a certain repository",
 
-	Action: func(context *cli.Context) {
+	Action: func(context *cli.Context) error {
 		var duc utils.DyUpdaterClientConfig
 
 		if len(context.Args()) == 0 {
@@ -98,5 +104,7 @@ var listCommand = cli.Command{
 				duc.Add(repo.String())
 			}
 		}
+
+		return nil
 	},
 }
