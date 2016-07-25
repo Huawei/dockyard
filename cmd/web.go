@@ -61,6 +61,7 @@ func runWeb(c *cli.Context) error {
 		listenaddr := fmt.Sprintf("%s:%d", c.String("address"), c.Int("port"))
 		if err := http.ListenAndServe(listenaddr, m); err != nil {
 			fmt.Printf("Start Dockyard http service error: %v\n", err.Error())
+			return err
 		}
 		break
 	case "https":
@@ -68,6 +69,7 @@ func runWeb(c *cli.Context) error {
 		server := &http.Server{Addr: listenaddr, TLSConfig: &tls.Config{MinVersion: tls.VersionTLS10}, Handler: m}
 		if err := server.ListenAndServeTLS(setting.HttpsCertFile, setting.HttpsKeyFile); err != nil {
 			fmt.Printf("Start Dockyard https service error: %v\n", err.Error())
+			return err
 		}
 		break
 	case "unix":
@@ -78,10 +80,12 @@ func runWeb(c *cli.Context) error {
 
 		if listener, err := net.Listen("unix", listenaddr); err != nil {
 			fmt.Printf("Start Dockyard unix socket error: %v\n", err.Error())
+			return err
 		} else {
 			server := &http.Server{Handler: m}
 			if err := server.Serve(listener); err != nil {
 				fmt.Printf("Start Dockyard unix socket error: %v\n", err.Error())
+				return err
 			}
 		}
 		break

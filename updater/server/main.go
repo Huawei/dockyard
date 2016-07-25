@@ -62,7 +62,8 @@ func runDUS(c *cli.Context) error {
 		listenaddr := fmt.Sprintf("%s:%d", c.String("address"), c.Int("port"))
 		fmt.Printf("Start listen to :%s\n", listenaddr)
 		if err := http.ListenAndServe(listenaddr, m); err != nil {
-			fmt.Printf("Start Dockyard Updater server error: %v\n", err.Error())
+			fmt.Printf("Start Dockyard Updater Server http mode error: %v\n", err.Error())
+			return err
 		}
 		break
 	default:
