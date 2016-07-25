@@ -29,8 +29,8 @@ type DyUpdaterServerStorage interface {
 	// get the 'url' set by 'New'
 	String() string
 	Supported(url string) bool
-	Get(key string, hash string) ([]byte, error)
-	GetMeta(key string) (Meta, error)
+	Get(key string) ([]byte, error)
+	GetMeta(key string) ([]Meta, error)
 	Put(key string, data []byte) error
 	List(key string) ([]string, error)
 }

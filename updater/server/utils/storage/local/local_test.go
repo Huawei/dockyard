@@ -39,7 +39,7 @@ func loadTestData(t *testing.T) dus_utils.DyUpdaterServerStorage {
 }
 
 // TestBasic
-func TestBasic(t *testing.T) {
+func TestLocalBasic(t *testing.T) {
 	var local DyUpdaterServerLocal
 
 	validURL := "local://tmp/containerops_storage_cache"
@@ -53,7 +53,7 @@ func TestBasic(t *testing.T) {
 	assert.Equal(t, l.String(), validURL)
 }
 
-func TestList(t *testing.T) {
+func TestLocalList(t *testing.T) {
 	l := loadTestData(t)
 	key := "containerops/official"
 	validCount := 0
@@ -69,7 +69,7 @@ func TestList(t *testing.T) {
 	assert.Equal(t, validCount, 2, "Fail to get right apps")
 }
 
-func TestPut(t *testing.T) {
+func TestLocalPut(t *testing.T) {
 	tmpPath, err := ioutil.TempDir("", "dus-test-")
 	defer os.RemoveAll(tmpPath)
 	assert.Nil(t, err, "Fail to create temp dir")
@@ -88,29 +88,32 @@ func TestPut(t *testing.T) {
 	err = l.Put(validKey, []byte(testData))
 	assert.Nil(t, err, "Fail to put key")
 
-	meta, err := l.GetMeta(validKey)
+	metas, err := l.GetMeta("containerops/official")
 	assert.Nil(t, err, "Fail to get meta data")
+	assert.Equal(t, len(metas), 1, "Fail to get meta data count")
 
-	getData, err := l.Get(validKey, meta.GetHash())
+	getData, err := l.Get(validKey)
 	assert.Nil(t, err, "Fail to load file")
 	assert.Equal(t, string(getData), testData, "Fail to get correct file")
 }
 
-func TestGet(t *testing.T) {
+func TestLocalGet(t *testing.T) {
 	l := loadTestData(t)
 
-	key := "containerops/official/appA"
-	invalidKey := "containerops/official"
+	key := "containerops/official"
+	invalidKey := "containerops/official/invalid"
 
 	_, err := l.GetMeta(invalidKey)
-	assert.Equal(t, err, dus_utils.ErrorsDUSSInvalidKey)
-	meta, err := l.GetMeta(key)
+	assert.NotNil(t, err, "Fail to get meta from invalid key")
+	metas, err := l.GetMeta(key)
 	assert.Nil(t, err, "Fail to load meta data")
+	assert.Equal(t, len(metas), 2, "Fail to get meta data count")
 
-	_, err = l.Get(invalidKey, "invalid hash")
+	_, err = l.Get("invalidinput")
 	assert.Equal(t, err, dus_utils.ErrorsDUSSInvalidKey)
 
-	data, err := l.Get(key, meta.Hash)
+	data, err := l.Get(key + "/appA")
+	expectedData := "This is the content of appA."
 	assert.Nil(t, err, "Fail to load file")
-	assert.Equal(t, string(data), "this is test appA", "Fail to get correct file")
+	assert.Equal(t, string(data), expectedData, "Fail to get correct file")
 }
