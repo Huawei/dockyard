@@ -32,6 +32,7 @@ var initCommand = cli.Command{
 
 		if err := duc.Init(); err != nil {
 			fmt.Println(err)
+			return err
 		} else {
 			fmt.Println("Success in initiating Dockyard Updater Client configuration.")
 		}
@@ -49,8 +50,10 @@ var addCommand = cli.Command{
 
 		if repo, err := utils.NewDUCRepo(context.Args().Get(0)); err != nil {
 			fmt.Println(err)
+			return err
 		} else if err := duc.Add(repo.String()); err != nil {
 			fmt.Println(err)
+			return err
 		} else {
 			fmt.Printf("Success in adding %s.\n", repo.String())
 		}
@@ -68,8 +71,10 @@ var removeCommand = cli.Command{
 
 		if repo, err := utils.NewDUCRepo(context.Args().Get(0)); err != nil {
 			fmt.Println(err)
+			return err
 		} else if err := duc.Remove(repo.String()); err != nil {
 			fmt.Println(err)
+			return err
 		} else {
 			fmt.Printf("Success in removing %s.\n", repo.String())
 		}
@@ -88,6 +93,7 @@ var listCommand = cli.Command{
 		if len(context.Args()) == 0 {
 			if err := duc.Load(); err != nil {
 				fmt.Println(err)
+				return err
 			} else {
 				for _, repo := range duc.Repos {
 					fmt.Println(repo)
@@ -96,6 +102,7 @@ var listCommand = cli.Command{
 		} else if len(context.Args()) == 1 {
 			if repo, err := utils.NewDUCRepo(context.Args().Get(0)); err != nil {
 				fmt.Println(err)
+				return err
 			} else {
 				apps, _ := repo.List()
 				for _, app := range apps {
