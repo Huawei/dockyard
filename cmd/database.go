@@ -45,6 +45,7 @@ func runDatabase(c *cli.Context) error {
 		case "sync":
 			if err := models.Sync(); err != nil {
 				fmt.Println("Init database struct error, ", err.Error())
+				return err
 			}
 			break
 		default:
