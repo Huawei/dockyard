@@ -31,10 +31,14 @@ func SetRouters(m *macaron.Macaron) {
 	m.Group("/app", func() {
 		m.Group("/v1", func() {
 			m.Group("/:namespace/:repository", func() {
-				// List
-				m.Get("/", h.AppListFileMetaV1Handler)
-				// Pull
-				m.Get("/:os/:arch/:app", h.AppGetFileMetaV1Handler)
+				// List files
+				m.Get("/", h.AppListFileV1Handler)
+				// Get meta data of the whole repo
+				m.Get("/meta", h.AppGetMetaV1Handler)
+				// Get file data of a certain app
+				m.Get("/:name/data", h.AppGetFileV1Handler)
+				// Add file to the repo
+				m.Post("/:name", h.AppPostFileV1Handler)
 			})
 		})
 	})

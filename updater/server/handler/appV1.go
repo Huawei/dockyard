@@ -27,11 +27,11 @@ import (
 
 type httpListRet struct {
 	Message string
-	Content []string
+	Content interface{}
 }
 
 // List all the files in the namespace/repository
-func AppListFileMetaV1Handler(ctx *macaron.Context) (int, []byte) {
+func AppListFileV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
@@ -45,8 +45,45 @@ func AppListFileMetaV1Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusOK, result
 }
 
-//
-func AppGetFileMetaV1Handler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{})
+// Get the meta data of all the namespace/repository
+func AppGetMetaV1Handler(ctx *macaron.Context) (int, []byte) {
+	namespace := ctx.Params(":namespace")
+	repository := ctx.Params(":repository")
+
+	appV1, _ := utils.NewDUSProtocal("appV1")
+	metas, _ := appV1.GetMeta(namespace + "/" + repository)
+	ret := httpListRet{
+		Message: "AppV1 Get Meta data",
+		Content: metas,
+	}
+	result, _ := json.Marshal(ret)
+	return http.StatusOK, result
+}
+
+// Get the content of a certain app
+func AppGetFileV1Handler(ctx *macaron.Context) (int, []byte) {
+	namespace := ctx.Params(":namespace")
+	repository := ctx.Params(":repository")
+	name := ctx.Params(":name")
+
+	appV1, _ := utils.NewDUSProtocal("appV1")
+	data, _ := appV1.Get(namespace + "/" + repository + "/" + name)
+	return http.StatusOK, data
+}
+
+// Post the content of a certain app
+func AppPostFileV1Handler(ctx *macaron.Context) (int, []byte) {
+	namespace := ctx.Params(":namespace")
+	repository := ctx.Params(":repository")
+	name := ctx.Params(":name")
+
+	data, _ := ctx.Req.Body().Bytes()
+	appV1, _ := utils.NewDUSProtocal("appV1")
+	appV1.Put(namespace+"/"+repository+"/"+name, data)
+
+	ret := httpListRet{
+		Message: "AppV1 Post data",
+	}
+	result, _ := json.Marshal(ret)
 	return http.StatusOK, result
 }

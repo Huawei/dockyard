@@ -17,16 +17,11 @@ limitations under the License.
 package local
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 
 	dus_utils "github.com/containerops/dockyard/updater/server/utils"
-	dy_utils "github.com/containerops/dockyard/utils"
 )
 
 const (
@@ -66,29 +61,28 @@ func (dusl *DyUpdaterServerLocal) String() string {
 }
 
 // Key is "namespace/repository/appname"
-func (dusl *DyUpdaterServerLocal) Get(key string, hash string) ([]byte, error) {
+func (dusl *DyUpdaterServerLocal) Get(key string) ([]byte, error) {
 	if !dus_utils.ValidStorageKey(key) {
 		return nil, dus_utils.ErrorsDUSSInvalidKey
 	}
 
-	file := filepath.Join(dusl.Path, key, hash)
-	return ioutil.ReadFile(file)
+	s := strings.Split(key, "/")
+	r, err := NewRepo(dusl.Path, strings.Join(s[:2], "/"))
+	if err != nil {
+		return nil, err
+	}
+
+	return r.Get(s[2])
 }
 
-// Key is "namespace/repository/appname"
-func (dusl *DyUpdaterServerLocal) GetMeta(key string) (meta dus_utils.Meta, err error) {
-	if !dus_utils.ValidStorageKey(key) {
-		return meta, dus_utils.ErrorsDUSSInvalidKey
+// Key is "namespace/repository"
+func (dusl *DyUpdaterServerLocal) GetMeta(key string) ([]dus_utils.Meta, error) {
+	r, err := NewRepo(dusl.Path, key)
+	if err != nil {
+		return nil, err
 	}
 
-	metaFileName := "meta.json"
-	filename := filepath.Join(dusl.Path, key, metaFileName)
-	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return dus_utils.Meta{}, err
-	}
-	err = json.Unmarshal(data, &meta)
-	return meta, err
+	return r.GetMeta()
 }
 
 // Key is "namespace/repository/appname"
@@ -97,46 +91,40 @@ func (dusl *DyUpdaterServerLocal) Put(key string, content []byte) error {
 		return dus_utils.ErrorsDUSSInvalidKey
 	}
 
-	topDir := filepath.Join(dusl.Path, key)
-	if !dy_utils.IsDirExist(topDir) {
-		if err := os.MkdirAll(topDir, 0777); err != nil {
-			return err
-		}
+	s := strings.Split(key, "/")
+	r, err := NewRepo(dusl.Path, strings.Join(s[:2], "/"))
+	if err != nil {
+		return err
+	}
+	return r.Add(s[2], content)
+}
+
+// Key is "namespace/repository"
+func (dusl *DyUpdaterServerLocal) Delete(key string) error {
+	if !dus_utils.ValidStorageKey(key) {
+		return dus_utils.ErrorsDUSSInvalidKey
 	}
 
-	metaFileName := "meta.json"
-	metaFile := filepath.Join(topDir, metaFileName)
-	meta := dus_utils.GenerateMeta(filepath.Base(key), content)
-	metaContent, _ := json.Marshal(meta)
-	if err := ioutil.WriteFile(metaFile, metaContent, 0644); err != nil {
+	s := strings.Split(key, "/")
+	r, err := NewRepo(dusl.Path, strings.Join(s[:2], "/"))
+	if err != nil {
 		return err
 	}
 
-	// Using the 'hash' value to rename the original file
-	dataFileName := meta.GetHash()
-	dataFile := filepath.Join(topDir, dataFileName)
-	if err := ioutil.WriteFile(dataFile, content, 0644); err != nil {
-		os.RemoveAll(topDir)
-		return err
-	}
-
-	return nil
+	return r.Remove(s[2])
 }
 
 // Key is "namespace/repository"
 func (dusl *DyUpdaterServerLocal) List(key string) ([]string, error) {
-	path := filepath.Join(dusl.Path, key)
-	files, err := ioutil.ReadDir(path)
+	s := strings.Split(key, "/")
+	if len(s) != 2 {
+		return nil, dus_utils.ErrorsDUSSInvalidKey
+	}
+
+	r, err := NewRepo(dusl.Path, key)
 	if err != nil {
 		return nil, err
 	}
 
-	var names []string
-	for _, info := range files {
-		if info.IsDir() {
-			names = append(names, info.Name())
-		}
-	}
-
-	return names, nil
+	return r.List()
 }
