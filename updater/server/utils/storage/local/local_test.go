@@ -25,9 +25,10 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	dus_utils "github.com/containerops/dockyard/updater/server/utils"
+	_ "github.com/containerops/dockyard/updater/server/utils/km/local"
 )
 
-func loadTestData(t *testing.T) dus_utils.DyUpdaterServerStorage {
+func loadTestData(t *testing.T) (dus_utils.DyUpdaterServerStorage, string) {
 	var local DyUpdaterServerLocal
 	_, path, _, _ := runtime.Caller(0)
 	realPath := filepath.Join(filepath.Dir(path), "testdata")
@@ -35,7 +36,7 @@ func loadTestData(t *testing.T) dus_utils.DyUpdaterServerStorage {
 	l, err := local.New(localPrefix + ":/" + realPath)
 	assert.Nil(t, err, "Fail to setup a local test storage")
 
-	return l
+	return l, realPath
 }
 
 // TestBasic
@@ -54,7 +55,7 @@ func TestLocalBasic(t *testing.T) {
 }
 
 func TestLocalList(t *testing.T) {
-	l := loadTestData(t)
+	l, _ := loadTestData(t)
 	key := "containerops/official"
 	validCount := 0
 
@@ -98,12 +99,18 @@ func TestLocalPut(t *testing.T) {
 }
 
 func TestLocalGet(t *testing.T) {
-	l := loadTestData(t)
+	l, kmPath := loadTestData(t)
 
 	key := "containerops/official"
 	invalidKey := "containerops/official/invalid"
 
-	_, err := l.GetMeta(invalidKey)
+	l.SetKM("local:/" + kmPath)
+	_, err := l.GetPublicKey(key)
+	assert.Nil(t, err, "Fail to load public key")
+	_, err = l.GetMetaSign(key)
+	assert.Nil(t, err, "Fail to load  sign file")
+
+	_, err = l.GetMeta(invalidKey)
 	assert.NotNil(t, err, "Fail to get meta from invalid key")
 	metas, err := l.GetMeta(key)
 	assert.Nil(t, err, "Fail to load meta data")

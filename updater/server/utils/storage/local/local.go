@@ -18,6 +18,7 @@ package local
 
 import (
 	"fmt"
+	"io/ioutil"
 	"regexp"
 	"strings"
 
@@ -35,6 +36,8 @@ var (
 
 type DyUpdaterServerLocal struct {
 	Path string
+
+	kmURL string
 }
 
 func init() {
@@ -48,16 +51,23 @@ func (dusl *DyUpdaterServerLocal) Supported(url string) bool {
 func (dusl *DyUpdaterServerLocal) New(url string) (dus_utils.DyUpdaterServerStorage, error) {
 	parts := localRegexp.FindStringSubmatch(url)
 	if len(parts) != 3 || parts[1] != localPrefix {
-		return nil, dus_utils.ErrorsDUSSInvalid
+		return nil, dus_utils.ErrorsDUInvalidURL
 	}
 
 	dusl.Path = parts[2]
+	dusl.kmURL = ""
 
 	return dusl, nil
 }
 
 func (dusl *DyUpdaterServerLocal) String() string {
 	return fmt.Sprintf("%s:/%s", localPrefix, dusl.Path)
+}
+
+func (dusl *DyUpdaterServerLocal) SetKM(kmURL string) error {
+	dusl.kmURL = kmURL
+
+	return nil
 }
 
 // Key is "namespace/repository/appname"
@@ -67,7 +77,7 @@ func (dusl *DyUpdaterServerLocal) Get(key string) ([]byte, error) {
 	}
 
 	s := strings.Split(key, "/")
-	r, err := NewRepo(dusl.Path, strings.Join(s[:2], "/"))
+	r, err := NewRepoWithKM(dusl.Path, strings.Join(s[:2], "/"), dusl.kmURL)
 	if err != nil {
 		return nil, err
 	}
@@ -77,12 +87,34 @@ func (dusl *DyUpdaterServerLocal) Get(key string) ([]byte, error) {
 
 // Key is "namespace/repository"
 func (dusl *DyUpdaterServerLocal) GetMeta(key string) ([]dus_utils.Meta, error) {
-	r, err := NewRepo(dusl.Path, key)
+	r, err := NewRepoWithKM(dusl.Path, key, dusl.kmURL)
 	if err != nil {
 		return nil, err
 	}
 
 	return r.GetMeta()
+}
+
+// Key is "namespace/repository"
+func (dusl *DyUpdaterServerLocal) GetMetaSign(key string) ([]byte, error) {
+	r, err := NewRepoWithKM(dusl.Path, key, dusl.kmURL)
+	if err != nil {
+		return nil, err
+	}
+
+	file := r.GetMetaSignFile()
+	return ioutil.ReadFile(file)
+}
+
+// Key is "namespace/repository"
+func (dusl *DyUpdaterServerLocal) GetPublicKey(key string) ([]byte, error) {
+	r, err := NewRepoWithKM(dusl.Path, key, dusl.kmURL)
+	if err != nil {
+		return nil, err
+	}
+
+	file := r.GetPublicKeyFile()
+	return ioutil.ReadFile(file)
 }
 
 // Key is "namespace/repository/appname"
@@ -92,7 +124,7 @@ func (dusl *DyUpdaterServerLocal) Put(key string, content []byte) error {
 	}
 
 	s := strings.Split(key, "/")
-	r, err := NewRepo(dusl.Path, strings.Join(s[:2], "/"))
+	r, err := NewRepoWithKM(dusl.Path, strings.Join(s[:2], "/"), dusl.kmURL)
 	if err != nil {
 		return err
 	}
@@ -106,7 +138,7 @@ func (dusl *DyUpdaterServerLocal) Delete(key string) error {
 	}
 
 	s := strings.Split(key, "/")
-	r, err := NewRepo(dusl.Path, strings.Join(s[:2], "/"))
+	r, err := NewRepoWithKM(dusl.Path, strings.Join(s[:2], "/"), dusl.kmURL)
 	if err != nil {
 		return err
 	}
@@ -121,7 +153,7 @@ func (dusl *DyUpdaterServerLocal) List(key string) ([]string, error) {
 		return nil, dus_utils.ErrorsDUSSInvalidKey
 	}
 
-	r, err := NewRepo(dusl.Path, key)
+	r, err := NewRepoWithKM(dusl.Path, key, dusl.kmURL)
 	if err != nil {
 		return nil, err
 	}
