@@ -37,8 +37,10 @@ var (
 )
 
 const (
-	defaultTag       = "latest"
 	defaultMeta      = "meta.json"
+	defaultMetaSign  = "meta.sig"
+	defaultPubKeyDir = "key"
+	defaultPubKey    = "pub_key.pem"
 	defaultTargetDir = "target"
 )
 
@@ -46,16 +48,73 @@ type Repo struct {
 	Path       string
 	Namespace  string
 	Repository string
+
+	kmURL string
 }
 
 // url : "namespace/repository"
+// kmURL: nil means using the km repository defined in configuration
 func NewRepo(path string, url string) (Repo, error) {
 	parts := strings.Split(url, "/")
 	if len(parts) != 2 {
 		return Repo{}, ErrorInvalidLocalRepo
 	}
 
-	return Repo{Path: path, Namespace: parts[0], Repository: parts[1]}, nil
+	repo := Repo{Path: path, Namespace: parts[0], Repository: parts[1]}
+
+	// create top dir if not exist
+	topDir := repo.GetTopDir()
+	if !dy_utils.IsDirExist(topDir) {
+		if err := os.MkdirAll(topDir, 0777); err != nil {
+			return Repo{}, err
+		}
+	}
+
+	repo.kmURL = ""
+	return repo, nil
+}
+
+func NewRepoWithKM(path string, url string, kmURL string) (Repo, error) {
+	if kmURL == "" {
+		return NewRepo(path, url)
+	}
+
+	repo, err := NewRepo(path, url)
+	if err == nil {
+		err = repo.SetKM(kmURL)
+	}
+
+	if err != nil {
+		return Repo{}, err
+	}
+
+	return repo, nil
+}
+
+func (r *Repo) SetKM(kmURL string) error {
+	// pull the public key
+	km, err := dus_utils.NewKeyManager(kmURL)
+	if err != nil {
+		return err
+	}
+
+	data, err := km.GetPublicKey(r.Namespace + "/" + r.Repository)
+	if err != nil {
+		return err
+	}
+
+	keyfile := r.GetPublicKeyFile()
+	if !dy_utils.IsDirExist(filepath.Dir(keyfile)) {
+		if err := os.MkdirAll(filepath.Dir(keyfile), 0777); err != nil {
+			return err
+		}
+	}
+	if err := ioutil.WriteFile(keyfile, data, 0644); err != nil {
+		return err
+	}
+
+	r.kmURL = kmURL
+	return nil
 }
 
 func (r Repo) GetTopDir() string {
@@ -64,6 +123,14 @@ func (r Repo) GetTopDir() string {
 
 func (r Repo) GetMetaFile() string {
 	return filepath.Join(r.Path, r.Namespace, r.Repository, defaultMeta)
+}
+
+func (r Repo) GetMetaSignFile() string {
+	return filepath.Join(r.Path, r.Namespace, r.Repository, defaultMetaSign)
+}
+
+func (r Repo) GetPublicKeyFile() string {
+	return filepath.Join(r.Path, r.Namespace, r.Repository, defaultPubKeyDir, defaultPubKey)
 }
 
 func (r Repo) GetMeta() ([]dus_utils.Meta, error) {
@@ -154,6 +221,22 @@ func (r Repo) Add(name string, content []byte) error {
 
 	}
 	meta := dus_utils.GenerateMeta(name, content)
+
+	// Using the 'hash' value to rename the original file
+	dataFileName := meta.GetHash()
+	dataFile := filepath.Join(topDir, defaultTargetDir, dataFileName)
+	if !dy_utils.IsDirExist(filepath.Dir(dataFile)) {
+		if err := os.MkdirAll(filepath.Dir(dataFile), 0777); err != nil {
+			return err
+		}
+	}
+
+	// write data
+	if err := ioutil.WriteFile(dataFile, content, 0644); err != nil {
+		return err
+	}
+
+	// get meta content
 	exist := false
 	for i, _ := range metas {
 		if metas[i].Name == name {
@@ -164,22 +247,44 @@ func (r Repo) Add(name string, content []byte) error {
 	if !exist {
 		metas = append(metas, meta)
 	}
-
 	metasContent, _ := json.Marshal(metas)
-	if err := ioutil.WriteFile(metaFile, metasContent, 0644); err != nil {
+
+	// write meta data
+	err := r.saveMeta(metasContent)
+	if err != nil {
+		os.Remove(dataFile)
 		return err
 	}
 
-	// Using the 'hash' value to rename the original file
-	dataFileName := meta.GetHash()
-	dataFile := filepath.Join(topDir, defaultTargetDir, dataFileName)
-	if !dy_utils.IsDirExist(filepath.Dir(dataFile)) {
-		if err := os.MkdirAll(filepath.Dir(dataFile), 0777); err != nil {
-			return err
-		}
+	return nil
+}
+
+func (r Repo) saveMeta(metasContent []byte) error {
+	metaFile := r.GetMetaFile()
+	err := ioutil.WriteFile(metaFile, metasContent, 0644)
+	if err != nil {
+		return err
 	}
-	if err := ioutil.WriteFile(dataFile, content, 0644); err != nil {
-		os.RemoveAll(topDir)
+
+	// write sign file
+	err = r.saveSign(metasContent)
+	if err != nil {
+		os.Remove(metaFile)
+		return err
+	}
+
+	return nil
+}
+
+func (r Repo) saveSign(metasContent []byte) error {
+	if r.kmURL == "" {
+		return nil
+	}
+
+	km, _ := dus_utils.NewKeyManager(r.kmURL)
+	signContent, _ := km.Sign(r.Namespace+"/"+r.Repository, metasContent)
+	signFile := r.GetMetaSignFile()
+	if err := ioutil.WriteFile(signFile, signContent, 0644); err != nil {
 		return err
 	}
 
@@ -214,7 +319,8 @@ func (r Repo) Remove(name string) error {
 
 		metas = append(metas[:i], metas[i+1:]...)
 		metasContent, _ := json.Marshal(metas)
-		if err := ioutil.WriteFile(metaFile, metasContent, 0644); err != nil {
+
+		if err := r.saveMeta(metasContent); err != nil {
 			return err
 		}
 		return nil

@@ -31,6 +31,9 @@ type DyUpdaterServerStorage interface {
 	Supported(url string) bool
 	Get(key string) ([]byte, error)
 	GetMeta(key string) ([]Meta, error)
+	SetKM(kmURL string) error
+	GetMetaSign(key string) ([]byte, error)
+	GetPublicKey(key string) ([]byte, error)
 	Put(key string, data []byte) error
 	List(key string) ([]string, error)
 }
