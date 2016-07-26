@@ -30,6 +30,7 @@ type AppV1 struct {
 	Keys        string     `json:"keys" sql:"null;type:text"`
 	Size        int64      `json:"size" sql:"default:0"`
 	Locked      bool       `json:"locked" sql:"default:false"`
+	Summary     string     `json:"summay" sql:"null;type:text"`
 	CreatedAt   time.Time  `json:"created" sql:""`
 	UpdatedAt   time.Time  `json:"updated" sql:""`
 	DeletedAt   *time.Time `json:"deleted" sql:"index"`
