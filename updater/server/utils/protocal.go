@@ -36,7 +36,7 @@ var (
 	dusProtocals     = make(map[string]DyUpdaterServerProtocal)
 
 	ErrorsDUSPNotSupported = errors.New("protocal is not supported")
-	ErrorsDUSSInvalid      = errors.New("protocal url is invalid")
+	ErrorsDUInvalidURL     = errors.New("url is invalid")
 )
 
 // RegisterProtocal provides a way to dynamically register an implementation of a
