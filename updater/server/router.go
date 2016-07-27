@@ -35,8 +35,10 @@ func SetRouters(m *macaron.Macaron) {
 				m.Get("/", h.AppListFileV1Handler)
 				// Get meta data of the whole repo
 				m.Get("/meta", h.AppGetMetaV1Handler)
+				// Get meta signature data of the whole repo
+				m.Get("/metasign", h.AppGetMetaSignV1Handler)
 				// Get file data of a certain app
-				m.Get("/:name/data", h.AppGetFileV1Handler)
+				m.Get("/blob/:name", h.AppGetFileV1Handler)
 				// Add file to the repo
 				m.Post("/:name", h.AppPostFileV1Handler)
 			})

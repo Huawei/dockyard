@@ -29,9 +29,9 @@ type DyUpdaterServerStorage interface {
 	// get the 'url' set by 'New'
 	String() string
 	Supported(url string) bool
-	Get(key string) ([]byte, error)
-	GetMeta(key string) ([]Meta, error)
 	SetKM(kmURL string) error
+	Get(key string) ([]byte, error)
+	GetMeta(key string) ([]byte, error)
 	GetMetaSign(key string) ([]byte, error)
 	GetPublicKey(key string) ([]byte, error)
 	Put(key string, data []byte) error
@@ -70,14 +70,11 @@ func RegisterStorage(name string, f DyUpdaterServerStorage) {
 	dusStorages[name] = f
 }
 
-func DefaultDUSStorage() (DyUpdaterServerStorage, error) {
-	//TODO: read from config
-	defaultURL := "local://tmp/containerops_storage_cache"
-
-	return NewDUSStorage(defaultURL)
-}
-
 func NewDUSStorage(url string) (DyUpdaterServerStorage, error) {
+	if url == "" {
+		url, _ = GetSetting("storage")
+	}
+
 	for _, f := range dusStorages {
 		if f.Supported(url) {
 			return f.New(url)
