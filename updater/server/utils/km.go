@@ -24,7 +24,8 @@ import (
 
 // The Key Manager should be seperate from DUS/DUC.
 // Now only assume that keys are existed in the backend key manager.
-// TODO: the user could generate key pair from Dockyard Update Server?
+// It is up to each implementation to decide whether provides a way
+//  to generate key pair automatically.
 type DyKeyManager interface {
 	// url is the database address or local directory (local://tmp/cache)
 	New(url string) (DyKeyManager, error)
@@ -66,10 +67,8 @@ func RegisterKeyManager(name string, f DyKeyManager) {
 
 func NewKeyManager(url string) (DyKeyManager, error) {
 	if url == "" {
-		//TODO: read from config
-		url = "local://tmp/containerops_key_cache"
+		url, _ = GetSetting("keymanager")
 	}
-
 	for _, f := range dkms {
 		if f.Supported(url) {
 			return f.New(url)
