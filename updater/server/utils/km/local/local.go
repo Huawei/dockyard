@@ -18,18 +18,21 @@ package local
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
 	dus_utils "github.com/containerops/dockyard/updater/server/utils"
+	dy_utils "github.com/containerops/dockyard/utils"
 )
 
 const (
 	localPrefix       = "local"
-	keyDir            = "key"
+	defaultKeyDirName = "key"
 	defaultPublicKey  = "pub_key.pem"
 	defaultPrivateKey = "priv_key.pem"
+	defaultBitsSize   = 2048
 )
 
 var (
@@ -56,19 +59,67 @@ func (dkml *DyKeyManagerLocal) New(url string) (dus_utils.DyKeyManager, error) {
 	}
 
 	dkml.Path = parts[2]
-
 	return dkml, nil
+}
+
+func isKeyExist(keyDir string) bool {
+	if !dy_utils.IsFileExist(filepath.Join(keyDir, defaultPrivateKey)) {
+		return false
+	}
+
+	if !dy_utils.IsFileExist(filepath.Join(keyDir, defaultPublicKey)) {
+		return false
+	}
+
+	return true
+}
+
+func generateKey(keyDir string) error {
+	privBytes, pubBytes, err := dus_utils.GenerateRSAKeyPair(defaultBitsSize)
+	if err != nil {
+		return err
+	}
+
+	if !dy_utils.IsDirExist(keyDir) {
+		err := os.MkdirAll(keyDir, 0777)
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := ioutil.WriteFile(filepath.Join(keyDir, defaultPrivateKey), privBytes, 0644); err != nil {
+		return err
+	}
+
+	if err := ioutil.WriteFile(filepath.Join(keyDir, defaultPublicKey), pubBytes, 0644); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Key is "namespace/repository"
 func (dkml *DyKeyManagerLocal) GetPublicKey(key string) ([]byte, error) {
-	file := filepath.Join(dkml.Path, key, keyDir, defaultPublicKey)
+	keyDir := filepath.Join(dkml.Path, key, defaultKeyDirName)
+	if !isKeyExist(keyDir) {
+		err := generateKey(keyDir)
+		if err != nil {
+			return nil, err
+		}
+	}
 
-	return ioutil.ReadFile(file)
+	return ioutil.ReadFile(filepath.Join(keyDir, defaultPublicKey))
 }
 
 // Key is "namespace/repository"
 func (dkml *DyKeyManagerLocal) Sign(key string, data []byte) ([]byte, error) {
-	file := filepath.Join(dkml.Path, key, keyDir, defaultPrivateKey)
-	return dus_utils.SHA256Sign(file, data)
+	keyDir := filepath.Join(dkml.Path, key, defaultKeyDirName)
+	if !isKeyExist(keyDir) {
+		err := generateKey(keyDir)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return dus_utils.SHA256Sign(filepath.Join(keyDir, defaultPrivateKey), data)
 }

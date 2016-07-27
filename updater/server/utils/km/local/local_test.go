@@ -17,6 +17,7 @@ package local
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -32,7 +33,7 @@ func loadTestData(t *testing.T) (dus_utils.DyKeyManager, string) {
 	realPath := filepath.Join(filepath.Dir(path), "testdata")
 
 	l, err := local.New(localPrefix + ":/" + realPath)
-	assert.Nil(t, err, "Fail to setup a local test storage")
+	assert.Nil(t, err, "Fail to setup a local test key manager")
 
 	return l, realPath
 }
@@ -48,17 +49,21 @@ func TestLocalBasic(t *testing.T) {
 	assert.Equal(t, ok, false, "Fail to get supported status")
 
 	_, err := local.New(validURL)
-	assert.Nil(t, err, "Fail to setup a local storage")
+	assert.Nil(t, err, "Fail to setup a local key manager")
 }
 
 func TestLocalGetPublicKey(t *testing.T) {
-	l, realPath := loadTestData(t)
-	key := "containerops/official"
+	tmpPath, err := ioutil.TempDir("", "dus-test-")
+	defer os.RemoveAll(tmpPath)
+	assert.Nil(t, err, "Fail to create temp dir")
 
-	data, err := l.GetPublicKey(key)
+	var local DyKeyManagerLocal
+	l, err := local.New(localPrefix + ":/" + tmpPath)
+	assert.Nil(t, err, "Fail to setup a local test key manager")
+
+	key := "containerops/official"
+	_, err = l.GetPublicKey(key)
 	assert.Nil(t, err, "Fail to get public key")
-	expectedData, _ := ioutil.ReadFile(filepath.Join(realPath, key, keyDir, defaultPublicKey))
-	assert.Equal(t, data, expectedData, "Fail to get the correct public key data")
 }
 
 func TestLocalSign(t *testing.T) {
