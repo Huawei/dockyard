@@ -86,7 +86,7 @@ func (dusl *DyUpdaterServerLocal) Get(key string) ([]byte, error) {
 }
 
 // Key is "namespace/repository"
-func (dusl *DyUpdaterServerLocal) GetMeta(key string) ([]dus_utils.Meta, error) {
+func (dusl *DyUpdaterServerLocal) GetMeta(key string) ([]byte, error) {
 	r, err := NewRepoWithKM(dusl.Path, key, dusl.kmURL)
 	if err != nil {
 		return nil, err

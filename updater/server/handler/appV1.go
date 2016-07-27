@@ -30,19 +30,34 @@ type httpListRet struct {
 	Content interface{}
 }
 
+//TODO: better http return result
+func httpRet(head string, content interface{}, err error) (int, []byte) {
+	var ret httpListRet
+	var code int
+
+	if err != nil {
+		ret.Message = head + " fail"
+		ret.Content = err.Error()
+		code = http.StatusBadRequest
+	} else {
+		ret.Message = head
+		ret.Content = content
+		code = http.StatusOK
+	}
+
+	result, _ := json.Marshal(ret)
+	return code, result
+}
+
 // List all the files in the namespace/repository
 func AppListFileV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
 	appV1, _ := utils.NewDUSProtocal("appV1")
-	apps, _ := appV1.List(namespace + "/" + repository)
-	ret := httpListRet{
-		Message: "AppV1 List files",
-		Content: apps,
-	}
-	result, _ := json.Marshal(ret)
-	return http.StatusOK, result
+	apps, err := appV1.List(namespace + "/" + repository)
+
+	return httpRet("AppV1 List files", apps, err)
 }
 
 // Get the meta data of all the namespace/repository
@@ -51,13 +66,26 @@ func AppGetMetaV1Handler(ctx *macaron.Context) (int, []byte) {
 	repository := ctx.Params(":repository")
 
 	appV1, _ := utils.NewDUSProtocal("appV1")
-	metas, _ := appV1.GetMeta(namespace + "/" + repository)
-	ret := httpListRet{
-		Message: "AppV1 Get Meta data",
-		Content: metas,
+	data, err := appV1.GetMeta(namespace + "/" + repository)
+	if err == nil {
+		return http.StatusOK, data
+	} else {
+		return httpRet("AppV1 Get Meta", nil, err)
 	}
-	result, _ := json.Marshal(ret)
-	return http.StatusOK, result
+}
+
+// Get the meta signature data of all the namespace/repository
+func AppGetMetaSignV1Handler(ctx *macaron.Context) (int, []byte) {
+	namespace := ctx.Params(":namespace")
+	repository := ctx.Params(":repository")
+
+	appV1, _ := utils.NewDUSProtocal("appV1")
+	data, err := appV1.GetMetaSign(namespace + "/" + repository)
+	if err == nil {
+		return http.StatusOK, data
+	} else {
+		return httpRet("AppV1 Get Meta Sign", data, err)
+	}
 }
 
 // Get the content of a certain app
@@ -67,8 +95,12 @@ func AppGetFileV1Handler(ctx *macaron.Context) (int, []byte) {
 	name := ctx.Params(":name")
 
 	appV1, _ := utils.NewDUSProtocal("appV1")
-	data, _ := appV1.Get(namespace + "/" + repository + "/" + name)
-	return http.StatusOK, data
+	data, err := appV1.Get(namespace + "/" + repository + "/" + name)
+	if err == nil {
+		return http.StatusOK, data
+	} else {
+		return httpRet("AppV1 Get File", nil, err)
+	}
 }
 
 // Post the content of a certain app
@@ -79,11 +111,7 @@ func AppPostFileV1Handler(ctx *macaron.Context) (int, []byte) {
 
 	data, _ := ctx.Req.Body().Bytes()
 	appV1, _ := utils.NewDUSProtocal("appV1")
-	appV1.Put(namespace+"/"+repository+"/"+name, data)
+	err := appV1.Put(namespace+"/"+repository+"/"+name, data)
 
-	ret := httpListRet{
-		Message: "AppV1 Post data",
-	}
-	result, _ := json.Marshal(ret)
-	return http.StatusOK, result
+	return httpRet("AppV1 Post data", nil, err)
 }

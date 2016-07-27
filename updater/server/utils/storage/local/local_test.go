@@ -89,9 +89,8 @@ func TestLocalPut(t *testing.T) {
 	err = l.Put(validKey, []byte(testData))
 	assert.Nil(t, err, "Fail to put key")
 
-	metas, err := l.GetMeta("containerops/official")
+	_, err = l.GetMeta("containerops/official")
 	assert.Nil(t, err, "Fail to get meta data")
-	assert.Equal(t, len(metas), 1, "Fail to get meta data count")
 
 	getData, err := l.Get(validKey)
 	assert.Nil(t, err, "Fail to load file")
@@ -105,6 +104,7 @@ func TestLocalGet(t *testing.T) {
 	invalidKey := "containerops/official/invalid"
 
 	l.SetKM("local:/" + kmPath)
+	defer os.RemoveAll(filepath.Join(kmPath, key, defaultKeyDir))
 	_, err := l.GetPublicKey(key)
 	assert.Nil(t, err, "Fail to load public key")
 	_, err = l.GetMetaSign(key)
@@ -112,9 +112,8 @@ func TestLocalGet(t *testing.T) {
 
 	_, err = l.GetMeta(invalidKey)
 	assert.NotNil(t, err, "Fail to get meta from invalid key")
-	metas, err := l.GetMeta(key)
+	_, err = l.GetMeta(key)
 	assert.Nil(t, err, "Fail to load meta data")
-	assert.Equal(t, len(metas), 2, "Fail to get meta data count")
 
 	_, err = l.Get("invalidinput")
 	assert.Equal(t, err, dus_utils.ErrorsDUSSInvalidKey)

@@ -44,7 +44,7 @@ func (ap *DyUpdaterServerAppV1) New(protocal string) (dus_utils.DyUpdaterServerP
 }
 
 func (ap *DyUpdaterServerAppV1) Put(key string, data []byte) error {
-	s, err := dus_utils.DefaultDUSStorage()
+	s, err := dus_utils.NewDUSStorage("")
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func (ap *DyUpdaterServerAppV1) Put(key string, data []byte) error {
 }
 
 func (ap *DyUpdaterServerAppV1) Get(key string) ([]byte, error) {
-	s, err := dus_utils.DefaultDUSStorage()
+	s, err := dus_utils.NewDUSStorage("")
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (ap *DyUpdaterServerAppV1) Get(key string) ([]byte, error) {
 }
 
 func (ap *DyUpdaterServerAppV1) List(key string) ([]string, error) {
-	s, err := dus_utils.DefaultDUSStorage()
+	s, err := dus_utils.NewDUSStorage("")
 	if err != nil {
 		return nil, err
 	}
@@ -70,11 +70,20 @@ func (ap *DyUpdaterServerAppV1) List(key string) ([]string, error) {
 	return s.List(key)
 }
 
-func (ap *DyUpdaterServerAppV1) GetMeta(key string) ([]dus_utils.Meta, error) {
-	s, err := dus_utils.DefaultDUSStorage()
+func (ap *DyUpdaterServerAppV1) GetMeta(key string) ([]byte, error) {
+	s, err := dus_utils.NewDUSStorage("")
 	if err != nil {
 		return nil, err
 	}
 
 	return s.GetMeta(key)
+}
+
+func (ap *DyUpdaterServerAppV1) GetMetaSign(key string) ([]byte, error) {
+	s, err := dus_utils.NewDUSStorage("")
+	if err != nil {
+		return nil, err
+	}
+
+	return s.GetMetaSign(key)
 }
