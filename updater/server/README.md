@@ -19,8 +19,8 @@ The Update Framework (TUF) helps developers to secure new or existing software u
 ## How to use it
 To make a simple demo, you can:
 ```
-	$ mkdir /tmp/containerops_storage_cache -p
-        $ cp -fr utils/storage/local/testdata/containerops /tmp/containerops_storage_cache
+	$ mkdir /tmp/dockyard-updater-server-storage -p
+        $ cp -fr utils/storage/local/testdata/containerops /tmp/dockyard-updater-server-storage
 	$ make
 	$ ./dus web
 ```
@@ -82,4 +82,4 @@ To an app store user, he/she might pull a software like `official/dockyard/cento
 `official` is the namespace, `dockyard` is the repository.
 
 ### Database
-The default location is for a local storage is at "/tmp/containerops_storage_cache"
+The default location is for a local storage is at "/tmp/dockyard-updater-server-storage"

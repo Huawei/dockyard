@@ -39,7 +39,7 @@ var (
 const (
 	defaultMeta      = "meta.json"
 	defaultMetaSign  = "meta.sig"
-	defaultPubKeyDir = "key"
+	defaultKeyDir    = "key"
 	defaultPubKey    = "pub_key.pem"
 	defaultTargetDir = "target"
 )
@@ -75,15 +75,19 @@ func NewRepo(path string, url string) (Repo, error) {
 }
 
 func NewRepoWithKM(path string, url string, kmURL string) (Repo, error) {
+	// if kmURL == "", try the one in setting
 	if kmURL == "" {
-		return NewRepo(path, url)
+		kmURL, _ = dus_utils.GetSetting("keymanager")
 	}
 
 	repo, err := NewRepo(path, url)
-	if err == nil {
-		err = repo.SetKM(kmURL)
+	if err != nil {
+		return Repo{}, err
+	} else if kmURL == "" {
+		return repo, err
 	}
 
+	err = repo.SetKM(kmURL)
 	if err != nil {
 		return Repo{}, err
 	}
@@ -130,28 +134,20 @@ func (r Repo) GetMetaSignFile() string {
 }
 
 func (r Repo) GetPublicKeyFile() string {
-	return filepath.Join(r.Path, r.Namespace, r.Repository, defaultPubKeyDir, defaultPubKey)
+	return filepath.Join(r.Path, r.Namespace, r.Repository, defaultKeyDir, defaultPubKey)
 }
 
-func (r Repo) GetMeta() ([]dus_utils.Meta, error) {
-	var metas []dus_utils.Meta
+func (r Repo) GetMeta() ([]byte, error) {
 	metaFile := r.GetMetaFile()
 	if !dy_utils.IsFileExist(metaFile) {
 		return nil, ErrorEmptyRepo
 	}
 
-	data, err := ioutil.ReadFile(metaFile)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(data, &metas)
-	return metas, err
+	return ioutil.ReadFile(metaFile)
 }
 
 func (r Repo) List() ([]string, error) {
-	metaFile := r.GetMetaFile()
-	data, err := ioutil.ReadFile(metaFile)
+	data, err := r.GetMeta()
 	if err != nil {
 		return nil, err
 	}

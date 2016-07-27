@@ -19,12 +19,12 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
 	_ "github.com/containerops/dockyard/updater/server/utils/km/local"
+	dy_utils "github.com/containerops/dockyard/utils"
 )
 
 // TestRepoBasic
@@ -46,9 +46,7 @@ func TestRepoBasic(t *testing.T) {
 	assert.Equal(t, r.GetTopDir(), filepath.Join(topDir, validURL), "Fail to get the correct top dir")
 	assert.Equal(t, r.GetMetaFile(), filepath.Join(topDir, validURL, defaultMeta), "Fail to get the default meta file")
 
-	_, kmpath, _, _ := runtime.Caller(0)
-	realKMPath := filepath.Join(filepath.Dir(kmpath), "testdata")
-	err = r.SetKM("local:/" + realKMPath)
+	err = r.SetKM("local:/" + topDir)
 	assert.Nil(t, err, "Fail to set key manager")
 
 	// add
@@ -93,7 +91,16 @@ func TestRepoBasic(t *testing.T) {
 	assert.Equal(t, string(res), updateContent)
 
 	// get meta
-	metas, err := r.GetMeta()
+	_, err = r.GetMeta()
 	assert.Nil(t, err, "Fail to get meta data")
-	assert.Equal(t, len(metas), 1, "Fail to get correct meta count")
+
+	// get metasign
+	metaSignFile := r.GetMetaSignFile()
+	ok := dy_utils.IsFileExist(metaSignFile)
+	assert.Equal(t, ok, true, "Fail to generate meta sign file")
+
+	// get public key
+	pubKeyFile := r.GetPublicKeyFile()
+	ok = dy_utils.IsFileExist(pubKeyFile)
+	assert.Equal(t, ok, true, "Fail to generate public key file")
 }
