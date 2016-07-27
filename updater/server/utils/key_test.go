@@ -16,12 +16,38 @@ limitations under the License.
 package utils
 
 import (
+	"io/ioutil"
+	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestRSAGenerateEnDe(t *testing.T) {
+	privBytes, pubBytes, err := GenerateRSAKeyPair(1024)
+	assert.Nil(t, err, "Fail to genereate RSA Key Pair")
+
+	tmpPath, err := ioutil.TempDir("", "dus-test-")
+	defer os.RemoveAll(tmpPath)
+	assert.Nil(t, err, "Fail to create temp dir")
+
+	privFile := filepath.Join(tmpPath, "rsa_private_key.pem")
+	err = ioutil.WriteFile(privFile, privBytes, 0644)
+	assert.Nil(t, err, "Fail to write private key file")
+
+	pubFile := filepath.Join(tmpPath, "rsa_public_key.pem")
+	err = ioutil.WriteFile(pubFile, pubBytes, 0644)
+	assert.Nil(t, err, "Fail to write public key file")
+
+	testData := []byte("This is the testdata for encrypt and decryp")
+	encrypted, err := RSAEncrypt(pubFile, testData)
+	assert.Nil(t, err, "Fail to encrypt data")
+	decrypted, err := RSADecrypt(privFile, encrypted)
+	assert.Nil(t, err, "Fail to decrypt data")
+	assert.Equal(t, testData, decrypted, "Fail to get correct data after en/de")
+}
 
 // TestSHA256Sign
 func TestSHA256Sign(t *testing.T) {
