@@ -39,6 +39,25 @@ func readBytes(path string) ([]byte, error) {
 	return ioutil.ReadAll(f)
 }
 
+func GenerateRSAKeyPair(bits int) ([]byte, []byte, error) {
+	privKey, err := rsa.GenerateKey(rand.Reader, bits)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	privBytes := x509.MarshalPKCS1PrivateKey(privKey)
+	pubBytes, err := x509.MarshalPKIXPublicKey(&privKey.PublicKey)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	privBlock := &pem.Block{Type: "RSA PRIVATE KEY", Bytes: privBytes}
+	pubBlock := &pem.Block{Type: "RSA PUBLIC KEY", Bytes: pubBytes}
+
+	return pem.EncodeToMemory(privBlock), pem.EncodeToMemory(pubBlock), nil
+}
+
 func RSAEncrypt(path string, contentByte []byte) ([]byte, error) {
 	pubKey, err := getPubKey(path)
 	if err != nil {
