@@ -26,7 +26,11 @@ type DyUpdaterClientRepo interface {
 	Supported(url string) bool
 	New(url string) (DyUpdaterClientRepo, error)
 	List() ([]string, error)
-	Get() error
+	GetFile(name string) ([]byte, error)
+	GetPublicKey() ([]byte, error)
+	GetMeta() ([]byte, error)
+	GetMetaSign() ([]byte, error)
+	Put(name string, content []byte) error
 	String() string
 }
 
