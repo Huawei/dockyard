@@ -17,7 +17,12 @@ limitations under the License.
 package appV1
 
 import (
+	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"regexp"
 	"strings"
 
@@ -25,7 +30,8 @@ import (
 )
 
 const (
-	appV1Prefix = "appV1"
+	appV1Prefix  = "appV1"
+	appV1Restful = "app/v1"
 )
 
 var (
@@ -63,14 +69,93 @@ func (ap *DyUpdaterClientAppV1Repo) New(url string) (duc_utils.DyUpdaterClientRe
 	return ap, nil
 }
 
-func (ap *DyUpdaterClientAppV1Repo) String() string {
+func (ap DyUpdaterClientAppV1Repo) String() string {
 	return fmt.Sprintf("%s://%s/%s/%s", appV1Prefix, ap.Site, ap.Namespace, ap.Repo)
 }
 
-func (ap *DyUpdaterClientAppV1Repo) Get() error {
-	return nil
+func (ap DyUpdaterClientAppV1Repo) generateURL() string {
+	//FIXME: only support http
+	return fmt.Sprintf("http://%s/%s/%s/%s", ap.Site, appV1Restful, ap.Namespace, ap.Repo)
 }
 
-func (ap *DyUpdaterClientAppV1Repo) List() ([]string, error) {
-	return nil, nil
+func (ap DyUpdaterClientAppV1Repo) List() ([]string, error) {
+	url := ap.generateURL()
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	resp_body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(resp.Status)
+	}
+
+	type httpRet struct {
+		Message string
+		Content []string
+	}
+
+	var ret httpRet
+	err = json.Unmarshal(resp_body, &ret)
+	if err != nil {
+		return nil, err
+	}
+
+	return ret.Content, nil
+}
+
+func (ap DyUpdaterClientAppV1Repo) GetFile(name string) ([]byte, error) {
+	url := fmt.Sprintf("%s/blob/%s", ap.generateURL(), name)
+	return ap.getFromURL(url)
+}
+
+func (ap DyUpdaterClientAppV1Repo) GetMetaSign() ([]byte, error) {
+	url := fmt.Sprintf("%s/metasign", ap.generateURL())
+	return ap.getFromURL(url)
+}
+
+func (ap DyUpdaterClientAppV1Repo) GetMeta() ([]byte, error) {
+	url := fmt.Sprintf("%s/meta", ap.generateURL())
+	return ap.getFromURL(url)
+}
+
+func (ap DyUpdaterClientAppV1Repo) GetPublicKey() ([]byte, error) {
+	url := fmt.Sprintf("%s/pubkey", ap.generateURL())
+	return ap.getFromURL(url)
+}
+
+func (ap DyUpdaterClientAppV1Repo) getFromURL(url string) ([]byte, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	resp_body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(resp.Status)
+	}
+
+	return resp_body, nil
+}
+
+func (ap DyUpdaterClientAppV1Repo) Put(name string, content []byte) error {
+	url := fmt.Sprintf("%s/%s", ap.generateURL(), name)
+	body := bytes.NewBuffer(content)
+	resp, err := http.Post(url, "application/appv1", body)
+	if err != nil {
+		return err
+	}
+
+	_, err = ioutil.ReadAll(resp.Body)
+	return err
 }

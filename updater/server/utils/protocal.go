@@ -26,6 +26,7 @@ type DyUpdaterServerProtocal interface {
 	Supported(protocal string) bool
 	New(protocal string) (DyUpdaterServerProtocal, error)
 	List(key string) ([]string, error)
+	GetPublicKey(key string) ([]byte, error)
 	GetMeta(key string) ([]byte, error)
 	GetMetaSign(key string) ([]byte, error)
 	Get(key string) ([]byte, error)

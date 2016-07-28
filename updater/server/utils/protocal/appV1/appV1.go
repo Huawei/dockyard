@@ -70,6 +70,15 @@ func (ap *DyUpdaterServerAppV1) List(key string) ([]string, error) {
 	return s.List(key)
 }
 
+func (ap *DyUpdaterServerAppV1) GetPublicKey(key string) ([]byte, error) {
+	s, err := dus_utils.NewDUSStorage("")
+	if err != nil {
+		return nil, err
+	}
+
+	return s.GetPublicKey(key)
+}
+
 func (ap *DyUpdaterServerAppV1) GetMeta(key string) ([]byte, error) {
 	s, err := dus_utils.NewDUSStorage("")
 	if err != nil {

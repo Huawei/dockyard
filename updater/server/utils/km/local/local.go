@@ -121,5 +121,6 @@ func (dkml *DyKeyManagerLocal) Sign(key string, data []byte) ([]byte, error) {
 		}
 	}
 
-	return dus_utils.SHA256Sign(filepath.Join(keyDir, defaultPrivateKey), data)
+	privBytes, _ := ioutil.ReadFile(filepath.Join(keyDir, defaultPrivateKey))
+	return dus_utils.SHA256Sign(privBytes, data)
 }
