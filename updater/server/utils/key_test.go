@@ -16,8 +16,6 @@ limitations under the License.
 package utils
 
 import (
-	"io/ioutil"
-	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -29,22 +27,10 @@ func TestRSAGenerateEnDe(t *testing.T) {
 	privBytes, pubBytes, err := GenerateRSAKeyPair(1024)
 	assert.Nil(t, err, "Fail to genereate RSA Key Pair")
 
-	tmpPath, err := ioutil.TempDir("", "dus-test-")
-	defer os.RemoveAll(tmpPath)
-	assert.Nil(t, err, "Fail to create temp dir")
-
-	privFile := filepath.Join(tmpPath, "rsa_private_key.pem")
-	err = ioutil.WriteFile(privFile, privBytes, 0644)
-	assert.Nil(t, err, "Fail to write private key file")
-
-	pubFile := filepath.Join(tmpPath, "rsa_public_key.pem")
-	err = ioutil.WriteFile(pubFile, pubBytes, 0644)
-	assert.Nil(t, err, "Fail to write public key file")
-
 	testData := []byte("This is the testdata for encrypt and decryp")
-	encrypted, err := RSAEncrypt(pubFile, testData)
+	encrypted, err := RSAEncrypt(pubBytes, testData)
 	assert.Nil(t, err, "Fail to encrypt data")
-	decrypted, err := RSADecrypt(privFile, encrypted)
+	decrypted, err := RSADecrypt(privBytes, encrypted)
 	assert.Nil(t, err, "Fail to decrypt data")
 	assert.Equal(t, testData, decrypted, "Fail to get correct data after en/de")
 }
@@ -58,11 +44,12 @@ func TestSHA256Sign(t *testing.T) {
 	testContentFile := filepath.Join(dir, "hello.txt")
 	testSignFile := filepath.Join(dir, "hello.sig")
 
-	signByte, _ := readBytes(testSignFile)
-	contentByte, _ := readBytes(testContentFile)
-	testByte, err := SHA256Sign(testPrivFile, contentByte)
+	privBytes, _ := readBytes(testPrivFile)
+	signBytes, _ := readBytes(testSignFile)
+	contentBytes, _ := readBytes(testContentFile)
+	testBytes, err := SHA256Sign(privBytes, contentBytes)
 	assert.Nil(t, err, "Fail to sign")
-	assert.Equal(t, testByte, signByte, "Fail to get valid sign data ")
+	assert.Equal(t, testBytes, signBytes, "Fail to get valid sign data ")
 }
 
 // TestSHA256Verify
@@ -74,10 +61,11 @@ func TestSHA256Verify(t *testing.T) {
 	testContentFile := filepath.Join(dir, "hello.txt")
 	testSignFile := filepath.Join(dir, "hello.sig")
 
-	signByte, _ := readBytes(testSignFile)
-	contentByte, _ := readBytes(testContentFile)
-	err := SHA256Verify(testPubFile, contentByte, signByte)
+	pubBytes, _ := readBytes(testPubFile)
+	signBytes, _ := readBytes(testSignFile)
+	contentBytes, _ := readBytes(testContentFile)
+	err := SHA256Verify(pubBytes, contentBytes, signBytes)
 	assert.Nil(t, err, "Fail to verify valid signed data")
-	err = SHA256Verify(testPubFile, []byte("Invalid content data"), signByte)
+	err = SHA256Verify(pubBytes, []byte("Invalid content data"), signBytes)
 	assert.NotNil(t, err, "Fail to verify invalid signed data")
 }

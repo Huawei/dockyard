@@ -28,7 +28,7 @@ import (
 
 var (
 	ErrorsDUCConfigExist  = errors.New("dockyard update client configuration is already exist")
-	ErrorsDUCInvalidRepo  = errors.New("invalid repository url")
+	ErrorsDUCEmptyURL     = errors.New("invalid repository url")
 	ErrorsDUCRepoExist    = errors.New("repository is already exist")
 	ErrorsDUCRepoNotExist = errors.New("repository is not exist")
 )
@@ -109,17 +109,9 @@ func (dyc *DyUpdaterClientConfig) Load() error {
 	return nil
 }
 
-func IsValidRepoURL(url string) bool {
-	if url == "" {
-		return false
-	}
-
-	return true
-}
-
 func (dyc *DyUpdaterClientConfig) Add(url string) error {
-	if !IsValidRepoURL(url) {
-		return ErrorsDUCInvalidRepo
+	if url == "" {
+		return ErrorsDUCEmptyURL
 	}
 
 	var err error
@@ -143,8 +135,8 @@ func (dyc *DyUpdaterClientConfig) Add(url string) error {
 }
 
 func (dyc *DyUpdaterClientConfig) Remove(url string) error {
-	if !IsValidRepoURL(url) {
-		return ErrorsDUCInvalidRepo
+	if url == "" {
+		return ErrorsDUCEmptyURL
 	}
 
 	if !dyc.exist() {

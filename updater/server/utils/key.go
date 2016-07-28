@@ -58,52 +58,47 @@ func GenerateRSAKeyPair(bits int) ([]byte, []byte, error) {
 	return pem.EncodeToMemory(privBlock), pem.EncodeToMemory(pubBlock), nil
 }
 
-func RSAEncrypt(path string, contentByte []byte) ([]byte, error) {
-	pubKey, err := getPubKey(path)
+func RSAEncrypt(keyBytes []byte, contentBytes []byte) ([]byte, error) {
+	pubKey, err := getPubKey(keyBytes)
 	if err != nil {
 		return nil, err
 	}
 
-	return rsa.EncryptPKCS1v15(rand.Reader, pubKey, contentByte)
+	return rsa.EncryptPKCS1v15(rand.Reader, pubKey, contentBytes)
 }
 
-func RSADecrypt(path string, contentByte []byte) ([]byte, error) {
-	privKey, err := getPrivKey(path)
+func RSADecrypt(keyBytes []byte, contentBytes []byte) ([]byte, error) {
+	privKey, err := getPrivKey(keyBytes)
 	if err != nil {
 		return nil, err
 	}
 
-	return rsa.DecryptPKCS1v15(rand.Reader, privKey, contentByte)
+	return rsa.DecryptPKCS1v15(rand.Reader, privKey, contentBytes)
 }
 
-func SHA256Sign(path string, contentByte []byte) ([]byte, error) {
-	privKey, err := getPrivKey(path)
+func SHA256Sign(keyBytes []byte, contentBytes []byte) ([]byte, error) {
+	privKey, err := getPrivKey(keyBytes)
 	if err != nil {
 		return nil, err
 	}
 
-	hashed := sha256.Sum256(contentByte)
+	hashed := sha256.Sum256(contentBytes)
 	return rsa.SignPKCS1v15(rand.Reader, privKey, crypto.SHA256, hashed[:])
 }
 
-func SHA256Verify(path string, contentByte []byte, signByte []byte) error {
-	pubKey, err := getPubKey(path)
+func SHA256Verify(keyBytes []byte, contentBytes []byte, signBytes []byte) error {
+	pubKey, err := getPubKey(keyBytes)
 	if err != nil {
 		return err
 	}
 
-	signStr := hex.EncodeToString(signByte)
-	newSignByte, _ := hex.DecodeString(signStr)
-	hashed := sha256.Sum256(contentByte)
-	return rsa.VerifyPKCS1v15(pubKey, crypto.SHA256, hashed[:], newSignByte)
+	signStr := hex.EncodeToString(signBytes)
+	newSignBytes, _ := hex.DecodeString(signStr)
+	hashed := sha256.Sum256(contentBytes)
+	return rsa.VerifyPKCS1v15(pubKey, crypto.SHA256, hashed[:], newSignBytes)
 }
 
-func getPrivKey(path string) (*rsa.PrivateKey, error) {
-	privBytes, err := readBytes(path)
-	if err != nil {
-		return nil, err
-	}
-
+func getPrivKey(privBytes []byte) (*rsa.PrivateKey, error) {
 	block, _ := pem.Decode(privBytes)
 	if block == nil {
 		return nil, errors.New("Fail to decode private key")
@@ -112,12 +107,7 @@ func getPrivKey(path string) (*rsa.PrivateKey, error) {
 	return x509.ParsePKCS1PrivateKey(block.Bytes)
 }
 
-func getPubKey(path string) (*rsa.PublicKey, error) {
-	pubBytes, err := readBytes(path)
-	if err != nil {
-		return nil, err
-	}
-
+func getPubKey(pubBytes []byte) (*rsa.PublicKey, error) {
 	block, _ := pem.Decode(pubBytes)
 	if block == nil {
 		return nil, errors.New("Fail to decode public key")

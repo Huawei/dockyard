@@ -60,6 +60,20 @@ func AppListFileV1Handler(ctx *macaron.Context) (int, []byte) {
 	return httpRet("AppV1 List files", apps, err)
 }
 
+// Get the public key of the namespace/repository
+func AppGetPublicKeyV1Handler(ctx *macaron.Context) (int, []byte) {
+	namespace := ctx.Params(":namespace")
+	repository := ctx.Params(":repository")
+
+	appV1, _ := utils.NewDUSProtocal("appV1")
+	data, err := appV1.GetPublicKey(namespace + "/" + repository)
+	if err == nil {
+		return http.StatusOK, data
+	} else {
+		return httpRet("AppV1 Get Public Key", nil, err)
+	}
+}
+
 // Get the meta data of all the namespace/repository
 func AppGetMetaV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
