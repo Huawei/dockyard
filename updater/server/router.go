@@ -33,6 +33,8 @@ func SetRouters(m *macaron.Macaron) {
 			m.Group("/:namespace/:repository", func() {
 				// List files
 				m.Get("/", h.AppListFileV1Handler)
+				// Get pub key of the whole repo
+				m.Get("/pubkey", h.AppGetPublicKeyV1Handler)
 				// Get meta data of the whole repo
 				m.Get("/meta", h.AppGetMetaV1Handler)
 				// Get meta signature data of the whole repo

@@ -74,7 +74,7 @@ func TestAddRemoveConfig(t *testing.T) {
 
 	// 'add'
 	err := conf.Add(invalidURL)
-	assert.Equal(t, err, ErrorsDUCInvalidRepo)
+	assert.Equal(t, err, ErrorsDUCEmptyURL)
 	err = conf.Add(validURL)
 	assert.Nil(t, err, "Failed to add repository")
 	err = conf.Add(validURL)
