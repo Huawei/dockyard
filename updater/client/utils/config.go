@@ -56,10 +56,6 @@ func (dyc *DyUpdaterClientConfig) Init() error {
 		return errors.New("Cannot get home directory")
 	}
 
-	if dyc.exist() {
-		return ErrorsDUCConfigExist
-	}
-
 	topURL := filepath.Join(homeDir, topDir)
 	cacheURL := filepath.Join(topURL, cacheDir)
 	if !dyutils.IsDirExist(cacheURL) {
@@ -70,7 +66,10 @@ func (dyc *DyUpdaterClientConfig) Init() error {
 
 	dyc.CacheDir = cacheURL
 
-	return dyc.save()
+	if !dyc.exist() {
+		return dyc.save()
+	}
+	return nil
 }
 
 func (dyc *DyUpdaterClientConfig) save() error {
