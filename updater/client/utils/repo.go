@@ -31,6 +31,7 @@ type DyUpdaterClientRepo interface {
 	GetMeta() ([]byte, error)
 	GetMetaSign() ([]byte, error)
 	Put(name string, content []byte) error
+	NRString() string
 	String() string
 }
 
