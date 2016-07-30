@@ -69,6 +69,11 @@ func (ap *DyUpdaterClientAppV1Repo) New(url string) (duc_utils.DyUpdaterClientRe
 	return ap, nil
 }
 
+// 'namespace/repo'
+func (ap DyUpdaterClientAppV1Repo) NRString() string {
+	return fmt.Sprintf("%s/%s", ap.Namespace, ap.Repo)
+}
+
 func (ap DyUpdaterClientAppV1Repo) String() string {
 	return fmt.Sprintf("%s://%s/%s/%s", appV1Prefix, ap.Site, ap.Namespace, ap.Repo)
 }

@@ -17,11 +17,19 @@ limitations under the License.
 package main
 
 import (
+	"crypto/sha1"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 
 	"github.com/urfave/cli"
 
 	"github.com/containerops/dockyard/updater/client/utils"
+	dus_utils "github.com/containerops/dockyard/updater/server/utils"
+	dy_utils "github.com/containerops/dockyard/utils"
 )
 
 var initCommand = cli.Command{
@@ -104,7 +112,11 @@ var listCommand = cli.Command{
 				fmt.Println(err)
 				return err
 			} else {
-				apps, _ := repo.List()
+				apps, err := repo.List()
+				if err != nil {
+					fmt.Println(err)
+					return err
+				}
 				for _, app := range apps {
 					fmt.Println(app)
 				}
@@ -113,5 +125,133 @@ var listCommand = cli.Command{
 		}
 
 		return nil
+	},
+}
+
+var pushCommand = cli.Command{
+	Name:  "push",
+	Usage: "push a file to a repository",
+
+	Action: func(context *cli.Context) error {
+		//TODO: we can have a default repo
+		if len(context.Args()) != 2 {
+			err := errors.New("wrong syntax: push 'filepath' 'repo url'")
+			fmt.Println(err)
+			return err
+		}
+
+		repo, err := utils.NewDUCRepo(context.Args().Get(1))
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+
+		file := context.Args().Get(0)
+		content, err := ioutil.ReadFile(file)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+
+		err = repo.Put(filepath.Base(file), content)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	},
+}
+
+var pullCommand = cli.Command{
+	Name:  "pull",
+	Usage: "pull a file from a repository",
+
+	Action: func(context *cli.Context) error {
+		//TODO: we can have a default repo
+		if len(context.Args()) != 2 {
+			err := errors.New("wrong syntax: pull 'filename' 'repo url'")
+			fmt.Println(err)
+			return err
+		}
+
+		repo, err := utils.NewDUCRepo(context.Args().Get(1))
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+
+		var duc utils.DyUpdaterClientConfig
+		duc.Init()
+
+		file := context.Args().Get(0)
+		fileBytes, err := repo.GetFile(file)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+
+		localFile := filepath.Join(duc.CacheDir, repo.NRString(), file)
+		if !dy_utils.IsDirExist(filepath.Dir(localFile)) {
+			os.MkdirAll(filepath.Dir(localFile), 0755)
+		}
+		err = ioutil.WriteFile(localFile, fileBytes, 0644)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		fmt.Println("file downloaded to: ", localFile)
+
+		fmt.Println("start to download public key")
+		pubBytes, err := repo.GetPublicKey()
+		if err != nil {
+			fmt.Println("Fail to get public key: ", err)
+			return err
+		}
+		fmt.Println("success in downloading public key")
+
+		fmt.Println("start to download meta data and signature file")
+		metaBytes, err := repo.GetMeta()
+		if err != nil {
+			fmt.Println("Fail to get meta data: ", err)
+			return err
+		}
+		signBytes, err := repo.GetMetaSign()
+		if err != nil {
+			fmt.Println("Fail to get sign data: ", err)
+			return err
+		}
+		fmt.Println("success in downloading meta data and signature file")
+
+		fmt.Println("start to verify meta data and downloaded file")
+		err = dus_utils.SHA256Verify(pubBytes, metaBytes, signBytes)
+		if err != nil {
+			fmt.Println("Fail to verify meta by public key")
+			return err
+		}
+		fmt.Println("success in verifying meta data and signature file")
+
+		fmt.Println("start to compare the hash value")
+		var metas []dus_utils.Meta
+		fileHash := fmt.Sprintf("%x", sha1.Sum(fileBytes))
+		json.Unmarshal(metaBytes, &metas)
+		for _, meta := range metas {
+			if meta.Name != file {
+				continue
+			}
+
+			if meta.Hash == fileHash {
+				fmt.Println("Congratulations! The file is valid!")
+				return nil
+			} else {
+				err := errors.New("the file is invalid, maybe security issue!")
+				fmt.Println(err)
+				return err
+			}
+		}
+
+		err = errors.New("something wrong with the server, cannot find the file in the meta data")
+		fmt.Println(err)
+
+		return err
 	},
 }

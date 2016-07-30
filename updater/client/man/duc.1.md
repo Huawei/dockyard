@@ -33,6 +33,12 @@ duc is the "Dockyard Updater Client" working with Dockyard Server.
 **list**
   List the saved repositories or appliances of a certain repository
 
+**push**
+  Push a file to a repository
+
+**pull**
+  Pull a file from a repository
+
 
 # HISTORY
 July 2016, Originally compiled by Liang Chenye (liangchenye at huawei dot com)

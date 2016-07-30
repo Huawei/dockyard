@@ -145,6 +145,8 @@ _duc() {
 		add
 		remove
 		list
+		pull
+		push
 	)
 
 	# These options are valid as global options for all client commands
