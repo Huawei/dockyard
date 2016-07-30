@@ -37,6 +37,9 @@ The Update Framework (TUF) helps developers to secure new or existing software u
 	    add         add a repository url
 	    remove      remove a repository url
 	    list        list the saved repositories or appliances of a certain repository
+	    push	push a file to a repository
+	    pull	pull a file from a repository
+
 
 	GLOBAL OPTIONS:
 	   --help, -h           show help
@@ -83,14 +86,14 @@ The Update Framework (TUF) helps developers to secure new or existing software u
 	$ duc list app://containerops.me/v1/official/dockyard
 	centos/x86/duc.rpm
   ```
-- duc pull --protocal "protocal:version" --server "localhost:8080" --path "localDir" "repoULR"
+- duc pull "filename" "repoULR"
   
-  Fetch a certain appliance to [local cache directory](#cache-directory) if "localDir" is not set.
-  No need to set '--server' if 'DefaultServer' is set in ~/.dockyard/config.json.
-- duc push --protocal "protocal:version" --server "localhost:8080" --path "localDir" "repoURL"
+  Fetch a certain appliance to [local cache directory](#cache-directory), default to ~/.dockyard/cache.
+  No need to set 'repoURL' if 'DefaultServer' is set in ~/.dockyard/config.json.
+- duc push "fileURL" "repoURL"
  
-  Upload a certain appliance from from local cache directory if "localDir" is not set.
-  No need to set '--server' if 'DefaultServer' is set in ~/.dockyard/config.json.
+  Upload a certain appliance 'fileURL'.
+  No need to set 'repoURL' if 'DefaultServer' is set in ~/.dockyard/config.json.
 
 ### Protocal
   The supported protocal will be `docker/appc/app/image`, now only support `app` (software packages).

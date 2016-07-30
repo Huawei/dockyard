@@ -25,14 +25,23 @@ cd ../client
 make
 cd ..
 
-echo "set enviornment and start to run tests"
+echo "\nset enviornment and start to run tests"
 export DUS_TEST_SERVER="appV1://localhost:1234"
+echo "---------------------------------------------"
 go test -v $(go list ./... | grep -v /vendor/)
 
+echo "\nstart to run client command line"
+echo "---------------------------------------------"
+cd client
+./duc push README.md "appV1://localhost:1234/citest/official"
+./duc pull README.md "appV1://localhost:1234/citest/official"
+
+echo "\n---------------------------------------------"
 echo "killing the testing 'dus' server"
 killall dus
 
 echo "clean all the generated data"
 rm -fr $TMPDIR
+rm -fr ~/.dockyard/cache/citest
 
 echo "end of test"

@@ -36,6 +36,8 @@ func main() {
 		addCommand,
 		removeCommand,
 		listCommand,
+		pushCommand,
+		pullCommand,
 	}
 
 	app.Run(os.Args)

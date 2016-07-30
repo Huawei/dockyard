@@ -44,8 +44,6 @@ func TestInitConfig(t *testing.T) {
 	var conf DyUpdaterClientConfig
 	err := conf.Init()
 	assert.Nil(t, err, "Fail to init config")
-	err = conf.Init()
-	assert.Equal(t, err, ErrorsDUCConfigExist, "Should not init more than once")
 }
 
 // TestLoadConfig tests the testdata/home/.dockyard/config.json file
