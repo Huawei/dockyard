@@ -20,11 +20,11 @@ import (
 	"time"
 )
 
-//
+//Docker
 type DockerV2 struct {
 	Id            int64      `json:"id" gorm:"primary_key"`
-	Namespace     string     `json:"namespace" sql:"not null;type:varchar(255)"`
-	Repository    string     `json:"repository" sql:"not null;type:varchar(255)"`
+	Namespace     string     `json:"namespace" sql:"not null;type:varchar(255)"  gorm:"unique_index:v2_repository"`
+	Repository    string     `json:"repository" sql:"not null;type:varchar(255)"  gorm:"unique_index:v2_repository"`
 	SchemaVersion string     `json:"schemaversion" sql:"not null;type:varchar(255)"`
 	Manifests     string     `json:"manifests" sql:"null;type:text"`
 	Agent         string     `json:"agent" sql:"null;type:text"`
