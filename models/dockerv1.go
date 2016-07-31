@@ -20,11 +20,11 @@ import (
 	"time"
 )
 
-//
+//DockerV1 is Docker Repository V1 repository.
 type DockerV1 struct {
 	Id          int64      `json:"id" gorm:"primary_key"`
-	Namespace   string     `json:"namespace" sql:"not null;type:varchar(255)"`
-	Repository  string     `json:"repository" sql:"not null;type:varchar(255)"`
+	Namespace   string     `json:"namespace" sql:"not null;type:varchar(255)" gorm:"unique_index:v1_repository"`
+	Repository  string     `json:"repository" sql:"not null;type:varchar(255)" gorm:"unique_index:v1_repository"`
 	JSON        string     `json:"json" sql:"null;type:text"`
 	Manifests   string     `json:"manifests" sql:"null;type:text"`
 	Agent       string     `json:"agent" sql:"null;type:text"`
@@ -36,8 +36,8 @@ type DockerV1 struct {
 	DeletedAt   *time.Time `json:"deleted" sql:"index"`
 }
 
-//
-func (*DockerV1) TableName() string {
+//TableName in mysql is "docker_v1".
+func (r *DockerV1) TableName() string {
 	return "docker_v1"
 }
 
@@ -58,7 +58,7 @@ type DockerImageV1 struct {
 	DeletedAt *time.Time `json:"deleted" sql:"index"`
 }
 
-//
+//TableName in mysql is "docker_image_v1".
 func (*DockerImageV1) TableName() string {
 	return "docker_image_v1"
 }
@@ -74,12 +74,17 @@ type DockerTagV1 struct {
 	DeletedAt *time.Time `json:"deleted" sql:"index"`
 }
 
-//
+//TableName in mysql is "docker_tag_v1".
 func (*DockerTagV1) TableName() string {
 	return "docker_tag_v1"
 }
 
+//Save function save all properties of Docker Registry V1 repository.
+func (r *DockerV1) Save(namespace, repository string) error {
+	return nil
+}
+
 //Put function will create or update repository.
-func (*DockerV1) Put(namespace, repository, json, agent string) error {
+func (r *DockerV1) Put(namespace, repository, json, agent string) error {
 	return nil
 }
