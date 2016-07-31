@@ -30,7 +30,7 @@ type DockerV1 struct {
 	Agent       string     `json:"agent" sql:"null;type:text"`
 	Description string     `json:"description" sql:"null;type:text"`
 	Size        int64      `json:"size" sql:"default:0"`
-	Locked      bool       `json:"locked" sql:"default:false"`
+	Locked      bool       `json:"locked" sql:"default:false"` //When create/update the repository, the locked will be true.
 	CreatedAt   time.Time  `json:"created" sql:""`
 	UpdatedAt   time.Time  `json:"updated" sql:""`
 	DeletedAt   *time.Time `json:"deleted" sql:"index"`
@@ -77,4 +77,9 @@ type DockerTagV1 struct {
 //
 func (*DockerTagV1) TableName() string {
 	return "docker_tag_v1"
+}
+
+//Put function will create or update repository.
+func (*DockerV1) Put(namespace, repository, json, agent string) error {
+	return nil
 }
