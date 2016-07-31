@@ -25,14 +25,18 @@ import (
 )
 
 var (
-	// Global Config
+	//@Global Config
+
+	//AppName should be "dockyard"
 	AppName string
+	//Usage is short description
 	Usage   string
 	Version string
 	Author  string
 	Email   string
 
-	// Runtime Config
+	//@Basic Runtime Config
+
 	RunMode        string
 	ListenMode     string
 	HttpsCertFile  string
@@ -41,6 +45,16 @@ var (
 	LogLevel       string
 	DatabaseDriver string
 	DatabaseURI    string
+	Domains        string
+
+	//@Docker V1 Config
+
+	DockerStandalone      string
+	DockerRegistryVersion string
+
+	//@Docker V2 Config
+
+	DockerDistributionVersion string
 )
 
 //
@@ -138,6 +152,32 @@ func setConfig(path string) error {
 		DatabaseURI = databaseuri
 	} else if databaseuri == "" {
 		return fmt.Errorf("Database URI config vaule is null")
+	}
+
+	if domains := conf.String("deployment::domain"); domains != "" {
+		Domains = domains
+	} else if domains == "" {
+		return fmt.Errorf("Deployment domains value is null")
+	}
+
+	//TODO: Add a config option for provide Docker Registry V1.
+	//TODO: Link @middle/header/setRespHeaders, @handler/dockerv1/-functions.
+	if standalone := conf.String("dockerv1::standalone"); standalone != "" {
+		DockerStandalone = standalone
+	} else if standalone == "" {
+		return fmt.Errorf("DockerV1 standalone value is null")
+	}
+
+	if registry := conf.String("dockerv1::version"); registry != "" {
+		DockerRegistryVersion = registry
+	} else if registry == "" {
+		return fmt.Errorf("DockerV1 Registry Version value is null")
+	}
+
+	if distribution := conf.String("dockerv2::distribution"); distribution != "" {
+		DockerDistributionVersion = distribution
+	} else if distribution == "" {
+		return fmt.Errorf("DockerV2 Distribution Version value is null")
 	}
 
 	return nil
