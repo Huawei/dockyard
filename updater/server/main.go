@@ -24,16 +24,15 @@ import (
 	"github.com/urfave/cli"
 	"gopkg.in/macaron.v1"
 
-	dus_utils "github.com/containerops/dockyard/updater/server/utils"
-	_ "github.com/containerops/dockyard/updater/server/utils/km/local"
-	_ "github.com/containerops/dockyard/updater/server/utils/protocal/appV1"
-	_ "github.com/containerops/dockyard/updater/server/utils/storage/local"
+	_ "github.com/containerops/dockyard/module/km/local"
+	_ "github.com/containerops/dockyard/module/storage/local"
+	_ "github.com/containerops/dockyard/module/us/appv1"
 )
 
 var webCommand = cli.Command{
 	Name:        "web",
-	Usage:       "Dockyard Updater Server",
-	Description: "Dockyard Updater Server stores the signatured meta data.",
+	Usage:       "Dockyard Update Server",
+	Description: "Dockyard Update Server stores the signatured meta data.",
 	Action:      runDUS,
 	Flags: []cli.Flag{
 		cli.StringFlag{
@@ -51,25 +50,11 @@ var webCommand = cli.Command{
 			Value: 1234,
 			Usage: "web service listen at port 80; if run with https will be 443.",
 		},
-		cli.StringFlag{
-			Name:  "storage",
-			Value: "local://tmp/dockyard-updater-server-storage",
-			Usage: "the storage database",
-		},
-		cli.StringFlag{
-			Name:  "keymanager",
-			Value: "local://tmp/dockyard-updater-server-keymanager",
-			Usage: "the key manager url",
-		},
 	},
 }
 
 func runDUS(c *cli.Context) error {
 	m := macaron.New()
-
-	for _, item := range []string{"keymanager", "storage"} {
-		dus_utils.SetSetting(item, c.String(item))
-	}
 
 	SetRouters(m)
 
@@ -78,7 +63,7 @@ func runDUS(c *cli.Context) error {
 		listenaddr := fmt.Sprintf("%s:%d", c.String("address"), c.Int("port"))
 		fmt.Printf("Start listen to :%s\n", listenaddr)
 		if err := http.ListenAndServe(listenaddr, m); err != nil {
-			fmt.Printf("Start Dockyard Updater Server http mode error: %v\n", err.Error())
+			fmt.Printf("Start Dockyard Update Server http mode error: %v\n", err.Error())
 			return err
 		}
 		break
@@ -93,7 +78,7 @@ func main() {
 	app := cli.NewApp()
 
 	app.Name = "dus"
-	app.Usage = "Dockyard Updater client"
+	app.Usage = "Dockyard Update Server"
 	app.Version = "0.0.1"
 
 	app.Commands = []cli.Command{

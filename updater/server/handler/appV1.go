@@ -22,7 +22,8 @@ import (
 
 	"gopkg.in/macaron.v1"
 
-	"github.com/containerops/dockyard/updater/server/utils"
+	"github.com/containerops/dockyard/module"
+	"github.com/containerops/dockyard/setting"
 )
 
 type httpListRet struct {
@@ -54,7 +55,7 @@ func AppListFileV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
-	appV1, _ := utils.NewDUSProtocal("appV1")
+	appV1, _ := module.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
 	apps, err := appV1.List(namespace + "/" + repository)
 
 	return httpRet("AppV1 List files", apps, err)
@@ -65,7 +66,7 @@ func AppGetPublicKeyV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
-	appV1, _ := utils.NewDUSProtocal("appV1")
+	appV1, _ := module.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
 	data, err := appV1.GetPublicKey(namespace + "/" + repository)
 	if err == nil {
 		return http.StatusOK, data
@@ -79,7 +80,7 @@ func AppGetMetaV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
-	appV1, _ := utils.NewDUSProtocal("appV1")
+	appV1, _ := module.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
 	data, err := appV1.GetMeta(namespace + "/" + repository)
 	if err == nil {
 		return http.StatusOK, data
@@ -93,7 +94,7 @@ func AppGetMetaSignV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
-	appV1, _ := utils.NewDUSProtocal("appV1")
+	appV1, _ := module.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
 	data, err := appV1.GetMetaSign(namespace + "/" + repository)
 	if err == nil {
 		return http.StatusOK, data
@@ -108,8 +109,8 @@ func AppGetFileV1Handler(ctx *macaron.Context) (int, []byte) {
 	repository := ctx.Params(":repository")
 	name := ctx.Params(":name")
 
-	appV1, _ := utils.NewDUSProtocal("appV1")
-	data, err := appV1.Get(namespace + "/" + repository + "/" + name)
+	appV1, _ := module.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
+	data, err := appV1.Get(namespace+"/"+repository, name)
 	if err == nil {
 		return http.StatusOK, data
 	} else {
@@ -124,8 +125,8 @@ func AppPostFileV1Handler(ctx *macaron.Context) (int, []byte) {
 	name := ctx.Params(":name")
 
 	data, _ := ctx.Req.Body().Bytes()
-	appV1, _ := utils.NewDUSProtocal("appV1")
-	err := appV1.Put(namespace+"/"+repository+"/"+name, data)
+	appV1, _ := module.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
+	err := appV1.Put(namespace+"/"+repository, name, data)
 
 	return httpRet("AppV1 Post data", nil, err)
 }
