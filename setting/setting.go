@@ -55,6 +55,10 @@ var (
 	//@Docker V2 Config
 
 	DockerDistributionVersion string
+
+	//@UpdateService
+	KeyManager string
+	Storage    string
 )
 
 //
@@ -178,6 +182,14 @@ func setConfig(path string) error {
 		DockerDistributionVersion = distribution
 	} else if distribution == "" {
 		return fmt.Errorf("DockerV2 Distribution Version value is null")
+	}
+
+	if uskeymanager := conf.String("updateserver::keymanager"); uskeymanager != "" {
+		KeyManager = uskeymanager
+	}
+
+	if usstorage := conf.String("updateserver::storage"); usstorage != "" {
+		Storage = usstorage
 	}
 
 	return nil
