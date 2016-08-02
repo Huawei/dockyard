@@ -158,10 +158,9 @@ func setConfig(path string) error {
 		return fmt.Errorf("Database URI config vaule is null")
 	}
 
+	// Deployment domain could be empty
 	if domains := conf.String("deployment::domain"); domains != "" {
 		Domains = domains
-	} else if domains == "" {
-		return fmt.Errorf("Deployment domains value is null")
 	}
 
 	//TODO: Add a config option for provide Docker Registry V1.
