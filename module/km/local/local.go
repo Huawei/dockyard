@@ -42,6 +42,7 @@ var (
 )
 
 // KeyManagerLocal is the local implementation of a key manager
+
 type KeyManagerLocal struct {
 	Path string
 }
@@ -55,7 +56,7 @@ func (kml *KeyManagerLocal) Supported(url string) bool {
 	return strings.HasPrefix(url, localPrefix+"://")
 }
 
-// New returns a keymanager by a url
+// New returns a keymanager by a url and a protocal
 func (kml *KeyManagerLocal) New(url string) (module.KeyManager, error) {
 	parts := localRegexp.FindStringSubmatch(url)
 	if len(parts) != 2 {
@@ -67,8 +68,8 @@ func (kml *KeyManagerLocal) New(url string) (module.KeyManager, error) {
 }
 
 // GetPublicKey gets the public key data of a namespace/repository
-func (kml *KeyManagerLocal) GetPublicKey(nr string) ([]byte, error) {
-	keyDir := filepath.Join(kml.Path, nr, defaultKeyDirName)
+func (kml *KeyManagerLocal) GetPublicKey(protocal string, nr string) ([]byte, error) {
+	keyDir := filepath.Join(kml.Path, protocal, nr, defaultKeyDirName)
 	if !isKeyExist(keyDir) {
 		err := generateKey(keyDir)
 		if err != nil {
@@ -80,8 +81,8 @@ func (kml *KeyManagerLocal) GetPublicKey(nr string) ([]byte, error) {
 }
 
 // Sign signs a data of a namespace/repository
-func (kml *KeyManagerLocal) Sign(nr string, data []byte) ([]byte, error) {
-	keyDir := filepath.Join(kml.Path, nr, defaultKeyDirName)
+func (kml *KeyManagerLocal) Sign(protocal string, nr string, data []byte) ([]byte, error) {
+	keyDir := filepath.Join(kml.Path, protocal, nr, defaultKeyDirName)
 	if !isKeyExist(keyDir) {
 		err := generateKey(keyDir)
 		if err != nil {

@@ -30,14 +30,15 @@ import (
 
 func loadTestData(t *testing.T) (module.UpdateServiceStorage, string) {
 	var local UpdateServiceStorageLocal
-	_, path, _, _ := runtime.Caller(0)
-	realPath := filepath.Join(filepath.Dir(path), "testdata")
 
-	km := "local:/" + realPath
-	l, err := local.New(localPrefix+":/"+realPath, km)
+	_, path, _, _ := runtime.Caller(0)
+	topPath := filepath.Join(filepath.Dir(path), "testdata")
+	km := "local:/" + topPath
+	// In this test, storage dir and key manager dir is the same
+	l, err := local.New(km, km)
 	assert.Nil(t, err, "Fail to setup a local test storage")
 
-	return l, realPath
+	return l, topPath
 }
 
 // TestBasic
@@ -60,9 +61,9 @@ func TestLocalList(t *testing.T) {
 	key := "containerops/official"
 	validCount := 0
 
-	apps, _ := l.List(key)
+	apps, _ := l.List("app/v1", key)
 	for _, app := range apps {
-		if app == "appA" || app == "appB" {
+		if app == "os/arch/appA" || app == "os/arch/appB" {
 			validCount++
 		}
 	}
@@ -74,6 +75,7 @@ func TestLocalPut(t *testing.T) {
 	defer os.RemoveAll(tmpPath)
 	assert.Nil(t, err, "Fail to create temp dir")
 
+	protocal := "app/v1"
 	testData := "this is test DATA, you can put in anything here"
 
 	var local UpdateServiceStorageLocal
@@ -81,17 +83,17 @@ func TestLocalPut(t *testing.T) {
 	assert.Nil(t, err, "Fail to setup local repo")
 
 	invalidKey := "containerops/official"
-	err = l.Put(invalidKey, []byte(testData))
+	_, err = l.Put(protocal, invalidKey, []byte(testData))
 	assert.NotNil(t, err, "Fail to put with invalid key")
 
-	validKey := "containerops/official/appA"
-	err = l.Put(validKey, []byte(testData))
+	validKey := "containerops/official/os/arch/appA"
+	_, err = l.Put(protocal, validKey, []byte(testData))
 	assert.Nil(t, err, "Fail to put key")
 
-	_, err = l.GetMeta("containerops/official")
+	_, err = l.GetMeta(protocal, "containerops/official")
 	assert.Nil(t, err, "Fail to get meta data")
 
-	getData, err := l.Get(validKey)
+	getData, err := l.Get(protocal, validKey)
 	assert.Nil(t, err, "Fail to load file")
 	assert.Equal(t, string(getData), testData, "Fail to get correct file")
 }
@@ -99,24 +101,25 @@ func TestLocalPut(t *testing.T) {
 func TestLocalGet(t *testing.T) {
 	l, kmPath := loadTestData(t)
 
+	protocal := "app/v1"
 	key := "containerops/official"
 	invalidKey := "containerops/official/invalid"
 
 	defer os.RemoveAll(filepath.Join(kmPath, key, defaultKeyDir))
-	_, err := l.GetPublicKey(key)
+	_, err := l.GetPublicKey(protocal, key)
 	assert.Nil(t, err, "Fail to load public key")
-	_, err = l.GetMetaSign(key)
+	_, err = l.GetMetaSign(protocal, key)
 	assert.Nil(t, err, "Fail to load  sign file")
 
-	_, err = l.GetMeta(invalidKey)
+	_, err = l.GetMeta(protocal, invalidKey)
 	assert.NotNil(t, err, "Fail to get meta from invalid key")
-	_, err = l.GetMeta(key)
+	_, err = l.GetMeta(protocal, key)
 	assert.Nil(t, err, "Fail to load meta data")
 
-	_, err = l.Get("invalidinput")
+	_, err = l.Get(protocal, "invalidinput")
 	assert.NotNil(t, err, "Fail to get by invalid key")
 
-	data, err := l.Get(key + "/appA")
+	data, err := l.Get(protocal, key+"/os/arch/appA")
 	expectedData := "This is the content of appA."
 	assert.Nil(t, err, "Fail to load file")
 	assert.Equal(t, string(data), expectedData, "Fail to get correct file")

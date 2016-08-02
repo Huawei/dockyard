@@ -44,6 +44,11 @@ version = 0.9
 
 [dockerv2]
 distribution = registry/2.0
+
+[updateserver]
+keymanager = "local://tmp/containerops_keymanager_cache"
+storage = "local://tmp/containerops_storage_cache"
+
 ```
 
 #### Nginx configuration

@@ -26,23 +26,25 @@ import (
 
 // UpdateServiceStorage represents the storage interface
 type UpdateServiceStorage interface {
-	// url is the database address or local directory (local://tmp/cache)
+	// `url` is the database address or local directory (local://tmp/cache)
+	// `km` is the key manager address
 	New(url string, km string) (UpdateServiceStorage, error)
 	// get the 'url' set by 'New'
 	String() string
 	Supported(url string) bool
+	// `protocal` is the supported protocals like 'app/v1, docker/v1'
 	// key: namespace/repository/appname
-	Get(key string) ([]byte, error)
+	Get(protocal, key string) ([]byte, error)
 	// key: namespace/repository
-	GetMeta(key string) ([]byte, error)
+	GetMeta(protocal, key string) ([]byte, error)
 	// key: namespace/repository
-	GetMetaSign(key string) ([]byte, error)
+	GetMetaSign(protocal, key string) ([]byte, error)
 	// key: namespace/repository
-	GetPublicKey(key string) ([]byte, error)
+	GetPublicKey(protocal, key string) ([]byte, error)
 	// key: namespace/repository/appname
-	Put(key string, data []byte) error
+	Put(protocal, key string, data []byte) (string, error)
 	// key: namespace/repository
-	List(key string) ([]string, error)
+	List(protocal, key string) ([]string, error)
 }
 
 var (
