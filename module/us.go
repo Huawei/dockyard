@@ -31,7 +31,8 @@ type UpdateService interface {
 	GetMeta(nr string) ([]byte, error)
 	GetMetaSign(nr string) ([]byte, error)
 	Get(nr string, name string) ([]byte, error)
-	Put(nr string, name string, data []byte) error
+	// Return the path of local storage or key of object store
+	Put(nr string, name string, data []byte) (string, error)
 }
 
 var (
