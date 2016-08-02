@@ -42,4 +42,4 @@ Offical Docker Registry V1 Doc is [here](https://docs.docker.com/v1.7/docker/ref
 
 ### Docker Registry V1 Pull
 
-![Docker Registry V1 Push](images/docker-v1-pull-chart.png "Dockyard - Docker Registry V1 Pull")
+![Docker Registry V1 Pull](images/docker-v1-pull-chart.png "Dockyard - Docker Registry V1 Pull")
