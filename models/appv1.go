@@ -17,10 +17,12 @@ limitations under the License.
 package models
 
 import (
+	"errors"
+	"fmt"
 	"time"
 )
 
-//
+// AppV1 is the App V1 repository
 type AppV1 struct {
 	Id          int64      `json:"id" gorm:"primary_key"`
 	Namespace   string     `json:"namespace" sql:"not null;type:varchar(255)"`
@@ -35,22 +37,45 @@ type AppV1 struct {
 	DeletedAt   *time.Time `json:"deleted" sql:"index"`
 }
 
-//
+// NewAppV1 returns the namespace/repository, it will create the repository if it is not exist
+func NewAppV1(namespace, repository string) (AppV1, error) {
+	var app AppV1
+	app.Namespace = namespace
+	app.Repository = repository
+
+	//TODO: create or query in db
+	return app, nil
+}
+
+// TableName returns the name of AppV1 table in mysql
 func (*AppV1) TableName() string {
 	return "app_v1"
 }
 
-//
+// Put adds an artifact to a repository
+func (app *AppV1) Put(artifact ArtifactV1) error {
+	if app.Locked {
+		return fmt.Errorf("AppV1 repository %s/%s is locked, please try it later.", app.Namespace, app.Repository)
+	}
+
+	//TODO: here we should both set the lock status and updated status
+	//DB.SetLock(app, true)
+	//defer DB.SetLock(app, false)
+	return nil
+}
+
+// ArtifactV1 is the Artifcat V1 object
 type ArtifactV1 struct {
-	Id        int64      `json:"id" gorm:"primary_key"`
-	AppV1     int64      `json:"appv1" sql:"not null"`
-	OS        string     `json:"os" sql:"null;type:varchar(255)"`
-	Arch      string     `json:"arch" sql:"null;type:varchar(255)"`
-	App       string     `json:"app" sql:"not null;varchar(255)" gorm:"unique_index:app_tag"`
-	Tag       string     `json:"tag" sql:"null;varchar(255)" gorm:"unique_index:app_tag"`
-	Manifests string     `json:"manifests" sql:"null;type:text"`
-	OSS       string     `json:"oss" sql:"null;type:text"`
-	Path      string     `json:"arch" sql:"null;type:text"`
+	Id        int64  `json:"id" gorm:"primary_key"`
+	AppV1ID   int64  `json:"appv1" sql:"not null"`
+	OS        string `json:"os" sql:"null;type:varchar(255)"`
+	Arch      string `json:"arch" sql:"null;type:varchar(255)"`
+	App       string `json:"app" sql:"not null;varchar(255)" gorm:"unique_index:app_tag"`
+	Tag       string `json:"tag" sql:"null;varchar(255)" gorm:"unique_index:app_tag"`
+	Manifests string `json:"manifests" sql:"null;type:text"`
+	OSS       string `json:"oss" sql:"null;type:text"`
+	// FIXME: Path is both the `URL` of the local storage and the `KEY` of the object storage
+	Path      string     `json:"path" sql:"null;type:text"`
 	Size      int64      `json:"size" sql:"default:0"`
 	Locked    bool       `json:"locked" sql:"default:false"`
 	CreatedAt time.Time  `json:"created" sql:""`
@@ -58,6 +83,30 @@ type ArtifactV1 struct {
 	DeletedAt *time.Time `json:"deleted" sql:"index"`
 }
 
+// TableName returns the name of ArtifactV1 table in mysql
 func (*ArtifactV1) TableName() string {
 	return "artifact_v1"
+}
+
+func (a *ArtifactV1) GetName() string {
+	if ok, _ := a.isValid(); !ok {
+		return ""
+	}
+
+	var name string
+	if a.Tag == "" {
+		name = a.App
+	} else {
+		name = a.App + ":" + a.Tag
+	}
+
+	return fmt.Sprintf("%s/%s/%s", a.OS, a.Arch, name)
+}
+
+func (a *ArtifactV1) isValid() (bool, error) {
+	if a.OS == "" || a.Arch == "" || a.App == "" {
+		return false, errors.New("OS, Arch and App are mandatory fields")
+	}
+
+	return true, nil
 }

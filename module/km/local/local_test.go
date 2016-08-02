@@ -62,7 +62,7 @@ func TestLocalGetPublicKey(t *testing.T) {
 	assert.Nil(t, err, "Fail to setup a local test key manager")
 
 	nr := "containerops/official"
-	_, err = l.GetPublicKey(nr)
+	_, err = l.GetPublicKey("app/v1", nr)
 	assert.Nil(t, err, "Fail to get public key")
 }
 
@@ -74,7 +74,7 @@ func TestLocalSign(t *testing.T) {
 	testByte, _ := ioutil.ReadFile(testFile)
 	signFile := filepath.Join(realPath, "hello.sig")
 	signByte, _ := ioutil.ReadFile(signFile)
-	data, err := l.Sign(nr, testByte)
+	data, err := l.Sign("app/v1", nr, testByte)
 	assert.Nil(t, err, "Fail to sign")
 	assert.Equal(t, data, signByte, "Fail to sign correctly")
 }
