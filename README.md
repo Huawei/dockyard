@@ -32,6 +32,16 @@ level = info
 [database]
 driver = mysql
 uri = containerops:containerops@/containerops?charset=utf8&parseTime=True&loc=Asia%2FShanghai
+
+[deployment]
+domains = containerops.me
+
+[dockerv1]
+standalone = true
+version = 0.9
+
+[dockerv2]
+distribution = registry/2.0
 ```
 
 #### Nginx configuration
