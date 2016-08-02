@@ -29,13 +29,15 @@ import (
 // It is up to each implementation to decide whether provides a way
 //  to generate key pair automatically.
 type KeyManager interface {
-	// url is the database address or local directory (local://tmp/cache)
+	// `url` is the database address or local directory (local://tmp/cache)
 	New(url string) (KeyManager, error)
 	Supported(url string) bool
-	// key : namespace/repository
-	GetPublicKey(key string) ([]byte, error)
-	// key : namespace/repository
-	Sign(key string, data []byte) ([]byte, error)
+	// protocal: 'app/v1' for example
+	// nr : namespace/repository
+	GetPublicKey(protocal string, nr string) ([]byte, error)
+	// protocal: 'app/v1' for example
+	// nr : namespace/repository
+	Sign(protocal string, nr string, data []byte) ([]byte, error)
 }
 
 var (

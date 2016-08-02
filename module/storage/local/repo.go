@@ -49,7 +49,29 @@ const (
 )
 
 // Repo reprensents a local repository
+// if Repo is {
+//	Protocal: "protocalA/VersionB",
+//	Path: "/data",
+//      Namespace: "containerops",
+//      Repository: "official",
+//      }
+//    add assume there are 'osX/archY/appA' and 'osX/archY/appB' files.
+// The local structure will be:
+// /data
+//   |_ protocalA
+//       |_ VersionB
+//            |_ containerops
+//                |_ official
+//                    |_ meta.json
+//                    |_ meta.sig
+//                    |_ key
+//                    |    |_ pub_key.pem
+//                    |
+//                    |_ target
+//                          |_ hashOfappA
+//                          |_ hashOfappB
 type Repo struct {
+	Protocal   string
 	Path       string
 	Namespace  string
 	Repository string
@@ -57,15 +79,15 @@ type Repo struct {
 	kmURL string
 }
 
-// NewRepo gets repo by a local storage path and a url
-// url : "namespace/repository"
-func NewRepo(path string, url string) (Repo, error) {
-	parts := strings.Split(url, "/")
+// NewRepo gets repo by a protocal, a local storage path and a url
+// nr : "namespace/repository"
+func NewRepo(path string, protocal string, nr string) (Repo, error) {
+	parts := strings.Split(nr, "/")
 	if len(parts) != 2 {
 		return Repo{}, ErrorInvalidLocalRepo
 	}
 
-	repo := Repo{Path: path, Namespace: parts[0], Repository: parts[1]}
+	repo := Repo{Protocal: protocal, Path: path, Namespace: parts[0], Repository: parts[1]}
 
 	// create top dir if not exist
 	topDir := repo.GetTopDir()
@@ -79,17 +101,17 @@ func NewRepo(path string, url string) (Repo, error) {
 	return repo, nil
 }
 
-// NewRepoWithKM gets repo by a local storage path, a url and
+// NewRepoWithKM gets repo by a protocal, a local storage path, a url and
 //   a keymanager url
-// url : "namespace/repository"
+// nr : "namespace/repository"
 // kmURL: nil means using the km repository defined in configuration
-func NewRepoWithKM(path string, url string, kmURL string) (Repo, error) {
+func NewRepoWithKM(path string, protocal, nr string, kmURL string) (Repo, error) {
 	// if kmURL == "", try the one in setting
 	if kmURL == "" {
 		kmURL = setting.KeyManager
 	}
 
-	repo, err := NewRepo(path, url)
+	repo, err := NewRepo(path, protocal, nr)
 	if err != nil {
 		return Repo{}, err
 	} else if kmURL == "" {
@@ -112,7 +134,7 @@ func (r *Repo) SetKM(kmURL string) error {
 		return err
 	}
 
-	data, err := km.GetPublicKey(r.Namespace + "/" + r.Repository)
+	data, err := km.GetPublicKey(r.Protocal, r.Namespace+"/"+r.Repository)
 	if err != nil {
 		return err
 	}
@@ -133,22 +155,22 @@ func (r *Repo) SetKM(kmURL string) error {
 
 // GetTopDir gets the top directory of a repository
 func (r Repo) GetTopDir() string {
-	return filepath.Join(r.Path, r.Namespace, r.Repository)
+	return filepath.Join(r.Path, r.Protocal, r.Namespace, r.Repository)
 }
 
 // GetMetaFile gets the meta data file url of repository
 func (r Repo) GetMetaFile() string {
-	return filepath.Join(r.Path, r.Namespace, r.Repository, defaultMeta)
+	return filepath.Join(r.GetTopDir(), defaultMeta)
 }
 
 // GetMetaSignFile gets the meta signature file url of repository
 func (r Repo) GetMetaSignFile() string {
-	return filepath.Join(r.Path, r.Namespace, r.Repository, defaultMetaSign)
+	return filepath.Join(r.GetTopDir(), defaultMetaSign)
 }
 
 // GetPublicKeyFile gets the public key file url of repository
 func (r Repo) GetPublicKeyFile() string {
-	return filepath.Join(r.Path, r.Namespace, r.Repository, defaultKeyDir, defaultPubKey)
+	return filepath.Join(r.GetTopDir(), defaultKeyDir, defaultPubKey)
 }
 
 // GetMeta gets the meta data of a repository
@@ -211,12 +233,12 @@ func (r Repo) Get(name string) ([]byte, error) {
 	return nil, ErrorAppNotExist
 }
 
-// Add adds an application to a repository
-func (r Repo) Add(name string, content []byte) error {
+// Put adds an application to a repository
+func (r Repo) Put(name string, content []byte) (string, error) {
 	topDir := r.GetTopDir()
 	if !utils.IsDirExist(topDir) {
 		if err := os.MkdirAll(topDir, 0777); err != nil {
-			return err
+			return "", err
 		}
 	}
 
@@ -225,12 +247,12 @@ func (r Repo) Add(name string, content []byte) error {
 	if utils.IsFileExist(metaFile) {
 		data, err := ioutil.ReadFile(metaFile)
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		err = json.Unmarshal(data, &metas)
 		if err != nil {
-			return err
+			return "", err
 		}
 
 	}
@@ -241,13 +263,13 @@ func (r Repo) Add(name string, content []byte) error {
 	dataFile := filepath.Join(topDir, defaultTargetDir, dataFileName)
 	if !utils.IsDirExist(filepath.Dir(dataFile)) {
 		if err := os.MkdirAll(filepath.Dir(dataFile), 0777); err != nil {
-			return err
+			return "", err
 		}
 	}
 
 	// write data
 	if err := ioutil.WriteFile(dataFile, content, 0644); err != nil {
-		return err
+		return "", err
 	}
 
 	// get meta content
@@ -267,10 +289,10 @@ func (r Repo) Add(name string, content []byte) error {
 	err := r.saveMeta(metasContent)
 	if err != nil {
 		os.Remove(dataFile)
-		return err
+		return "", err
 	}
 
-	return nil
+	return dataFile, nil
 }
 
 func (r Repo) saveMeta(metasContent []byte) error {
@@ -296,7 +318,7 @@ func (r Repo) saveSign(metasContent []byte) error {
 	}
 
 	km, _ := module.NewKeyManager(r.kmURL)
-	signContent, _ := km.Sign(r.Namespace+"/"+r.Repository, metasContent)
+	signContent, _ := km.Sign(r.Protocal, r.Namespace+"/"+r.Repository, metasContent)
 	signFile := r.GetMetaSignFile()
 	if err := ioutil.WriteFile(signFile, signContent, 0644); err != nil {
 		return err

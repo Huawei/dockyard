@@ -101,7 +101,7 @@ func SetRouters(m *macaron.Macaron) {
 				m.Get("/:os/:arch/:app/manifests/?:tag", handler.AppGetManifestsV1Handler)
 
 				// Push
-				m.Post("/", handler.AppPostV1Handler)
+				m.Post("/", handler.AppPostFileV1Handler)
 				m.Put("/:os/:arch/:app/?:tag", handler.AppPutFileV1Handler)
 				m.Put("/:os/:arch/:app/manifests/?:tag", handler.AppPutManifestV1Handler)
 				m.Patch("/:os/:arch/:app/:status/?:tag", handler.AppPatchFileV1Handler)
