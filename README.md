@@ -1,5 +1,7 @@
 # Dockyard - Container And Artifact Repository 
 
+![Dockyard](docs/images/dockyard.jpg "Dockyard - Container And Artifact Repository")
+
 ## What is Dockyard ?
 Dockyard is a container and artifact repository storing and distributing container image, software artifact and virtual images of KVM or XEN. It's key features and goals include:
 - Multi supported distribute protocols include Docker Registry V1 & V2 and App Container Image Discovery.
