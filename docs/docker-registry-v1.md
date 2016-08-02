@@ -1,5 +1,7 @@
 ## Docker Registry V1 Protocol
 
+Offical Docker Registry V1 Doc is [here](https://docs.docker.com/v1.7/docker/reference/api/hub_registry_spec).
+
 ### Docker Registry V1 Types: 
 
 - sponsor registry: such a registry is provided by a third-party hosting infrastructure as a convenience for their customers and the Docker community as a whole. Its costs are supported by the third party, but the management and operation of the registry are supported by Docker, Inc. It features read/write access, and delegates authentication and authorization to the Docker Hub.
@@ -10,6 +12,33 @@
 ### Docker Registry V1 Push 
 
 ![Docker Registry V1 Push](docs/images/docker-v1-push-chart.png "Dockyard - Docker Registry V1 Push")
+
+1. Contact the Docker Registry to allocate the repository name “samalba/busybox” (authentication required with user credentials)
+  - (Docker Client -> Docker Registry) PUT /v1/repositories/:namespace/:repository
+  - Request Headers:
+
+    ```
+      Authorization: Basic sdkjfskdjfhsdkjfh== 
+      X-Docker-Token: true
+    ```
+  - Request Body:
+
+    ```
+      [{“id”: “9e89cc6f0bc3c38722009fe6857087b486531f9a779a0c17e3ed29dae8f12c4f”}]
+    ```
+  - Response HTTP Code:
+    ```
+      200
+    ```
+  - Response Header:
+    ```
+      WWW-Authenticate: Token signature=123abc,repository=”samalba/busybox”,access=write
+      X-Docker-Endpoints: registry.docker.io [, registry2.docker.io]
+    ```
+  - Response Body:
+    ```
+   	  {}
+    ```
 
 ### Docker Registry V1 Pull
 
