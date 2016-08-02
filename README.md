@@ -90,6 +90,23 @@ server {
 }
 ```
 
+### Database Configuration
+
+#### Database SQL
+
+```
+INSERT INTO mysql.user(Host,User,Password) VALUES ('localhost', 'containerops', password('containerops'));
+CREATE DATABASE `containerops` DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+GRANT ALL PRIVILEGES ON containerops.* TO containerops@localhost IDENTIFIED BY 'containerops';
+FLUSH PRIVILEGES;
+```
+
+#### Initlization Tables
+
+```
+./dockyard db --action sync
+```
+
 ### Start dockyard service
 - Run directly:
 
