@@ -21,21 +21,28 @@ Offical Docker Registry V1 Doc is [here](https://docs.docker.com/v1.7/docker/ref
       Authorization: Basic sdkjfskdjfhsdkjfh== 
       X-Docker-Token: true
     ```
+    
   - Request Body:
 
     ```
       [{“id”: “9e89cc6f0bc3c38722009fe6857087b486531f9a779a0c17e3ed29dae8f12c4f”}]
     ```
+
   - Response HTTP Code:
+
     ```
       200
     ```
+
   - Response Header:
+
     ```
       WWW-Authenticate: Token signature=123abc,repository=”samalba/busybox”,access=write
       X-Docker-Endpoints: registry.docker.io [, registry2.docker.io]
     ```
+
   - Response Body:
+
     ```
    	  {}
     ```
