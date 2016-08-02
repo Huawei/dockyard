@@ -14,7 +14,7 @@ Offical Docker Registry V1 Doc is [here](https://docs.docker.com/v1.7/docker/ref
 ![Docker Registry V1 Push](images/docker-v1-push-chart.png "Dockyard - Docker Registry V1 Push")
 
 1. Contact the Docker Registry to allocate the repository name “samalba/busybox” (authentication required with user credentials)
-  - (Docker Client -> Docker Registry) PUT /v1/repositories/:namespace/:repository
+  - (Docker Client -> Docker Registry) `PUT /v1/repositories/:namespace/:repository`
   - Request Headers:
 
     ```
