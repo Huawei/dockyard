@@ -13,7 +13,7 @@ Offical Docker Registry V1 Doc is [here](https://docs.docker.com/v1.7/docker/ref
 
 ![Docker Registry V1 Push](images/docker-v1-push-chart.png "Dockyard - Docker Registry V1 Push")
 
-1. Contact the Docker Registry to allocate the repository name “samalba/busybox” (authentication required with user credentials)
+1. Contact the Docker Registry to allocate the repository name “samalba/busybox” (authentication required with user credentials). If authentication works and namespace available, “samalba/busybox” is allocated and a temporary token is returned.
   - (Docker Client -> Docker Registry) `PUT /v1/repositories/:namespace/:repository`
   - Request Headers:
 
@@ -21,7 +21,7 @@ Offical Docker Registry V1 Doc is [here](https://docs.docker.com/v1.7/docker/ref
       Authorization: Basic sdkjfskdjfhsdkjfh== 
       X-Docker-Token: true
     ```
-    
+
   - Request Body:
 
     ```
@@ -46,6 +46,10 @@ Offical Docker Registry V1 Doc is [here](https://docs.docker.com/v1.7/docker/ref
     ```
    	  {}
     ```
+2. Push the image on the registry along with the token.
+
+  - 2.1 (Docker Client -> Docker Registry) `PUT /v1/images/:image/json`
+  - 2.2 (Docker Client -> Docker Registry) `PUT /v1/images/:image/layer` 
 
 ### Docker Registry V1 Pull
 
