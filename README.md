@@ -131,6 +131,8 @@ FLUSH PRIVILEGES;
 go get -u -v github.com/urfave/cli
 go get -u -v gopkg.in/macaron.v1
 go get -u -v github.com/jinzhu/gorm
+go get -u -v github.com/Sirupsen/logrus
+go get -u -v github.com/go-sql-driver/mysql
 ```
 
 ## How to involve
