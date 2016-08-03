@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/ngaut/log"
+	log "github.com/Sirupsen/logrus"
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/dockyard/models"
