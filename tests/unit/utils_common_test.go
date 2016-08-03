@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package utils
+package unittest
 
 import (
 	"io/ioutil"
@@ -22,16 +22,18 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/containerops/dockyard/utils"
 )
 
 func TestRSAGenerateEnDe(t *testing.T) {
-	privBytes, pubBytes, err := GenerateRSAKeyPair(1024)
+	privBytes, pubBytes, err := utils.GenerateRSAKeyPair(1024)
 	assert.Nil(t, err, "Fail to genereate RSA Key Pair")
 
 	testData := []byte("This is the testdata for encrypt and decryp")
-	encrypted, err := RSAEncrypt(pubBytes, testData)
+	encrypted, err := utils.RSAEncrypt(pubBytes, testData)
 	assert.Nil(t, err, "Fail to encrypt data")
-	decrypted, err := RSADecrypt(privBytes, encrypted)
+	decrypted, err := utils.RSADecrypt(privBytes, encrypted)
 	assert.Nil(t, err, "Fail to decrypt data")
 	assert.Equal(t, testData, decrypted, "Fail to get correct data after en/de")
 }
@@ -48,7 +50,7 @@ func TestSHA256Sign(t *testing.T) {
 	privBytes, _ := ioutil.ReadFile(testPrivFile)
 	signBytes, _ := ioutil.ReadFile(testSignFile)
 	contentBytes, _ := ioutil.ReadFile(testContentFile)
-	testBytes, err := SHA256Sign(privBytes, contentBytes)
+	testBytes, err := utils.SHA256Sign(privBytes, contentBytes)
 	assert.Nil(t, err, "Fail to sign")
 	assert.Equal(t, testBytes, signBytes, "Fail to get valid sign data ")
 }
@@ -65,8 +67,8 @@ func TestSHA256Verify(t *testing.T) {
 	pubBytes, _ := ioutil.ReadFile(testPubFile)
 	signBytes, _ := ioutil.ReadFile(testSignFile)
 	contentBytes, _ := ioutil.ReadFile(testContentFile)
-	err := SHA256Verify(pubBytes, contentBytes, signBytes)
+	err := utils.SHA256Verify(pubBytes, contentBytes, signBytes)
 	assert.Nil(t, err, "Fail to verify valid signed data")
-	err = SHA256Verify(pubBytes, []byte("Invalid content data"), signBytes)
+	err = utils.SHA256Verify(pubBytes, []byte("Invalid content data"), signBytes)
 	assert.NotNil(t, err, "Fail to verify invalid signed data")
 }
