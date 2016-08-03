@@ -29,5 +29,6 @@ var CmdMonitor = cli.Command{
 }
 
 func runMonitor(c *cli.Context) error {
+	startServerService()
 	return nil
 }

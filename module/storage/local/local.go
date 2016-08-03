@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	localPrefix = "local"
+	LocalPrefix = "local"
 )
 
 var (
@@ -43,18 +43,18 @@ type UpdateServiceStorageLocal struct {
 }
 
 func init() {
-	module.RegisterStorage(localPrefix, &UpdateServiceStorageLocal{})
+	module.RegisterStorage(LocalPrefix, &UpdateServiceStorageLocal{})
 }
 
 // Supported checks if a url begin with 'local://'
 func (ussl *UpdateServiceStorageLocal) Supported(url string) bool {
-	return strings.HasPrefix(url, localPrefix+"://")
+	return strings.HasPrefix(url, LocalPrefix+"://")
 }
 
 // New creates an UpdateServceStorage interface with a local implmentation
 func (ussl *UpdateServiceStorageLocal) New(url string, km string) (module.UpdateServiceStorage, error) {
 	parts := localRegexp.FindStringSubmatch(url)
-	if len(parts) != 3 || parts[1] != localPrefix {
+	if len(parts) != 3 || parts[1] != LocalPrefix {
 		return nil, errors.New("invalid url set in StorageLocal.New")
 	}
 
@@ -66,7 +66,7 @@ func (ussl *UpdateServiceStorageLocal) New(url string, km string) (module.Update
 
 // String returns the composed url
 func (ussl *UpdateServiceStorageLocal) String() string {
-	return fmt.Sprintf("%s:/%s", localPrefix, ussl.Path)
+	return fmt.Sprintf("%s:/%s", LocalPrefix, ussl.Path)
 }
 
 // Get the data of an input key. Key is "namespace/repository/os/arch/appname"

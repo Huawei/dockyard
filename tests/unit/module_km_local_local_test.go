@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package local
+package unittest
 
 import (
 	"io/ioutil"
@@ -25,22 +25,22 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/containerops/dockyard/module"
+	kml "github.com/containerops/dockyard/module/km/local"
 )
 
-func loadTestData(t *testing.T) (module.KeyManager, string) {
-	var local KeyManagerLocal
+func loadTestKMLData(t *testing.T) (module.KeyManager, string) {
+	var local kml.KeyManagerLocal
 	_, path, _, _ := runtime.Caller(0)
 	realPath := filepath.Join(filepath.Dir(path), "testdata")
 
-	l, err := local.New(localPrefix + ":/" + realPath)
+	l, err := local.New(kml.LocalPrefix + ":/" + realPath)
 	assert.Nil(t, err, "Fail to setup a local test key manager")
 
 	return l, realPath
 }
 
-// TestBasic
-func TestLocalBasic(t *testing.T) {
-	var local KeyManagerLocal
+func TestKMLBasic(t *testing.T) {
+	var local kml.KeyManagerLocal
 
 	validURL := "local://tmp/containerops_km_cache"
 	ok := local.Supported(validURL)
@@ -52,13 +52,13 @@ func TestLocalBasic(t *testing.T) {
 	assert.Nil(t, err, "Fail to setup a local key manager")
 }
 
-func TestLocalGetPublicKey(t *testing.T) {
+func TestKMLGetPublicKey(t *testing.T) {
 	tmpPath, err := ioutil.TempDir("", "us-test-")
 	defer os.RemoveAll(tmpPath)
 	assert.Nil(t, err, "Fail to create temp dir")
 
-	var local KeyManagerLocal
-	l, err := local.New(localPrefix + ":/" + tmpPath)
+	var local kml.KeyManagerLocal
+	l, err := local.New(kml.LocalPrefix + ":/" + tmpPath)
 	assert.Nil(t, err, "Fail to setup a local test key manager")
 
 	nr := "containerops/official"
@@ -66,8 +66,8 @@ func TestLocalGetPublicKey(t *testing.T) {
 	assert.Nil(t, err, "Fail to get public key")
 }
 
-func TestLocalSign(t *testing.T) {
-	l, realPath := loadTestData(t)
+func TestKMLSign(t *testing.T) {
+	l, realPath := loadTestKMLData(t)
 	nr := "containerops/official"
 
 	testFile := filepath.Join(realPath, "hello.txt")

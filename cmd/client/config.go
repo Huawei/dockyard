@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package utils
 
 import (
 	"encoding/json"
@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/containerops/dockyard/setting"
 	"github.com/containerops/dockyard/utils"
 )
 
@@ -36,15 +37,14 @@ var (
 )
 
 const (
-	topDir     = ".update-service"
-	configName = "config.json"
+	topDir     = ".dockyard"
 	cacheDir   = "cache"
+	configName = "repo.json"
 )
 
 // UpdateClientConfig is the local configuation of a update client
 type UpdateClientConfig struct {
 	DefaultServer string
-	CacheDir      string
 	Repos         []string
 }
 
@@ -60,15 +60,17 @@ func (ucc *UpdateClientConfig) Init() error {
 		return errors.New("Cannot get home directory")
 	}
 
-	topURL := filepath.Join(homeDir, topDir)
-	cacheURL := filepath.Join(topURL, cacheDir)
-	if !utils.IsDirExist(cacheURL) {
-		if err := os.MkdirAll(cacheURL, os.ModePerm); err != nil {
+	topPath := filepath.Join(homeDir, topDir)
+	if !utils.IsDirExist(topPath) {
+		if err := os.MkdirAll(topPath, os.ModePerm); err != nil {
 			return err
 		}
 	}
-
-	ucc.CacheDir = cacheURL
+	if !utils.IsDirExist(setting.Storage) {
+		if err := os.MkdirAll(setting.Storage, os.ModePerm); err != nil {
+			return err
+		}
+	}
 
 	if !ucc.exist() {
 		return ucc.save()
@@ -104,10 +106,6 @@ func (ucc *UpdateClientConfig) Load() error {
 
 	if err := json.Unmarshal(content, &ucc); err != nil {
 		return err
-	}
-
-	if ucc.CacheDir == "" {
-		ucc.CacheDir = filepath.Join(homeDir, topDir, cacheDir)
 	}
 
 	return nil
@@ -165,4 +163,8 @@ func (ucc *UpdateClientConfig) Remove(url string) error {
 	}
 
 	return ucc.save()
+}
+
+func (ucc *UpdateClientConfig) GetCacheDir() string {
+	return filepath.Join(os.Getenv("HOME"), topDir, cacheDir)
 }
