@@ -19,6 +19,7 @@ package setting
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/astaxie/beego/config"
 )
@@ -62,18 +63,43 @@ var (
 
 //
 func init() {
-	if err := setConfig("conf/containerops.conf"); err != nil {
+	conf, err := getConfig()
+	if err == nil {
+		err = setGlobalConfig(conf)
+	}
+	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 }
 
-func setConfig(path string) error {
-	conf, err := config.NewConfig("ini", path)
-	if err != nil {
-		return fmt.Errorf("Read %s error: %v", path, err.Error())
+func getConfig() (conf config.Configer, err error) {
+	home := os.Getenv("HOME")
+	if home != "" {
+		homePath := filepath.Join(home, ".dockyard", "containerops.conf")
+		conf, err = config.NewConfig("ini", homePath)
 	}
 
+	if err != nil {
+		conf, err = config.NewConfig("ini", "conf/containerops.conf")
+	}
+
+	return
+}
+
+func LoadServerConfig() {
+	conf, err := getConfig()
+	if err == nil {
+		err = setServerConfig(conf)
+	}
+
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+func setGlobalConfig(conf config.Configer) error {
 	//config globals
 	if appname := conf.String("appname"); appname != "" {
 		AppName = appname
@@ -105,6 +131,23 @@ func setConfig(path string) error {
 		return fmt.Errorf("Email config value is null")
 	}
 
+	//config update service
+	if uskeymanager := conf.String("updateserver::keymanager"); uskeymanager != "" {
+		KeyManager = uskeymanager
+	} else if uskeymanager == "" {
+		return fmt.Errorf("Update Server Key manager config value is null")
+	}
+
+	if usstorage := conf.String("updateserver::storage"); usstorage != "" {
+		Storage = usstorage
+	} else if usstorage == "" {
+		return fmt.Errorf("Update Server Storage config value is null")
+	}
+
+	return nil
+}
+
+func setServerConfig(conf config.Configer) error {
 	//config runtime
 	if runmode := conf.String("runmode"); runmode != "" {
 		RunMode = runmode
@@ -177,14 +220,6 @@ func setConfig(path string) error {
 		DockerDistributionVersion = distribution
 	} else if distribution == "" {
 		return fmt.Errorf("DockerV2 Distribution Version value is null")
-	}
-
-	if uskeymanager := conf.String("updateserver::keymanager"); uskeymanager != "" {
-		KeyManager = uskeymanager
-	}
-
-	if usstorage := conf.String("updateserver::storage"); usstorage != "" {
-		Storage = usstorage
 	}
 
 	return nil

@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	localPrefix       = "local"
+	LocalPrefix       = "local"
 	defaultKeyDirName = "key"
 	defaultPublicKey  = "pub_key.pem"
 	defaultPrivateKey = "priv_key.pem"
@@ -48,12 +48,12 @@ type KeyManagerLocal struct {
 }
 
 func init() {
-	module.RegisterKeyManager(localPrefix, &KeyManagerLocal{})
+	module.RegisterKeyManager(LocalPrefix, &KeyManagerLocal{})
 }
 
 // Supported checks if a local url begin with "local://"
 func (kml *KeyManagerLocal) Supported(url string) bool {
-	return strings.HasPrefix(url, localPrefix+"://")
+	return strings.HasPrefix(url, LocalPrefix+"://")
 }
 
 // New returns a keymanager by a url and a protocal

@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package utils
+package unittest
 
 import (
 	"io/ioutil"
@@ -24,6 +24,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/containerops/dockyard/utils"
 )
 
 // TestGenerate
@@ -35,7 +37,7 @@ func TestGenerate(t *testing.T) {
 	testHashFile := filepath.Join(dir, "hello.hash")
 	contentByte, _ := ioutil.ReadFile(testContentFile)
 	hashByte, _ := ioutil.ReadFile(testHashFile)
-	meta := GenerateMeta("hello.txt", contentByte)
+	meta := utils.GenerateMeta("hello.txt", contentByte)
 	assert.Equal(t, meta.GetHash(), strings.TrimSpace(string(hashByte)), "Fail to get correct hash value")
 }
 
@@ -43,7 +45,7 @@ func TestGenerate(t *testing.T) {
 func TestTime(t *testing.T) {
 	test1 := "test1"
 	test1Byte := []byte("test1 byte")
-	meta1 := GenerateMeta(test1, test1Byte)
+	meta1 := utils.GenerateMeta(test1, test1Byte)
 	meta2 := meta1
 	assert.Equal(t, meta1, meta2, "Fail to compare meta, should be the same")
 

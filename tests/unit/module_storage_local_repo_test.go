@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package local
+package unittest
 
 import (
 	"io/ioutil"
@@ -24,11 +24,12 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	_ "github.com/containerops/dockyard/module/km/local"
+	sl "github.com/containerops/dockyard/module/storage/local"
 	"github.com/containerops/dockyard/utils"
 )
 
-// TestRepoBasic
-func TestRepoBasic(t *testing.T) {
+// TestSLRepoBasic
+func TestSLRepoBasic(t *testing.T) {
 	topDir, err := ioutil.TempDir("", "dus-repo-test-")
 	defer os.RemoveAll(topDir)
 	assert.Nil(t, err, "Fail to create temp dir")
@@ -36,16 +37,16 @@ func TestRepoBasic(t *testing.T) {
 	protocal := "app/v1"
 	invalidURLs := []string{"a", "a/b/c"}
 	for _, invalidURL := range invalidURLs {
-		_, err := NewRepo(topDir, protocal, invalidURL)
+		_, err := sl.NewRepo(topDir, protocal, invalidURL)
 		assert.NotNil(t, err, "Fail to return error while setup an invalid url")
 	}
 
 	// new
 	validURL := "containerops/official"
-	r, err := NewRepo(topDir, protocal, validURL)
+	r, err := sl.NewRepo(topDir, protocal, validURL)
 	assert.Nil(t, err, "Fail to setup a valid url")
 	assert.Equal(t, r.GetTopDir(), filepath.Join(topDir, protocal, validURL), "Fail to get the correct top dir")
-	assert.Equal(t, r.GetMetaFile(), filepath.Join(topDir, protocal, validURL, defaultMeta), "Fail to get the default meta file")
+	assert.Equal(t, r.GetMetaFile(), filepath.Join(topDir, protocal, validURL, "meta.json"), "Fail to get the default meta file")
 
 	err = r.SetKM("local:/" + topDir)
 	assert.Nil(t, err, "Fail to set key manager")

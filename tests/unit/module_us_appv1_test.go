@@ -13,17 +13,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package appV1
+package unittest
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	usa "github.com/containerops/dockyard/module/us/appv1"
 )
 
-// TestBasic tests the basic functions
-func TestBasic(t *testing.T) {
-	var appV1 UpdateServiceAppV1
+// TestUSABasic tests the basic functions
+func TestUSABasic(t *testing.T) {
+	var appV1 usa.UpdateServiceAppV1
 
 	ok := appV1.Supported("appV1")
 	assert.Equal(t, ok, true, "Fail to get supported status")

@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package local
+package unittest
 
 import (
 	"io/ioutil"
@@ -26,10 +26,11 @@ import (
 
 	"github.com/containerops/dockyard/module"
 	_ "github.com/containerops/dockyard/module/km/local"
+	sl "github.com/containerops/dockyard/module/storage/local"
 )
 
-func loadTestData(t *testing.T) (module.UpdateServiceStorage, string) {
-	var local UpdateServiceStorageLocal
+func loadSLTestData(t *testing.T) (module.UpdateServiceStorage, string) {
+	var local sl.UpdateServiceStorageLocal
 
 	_, path, _, _ := runtime.Caller(0)
 	topPath := filepath.Join(filepath.Dir(path), "testdata")
@@ -42,8 +43,8 @@ func loadTestData(t *testing.T) (module.UpdateServiceStorage, string) {
 }
 
 // TestBasic
-func TestLocalBasic(t *testing.T) {
-	var local UpdateServiceStorageLocal
+func TestSLBasic(t *testing.T) {
+	var local sl.UpdateServiceStorageLocal
 
 	validURL := "local://tmp/containerops_storage_cache"
 	ok := local.Supported(validURL)
@@ -56,8 +57,8 @@ func TestLocalBasic(t *testing.T) {
 	assert.Equal(t, l.String(), validURL)
 }
 
-func TestLocalList(t *testing.T) {
-	l, _ := loadTestData(t)
+func TestSLList(t *testing.T) {
+	l, _ := loadSLTestData(t)
 	key := "containerops/official"
 	validCount := 0
 
@@ -70,7 +71,7 @@ func TestLocalList(t *testing.T) {
 	assert.Equal(t, validCount, 2, "Fail to get right apps")
 }
 
-func TestLocalPut(t *testing.T) {
+func TestSLPut(t *testing.T) {
 	tmpPath, err := ioutil.TempDir("", "us-test-")
 	defer os.RemoveAll(tmpPath)
 	assert.Nil(t, err, "Fail to create temp dir")
@@ -78,8 +79,8 @@ func TestLocalPut(t *testing.T) {
 	protocal := "app/v1"
 	testData := "this is test DATA, you can put in anything here"
 
-	var local UpdateServiceStorageLocal
-	l, err := local.New(localPrefix+":/"+tmpPath, localPrefix+":/"+tmpPath)
+	var local sl.UpdateServiceStorageLocal
+	l, err := local.New(sl.LocalPrefix+":/"+tmpPath, sl.LocalPrefix+":/"+tmpPath)
 	assert.Nil(t, err, "Fail to setup local repo")
 
 	invalidKey := "containerops/official"
@@ -98,14 +99,14 @@ func TestLocalPut(t *testing.T) {
 	assert.Equal(t, string(getData), testData, "Fail to get correct file")
 }
 
-func TestLocalGet(t *testing.T) {
-	l, kmPath := loadTestData(t)
+func TestSLGet(t *testing.T) {
+	l, kmPath := loadSLTestData(t)
 
 	protocal := "app/v1"
 	key := "containerops/official"
 	invalidKey := "containerops/official/invalid"
 
-	defer os.RemoveAll(filepath.Join(kmPath, key, defaultKeyDir))
+	defer os.RemoveAll(filepath.Join(kmPath, key, "key"))
 	_, err := l.GetPublicKey(protocal, key)
 	assert.Nil(t, err, "Fail to load public key")
 	_, err = l.GetMetaSign(protocal, key)
