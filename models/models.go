@@ -32,11 +32,10 @@ var (
 
 //
 func init() {
-	var err error
+}
 
-	if setting.RunMode == "unitTest" {
-		return
-	}
+func OpenDatabase() {
+	var err error
 	if db, err = gorm.Open(setting.DatabaseDriver, setting.DatabaseURI); err != nil {
 		log.Fatal("Initlization database connection error.")
 		os.Exit(1)
