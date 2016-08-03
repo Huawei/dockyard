@@ -21,7 +21,6 @@ import (
 	"os"
 
 	"github.com/astaxie/beego/config"
-	"github.com/ngaut/log"
 )
 
 var (
@@ -67,9 +66,6 @@ func init() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-
-	//set log level
-	log.SetLevelByString(LogLevel)
 }
 
 func setConfig(path string) error {
