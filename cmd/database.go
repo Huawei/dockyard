@@ -38,6 +38,8 @@ var CmdDatabase = cli.Command{
 }
 
 func runDatabase(c *cli.Context) error {
+	startServerService()
+
 	if len(c.String("action")) > 0 {
 		action := c.String("action")
 

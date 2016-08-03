@@ -49,6 +49,7 @@ func main() {
 		cmd.CmdDatabase,
 		cmd.CmdOSS,
 		cmd.CmdMonitor,
+		cmd.CmdClient,
 	}
 
 	app.Flags = append(app.Flags, []cli.Flag{}...)
