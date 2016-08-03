@@ -59,7 +59,7 @@ type DockerImageV1 struct {
 }
 
 //TableName in mysql is "docker_image_v1".
-func (*DockerImageV1) TableName() string {
+func (i *DockerImageV1) TableName() string {
 	return "docker_image_v1"
 }
 
@@ -75,7 +75,7 @@ type DockerTagV1 struct {
 }
 
 //TableName in mysql is "docker_tag_v1".
-func (*DockerTagV1) TableName() string {
+func (t *DockerTagV1) TableName() string {
 	return "docker_tag_v1"
 }
 

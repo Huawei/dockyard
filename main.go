@@ -19,6 +19,7 @@ package main
 import (
 	"os"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/urfave/cli"
 
 	"github.com/containerops/dockyard/cmd"
@@ -36,6 +37,11 @@ func init() {
 }
 
 func main() {
+	if setting.RunMode == "prod" {
+		log.SetFormatter(&log.JSONFormatter{})
+		log.SetOutput(os.Stderr)
+	}
+
 	app := cli.NewApp()
 
 	app.Name = setting.AppName

@@ -17,22 +17,23 @@ limitations under the License.
 package middleware
 
 import (
+	"time"
+
+	log "github.com/Sirupsen/logrus"
 	"gopkg.in/macaron.v1"
+
+	"github.com/containerops/dockyard/setting"
 )
 
-
-//SetMiddlewares set all middleware functions.
-func SetMiddlewares(m *macaron.Macaron) {
-	//Set static file directory,static file access without log output
-	m.Use(macaron.Static("external", macaron.StaticOptions{
-		Expires: func() string { return "max-age=0" },
-	}))
-
-	m.Use(logger())
-
-	//Set Resp Global Headers
-	m.Use(setRespHeaders())
-
-	//Set recovery handler to returns a middleware that recovers from any panics
-	m.Use(macaron.Recovery())
+func logger() macaron.Handler {
+	return func(ctx *macaron.Context) {
+		if setting.RunMode == "dev" {
+			log.Info("------------------------------------------------------------------------------")
+			log.Info(time.Now().String())
+		}
+		log.WithFields(log.Fields{
+			"Method": ctx.Req.Method,
+			"URL":    ctx.Req.RequestURI,
+		}).Info(ctx.Req.Header)
+	}
 }
