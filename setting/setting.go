@@ -198,8 +198,10 @@ func setServerConfig(conf config.Configer) error {
 	}
 
 	// Deployment domain could be empty
-	if domains := conf.String("deployment::domain"); domains != "" {
+	if domains := conf.String("deployment::domains"); domains != "" {
 		Domains = domains
+	} else if domains == "" {
+		return fmt.Errorf("Deployment domains config vaule is null")
 	}
 
 	//TODO: Add a config option for provide Docker Registry V1.

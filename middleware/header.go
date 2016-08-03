@@ -34,7 +34,6 @@ func setRespHeaders() macaron.Handler {
 			ctx.Resp.Header().Set("X-Docker-Registry-Standalone", setting.DockerStandalone)
 			ctx.Resp.Header().Set("X-Docker-Registry-Version", setting.DockerRegistryVersion)
 			ctx.Resp.Header().Set("X-Docker-Registry-Config", setting.RunMode)
-			ctx.Resp.Header().Set("X-Docker-Endpoints", setting.Domains)
 		} else if flag := strings.Contains(ctx.Req.RequestURI, "/v2/"); flag == true {
 			//Docker Registry V2
 			ctx.Resp.Header().Set("Docker-Distribution-Api-Version", setting.DockerDistributionVersion)
