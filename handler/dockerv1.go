@@ -25,6 +25,7 @@ import (
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/dockyard/models"
+	"github.com/containerops/dockyard/setting"
 	"github.com/containerops/dockyard/utils"
 )
 
@@ -129,6 +130,9 @@ func PutRepositoryV1Handler(ctx *macaron.Context) (int, []byte) {
 		ctx.Resp.Header().Set("X-Docker-Token", token)
 		ctx.Resp.Header().Set("WWW-Authenticate", token)
 	}
+
+	//TODO: When deploy multi instances of dockyard, the endpoints will schedule comply all instances stauts and arithmetic.
+	ctx.Resp.Header().Set("X-Docker-Endpoints", setting.Domains)
 
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
