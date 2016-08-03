@@ -25,7 +25,7 @@ import (
 
 func GetPingV2Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
+	return http.StatusNotFound, result
 }
 
 func GetCatalogV2Handler(ctx *macaron.Context) (int, []byte) {
