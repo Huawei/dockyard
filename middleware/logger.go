@@ -31,9 +31,11 @@ func logger() macaron.Handler {
 			log.Info("------------------------------------------------------------------------------")
 			log.Info(time.Now().String())
 		}
+
 		log.WithFields(log.Fields{
 			"Method": ctx.Req.Method,
 			"URL":    ctx.Req.RequestURI,
 		}).Info(ctx.Req.Header)
+
 	}
 }

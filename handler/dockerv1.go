@@ -22,6 +22,7 @@ import (
 	"net/http"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/jinzhu/gorm"
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/dockyard/models"
@@ -124,7 +125,7 @@ func PutRepositoryV1Handler(ctx *macaron.Context) (int, []byte) {
 
 	//If the Docker client use "X-Docker-Token", will return a randon token value.
 	if ctx.Req.Header.Get("X-Docker-Token") == "true" {
-		token := fmt.Sprintf("Token signature=%v,repository=\"%v/%v\",access=%v",
+		token := fmt.Sprintf("signature=%v,repository=\"%v/%v\",access=%v",
 			utils.MD5(username), namespace, repository, "write")
 
 		ctx.Resp.Header().Set("X-Docker-Token", token)
@@ -144,10 +145,29 @@ func GetImageAncestryV1Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusOK, result
 }
 
-//GetImageJSONV1Handler
+//GetImageJSONV1Handler is getting image json data function.
+//When docker client push an image, dockyard return http status code '400' or '404' if haven't it. Then the docker client will push the json data and layer file.
+//If dockyard has the image and return 200, the docker client will ignore it and push another iamge.
 func GetImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
+	//TODO: If standalone == true, Dockyard will check HEADER Authorization; if standalone == false, Dockyard will check HEADER TOEKN.
+	imageID := ctx.Params(":image")
+
+	image := new(models.DockerImageV1)
+	if i, err := image.Get(imageID); err != nil && err == gorm.ErrRecordNotFound {
+		log.WithFields(log.Fields{
+			"image": i.ImageId,
+		}).Info("Image Not Found.")
+
+		result, _ := json.Marshal(map[string]string{})
+		return http.StatusNotFound, result
+	} else if err != nil && err != gorm.ErrRecordNotFound {
+		log.Errorf("[%s] get image error: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"Error": "Get Image Error"})
+		return http.StatusBadRequest, result
+	} else {
+		return http.StatusOK, []byte(i.JSON)
+	}
 }
 
 //GetImageLayerV1Handler

@@ -30,9 +30,9 @@ type AppcV1 struct {
 	Keys        string     `json:"keys" sql:"null;type:text"`
 	Size        int64      `json:"size" sql:"default:0"`
 	Locked      bool       `json:"locked" sql:"default:false"`
-	CreatedAt   time.Time  `json:"created" sql:""`
-	UpdatedAt   time.Time  `json:"updated" sql:""`
-	DeletedAt   *time.Time `json:"deleted" sql:"index"`
+	CreatedAt   time.Time  `json:"create_at" sql:""`
+	UpdatedAt   time.Time  `json:"update_at" sql:""`
+	DeletedAt   *time.Time `json:"delete_at" sql:"index"`
 }
 
 //
@@ -43,7 +43,7 @@ func (*AppcV1) TableName() string {
 //
 type ACIv1 struct {
 	Id        int64      `json:"id" gorm:"primary_key"`
-	AppcV1    int64      `json:"appcv1" sql:"not null"`
+	AppcV1    int64      `json:"appc_v1" sql:"not null"`
 	OS        string     `json:"os" sql:"null;type:varchar(255)"`
 	Arch      string     `json:"arch" sql:"null;type:varchar(255)"`
 	Name      string     `json:"name" sql:"not null;type:text"`
@@ -51,9 +51,9 @@ type ACIv1 struct {
 	Path      string     `json:"arch" sql:"null;type:text"`
 	Size      int64      `json:"size" sql:"default:0"`
 	Locked    bool       `json:"locked" sql:"default:false"`
-	CreatedAt time.Time  `json:"created" sql:""`
-	UpdatedAt time.Time  `json:"updated" sql:""`
-	DeletedAt *time.Time `json:"deleted" sql:"index"`
+	CreatedAt time.Time  `json:"create_at" sql:""`
+	UpdatedAt time.Time  `json:"update_at" sql:""`
+	DeletedAt *time.Time `json:"delete_at" sql:"index"`
 }
 
 func (*ACIv1) TableName() string {
