@@ -26,44 +26,45 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/containerops/dockyard/cmd/client/module"
+	"github.com/containerops/dockyard/module/client"
 )
 
 const (
-	appV1Prefix  = "appV1"
-	appV1Restful = "app/v1"
+	appV1Protocal = "appv1"
+	appV1Restful  = "app/v1"
 )
 
 var (
-	repoRegexp = regexp.MustCompile(`^(.+)://(.+)/(.+)/(.+)$`)
+	appv1Regexp = regexp.MustCompile(`^(.+)://(.+)/(.+)/(.+)$`)
 )
 
 // UpdateClientAppV1Repo represents the 'appV1' repo
 type UpdateClientAppV1Repo struct {
+	Runmode   string
 	Site      string
 	Namespace string
 	Repo      string
 }
 
 func init() {
-	module.RegisterRepo(appV1Prefix, &UpdateClientAppV1Repo{})
+	module.RegisterRepo(appV1Protocal, &UpdateClientAppV1Repo{})
 }
 
-// Supported checks if a url begins with 'appV1://'
-func (ap *UpdateClientAppV1Repo) Supported(url string) bool {
-	return strings.HasPrefix(url, appV1Prefix+"://")
+// Supported checks if a protocal is "appv1"
+func (ap *UpdateClientAppV1Repo) Supported(protocal string) bool {
+	return protocal == appV1Protocal
 }
 
-// New parses 'app://containerops/dockyard.me/containerops/dockyard/offical' and get
+// New parses 'http://containerops/dockyard.me/containerops/dockyard/offical' and get
 //	Site:       "containerops/dockyard.me"
 //      Namespace:  "containerops/dockyard"
 //      Repo:       "offical"
 func (ap *UpdateClientAppV1Repo) New(url string) (module.UpdateClientRepo, error) {
-	parts := repoRegexp.FindStringSubmatch(url)
-	if len(parts) != 5 || parts[1] != appV1Prefix {
+	parts := appv1Regexp.FindStringSubmatch(url)
+	if len(parts) != 5 {
 		return nil, module.ErrorsUCRepoInvalid
 	}
-
+	ap.Runmode = parts[1]
 	ap.Site = parts[2]
 	ap.Namespace = parts[3]
 	ap.Repo = parts[4]
@@ -78,17 +79,16 @@ func (ap UpdateClientAppV1Repo) NRString() string {
 
 // String returns the full appV1 url
 func (ap UpdateClientAppV1Repo) String() string {
-	return fmt.Sprintf("%s://%s/%s/%s", appV1Prefix, ap.Site, ap.Namespace, ap.Repo)
+	return fmt.Sprintf("%s://%s/%s/%s", ap.Runmode, ap.Site, ap.Namespace, ap.Repo)
 }
 
 func (ap UpdateClientAppV1Repo) generateURL() string {
-	//FIXME: only support http
-	return fmt.Sprintf("http://%s/%s/%s/%s", ap.Site, appV1Restful, ap.Namespace, ap.Repo)
+	return fmt.Sprintf("%s://%s/%s/%s/%s", ap.Runmode, ap.Site, appV1Restful, ap.Namespace, ap.Repo)
 }
 
-// List lists the applications of a remove repository
+// List lists the applications of a remote repository
 func (ap UpdateClientAppV1Repo) List() ([]string, error) {
-	url := ap.generateURL()
+	url := fmt.Sprintf("%s/list", ap.generateURL())
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -119,8 +119,13 @@ func (ap UpdateClientAppV1Repo) List() ([]string, error) {
 }
 
 // GetFile gets the application data by its name
-func (ap UpdateClientAppV1Repo) GetFile(name string) ([]byte, error) {
-	url := fmt.Sprintf("%s/blob/%s", ap.generateURL(), name)
+func (ap UpdateClientAppV1Repo) GetFile(fullname string) ([]byte, error) {
+	// fullname:  os/arch/app
+	if len(strings.Split(fullname, "/")) != 3 {
+		return nil, errors.New("Invalid fullname in appV1 GetFile")
+	}
+
+	url := fmt.Sprintf("%s/%s", ap.generateURL(), fullname)
 	return ap.getFromURL(url)
 }
 
@@ -164,12 +169,32 @@ func (ap UpdateClientAppV1Repo) getFromURL(url string) ([]byte, error) {
 // Put adds an application with a name to a repository
 func (ap UpdateClientAppV1Repo) Put(name string, content []byte) error {
 	url := fmt.Sprintf("%s/%s", ap.generateURL(), name)
-	body := bytes.NewBuffer(content)
-	resp, err := http.Post(url, "application/appv1", body)
+	r := bytes.NewReader(content)
+	req, err := http.NewRequest("PUT", url, r)
 	if err != nil {
 		return err
 	}
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	_, err = ioutil.ReadAll(resp.Body)
+	return err
+}
 
+// Delete removes an application with a name from a repository
+func (ap UpdateClientAppV1Repo) Delete(name string) error {
+	url := fmt.Sprintf("%s/%s", ap.generateURL(), name)
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return err
+	}
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
 	_, err = ioutil.ReadAll(resp.Body)
 	return err
 }

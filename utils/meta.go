@@ -23,8 +23,14 @@ import (
 	"time"
 )
 
-// Meta represents the meta information of a repository
+// Meta represents the meta info of a repository
 type Meta struct {
+	Items   []MetaItem
+	Updated time.Time
+}
+
+// MetaItem represents the meta information of a repository app/vm/image
+type MetaItem struct {
 	Name string
 	Hash string
 
@@ -37,8 +43,12 @@ const (
 	defaultLifecircle = time.Hour * 24 * 180
 )
 
-// GenerateMeta generates a meta data by a file name and file content
-func GenerateMeta(file string, contentByte []byte) (meta Meta) {
+func (a Meta) Before(b Meta) bool {
+	return a.Updated.Before(b.Updated)
+}
+
+// GenerateMetaItem generates a meta data by a file name and file content
+func GenerateMetaItem(file string, contentByte []byte) (meta MetaItem) {
 	meta.Name = file
 	meta.Hash = fmt.Sprintf("%x", sha1.Sum(contentByte))
 	meta.Created = time.Now()
@@ -47,38 +57,38 @@ func GenerateMeta(file string, contentByte []byte) (meta Meta) {
 }
 
 // GetHash get the hash string of a file
-func (a Meta) GetHash() string {
+func (a MetaItem) GetHash() string {
 	return a.Hash
 }
 
 // IsExpired tells if an application is expired
-func (a Meta) IsExpired() bool {
+func (a MetaItem) IsExpired() bool {
 	//FIXME: read time from time server?
 	return a.Expired.Before(time.Now())
 }
 
 // GetCreated returns the created time of an application
-func (a Meta) GetCreated() time.Time {
+func (a MetaItem) GetCreated() time.Time {
 	return a.Created
 }
 
 // SetCreated set the created time of an application
-func (a *Meta) SetCreated(t time.Time) {
+func (a *MetaItem) SetCreated(t time.Time) {
 	a.Created = t
 }
 
 // GetExpired get the expired time of an application
-func (a Meta) GetExpired() time.Time {
+func (a MetaItem) GetExpired() time.Time {
 	return a.Expired
 }
 
 // SetExpired set the expired time of an application
-func (a *Meta) SetExpired(t time.Time) {
+func (a *MetaItem) SetExpired(t time.Time) {
 	a.Expired = t
 }
 
 // Compare checks if two meta is the same
-func (a Meta) Compare(b Meta) int {
+func (a MetaItem) Compare(b MetaItem) int {
 	if reflect.DeepEqual(a, b) {
 		return 0
 	}

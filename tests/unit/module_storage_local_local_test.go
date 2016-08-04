@@ -71,7 +71,7 @@ func TestSLList(t *testing.T) {
 	assert.Equal(t, validCount, 2, "Fail to get right apps")
 }
 
-func TestSLPut(t *testing.T) {
+func TestSLPutDelete(t *testing.T) {
 	tmpPath, err := ioutil.TempDir("", "us-test-")
 	defer os.RemoveAll(tmpPath)
 	assert.Nil(t, err, "Fail to create temp dir")
@@ -97,6 +97,11 @@ func TestSLPut(t *testing.T) {
 	getData, err := l.Get(protocal, validKey)
 	assert.Nil(t, err, "Fail to load file")
 	assert.Equal(t, string(getData), testData, "Fail to get correct file")
+
+	err = l.Delete(protocal, validKey)
+	assert.Nil(t, err, "Fail to remove a file")
+	err = l.Delete(protocal, validKey)
+	assert.NotNil(t, err, "Should return error in removing a non exist file")
 }
 
 func TestSLGet(t *testing.T) {

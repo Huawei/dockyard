@@ -126,10 +126,15 @@ func AppGetMetaSignV1Handler(ctx *macaron.Context) (int, []byte) {
 func AppGetFileV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
-	name := ctx.Params(":name")
+	a := models.ArtifactV1{
+		OS:   ctx.Params(":os"),
+		Arch: ctx.Params(":arch"),
+		App:  ctx.Params(":app"),
+		Tag:  ctx.Params(":tag"),
+	}
 
 	appV1, _ := module.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
-	data, err := appV1.Get(namespace+"/"+repository, name)
+	data, err := appV1.Get(namespace+"/"+repository, a.GetName())
 	if err == nil {
 		return http.StatusOK, data
 	} else {
@@ -205,7 +210,7 @@ func AppPutFileV1Handler(ctx *macaron.Context) (int, []byte) {
 		return http.StatusBadRequest, result
 	}
 
-	return httpRet("AppV1 Post data", nil, err)
+	return httpRet("AppV1 Put data", nil, err)
 }
 
 //
@@ -220,8 +225,50 @@ func AppPatchFileV1Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusOK, result
 }
 
-//
+// AppDeleteFileV1Handler remove a file from a repo
 func AppDeleteFileV1Handler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
+	// setup the repository.
+	namespace := ctx.Params(":namespace")
+	repository := ctx.Params(":repository")
+	r, err := models.NewAppV1(namespace, repository)
+	if err != nil {
+		log.Errorf("[%s] setup repository error: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"Error": "Setup Repository Error"})
+		return http.StatusBadRequest, result
+	}
+
+	a := models.ArtifactV1{
+		OS:   ctx.Params(":os"),
+		Arch: ctx.Params(":arch"),
+		App:  ctx.Params(":app"),
+		Tag:  ctx.Params(":tag"),
+	}
+
+	// Remove from update service
+	appV1, err := module.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
+	if err != nil {
+		log.Errorf("[%s] create update service: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"Error": "Create Update Service Error"})
+		return http.StatusBadRequest, result
+	}
+
+	err = appV1.Delete(namespace+"/"+repository, a.GetName())
+	if err != nil {
+		log.Errorf("[%s] delete from update service error: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"Error": "Delete Update Service Error"})
+		return http.StatusBadRequest, result
+	}
+
+	err = r.Delete(a)
+	if err != nil {
+		log.Errorf("[%s] delete artifact error: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"Error": "Delete Artifact Error"})
+		return http.StatusBadRequest, result
+	}
+
+	return httpRet("AppV1 Delete data", nil, err)
 }
