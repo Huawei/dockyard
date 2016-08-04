@@ -97,6 +97,9 @@ func SetRouters(m *macaron.Macaron) {
 				m.Get("/list", handler.AppGetListAppV1Handler)
 
 				// Pull
+				m.Get("/meta", handler.AppGetMetaV1Handler)
+				m.Get("/metasign", handler.AppGetMetaSignV1Handler)
+				m.Get("/pubkey", handler.AppGetPublicKeyV1Handler)
 				m.Get("/:os/:arch/:app/?:tag", handler.AppGetFileV1Handler)
 				m.Get("/:os/:arch/:app/manifests/?:tag", handler.AppGetManifestsV1Handler)
 
