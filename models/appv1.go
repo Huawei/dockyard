@@ -32,9 +32,9 @@ type AppV1 struct {
 	Keys        string     `json:"keys" sql:"null;type:text"`
 	Size        int64      `json:"size" sql:"default:0"`
 	Locked      bool       `json:"locked" sql:"default:false"`
-	CreatedAt   time.Time  `json:"created" sql:""`
-	UpdatedAt   time.Time  `json:"updated" sql:""`
-	DeletedAt   *time.Time `json:"deleted" sql:"index"`
+	CreatedAt   time.Time  `json:"create_at" sql:""`
+	UpdatedAt   time.Time  `json:"update_at" sql:""`
+	DeletedAt   *time.Time `json:"delete_at" sql:"index"`
 }
 
 // NewAppV1 returns the namespace/repository, it will create the repository if it is not exist
@@ -67,7 +67,7 @@ func (app *AppV1) Put(artifact ArtifactV1) error {
 // ArtifactV1 is the Artifcat V1 object
 type ArtifactV1 struct {
 	Id        int64  `json:"id" gorm:"primary_key"`
-	AppV1ID   int64  `json:"appv1" sql:"not null"`
+	AppV1ID   int64  `json:"app_v1_id" sql:"not null"`
 	OS        string `json:"os" sql:"null;type:varchar(255)"`
 	Arch      string `json:"arch" sql:"null;type:varchar(255)"`
 	App       string `json:"app" sql:"not null;varchar(255)" gorm:"unique_index:app_tag"`
@@ -78,9 +78,9 @@ type ArtifactV1 struct {
 	Path      string     `json:"path" sql:"null;type:text"`
 	Size      int64      `json:"size" sql:"default:0"`
 	Locked    bool       `json:"locked" sql:"default:false"`
-	CreatedAt time.Time  `json:"created" sql:""`
-	UpdatedAt time.Time  `json:"updated" sql:""`
-	DeletedAt *time.Time `json:"deleted" sql:"index"`
+	CreatedAt time.Time  `json:"create_at" sql:""`
+	UpdatedAt time.Time  `json:"update_at" sql:""`
+	DeletedAt *time.Time `json:"delete_at" sql:"index"`
 }
 
 // TableName returns the name of ArtifactV1 table in mysql
