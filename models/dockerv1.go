@@ -86,5 +86,23 @@ func (r *DockerV1) Save(namespace, repository string) error {
 
 //Put function will create or update repository.
 func (r *DockerV1) Put(namespace, repository, json, agent string) error {
+	r.Namespace, r.Repository, r.JSON, r.Agent, r.Locked = namespace, repository, json, agent, true
+
+	tx := db.Begin()
+
+	if err := db.Debug().Where("namespace = ? AND repository = ? ", namespace, repository).FirstOrCreate(&r).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Debug().Model(&r).Updates(map[string]interface{}{"json": json, "agent": agent, "locked": true}).Error; err != nil {
+		tx.Rollback()
+		return err
+	} else if err == nil {
+		tx.Commit()
+		return nil
+	}
+
+	tx.Commit()
 	return nil
 }
