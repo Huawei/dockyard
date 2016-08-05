@@ -26,6 +26,7 @@ import (
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/dockyard/module"
 	"github.com/containerops/dockyard/setting"
+	"github.com/containerops/dockyard/utils"
 )
 
 type httpListRet struct {
@@ -175,12 +176,22 @@ func AppPutFileV1Handler(ctx *macaron.Context) (int, []byte) {
 		return http.StatusBadRequest, result
 	}
 
+	reqMethod := ctx.Req.Header.Get("Dockyard-Encrypt-Method")
+	encryptMethod := utils.NewEncryptMethod(reqMethod)
+	if encryptMethod == utils.EncryptNotSupported {
+		log.Errorf("[%s] encrypt method %s is invalid", ctx.Req.RequestURI, reqMethod)
+
+		result, _ := json.Marshal(map[string]string{"Error": "Invalid Encrypt Method"})
+		return http.StatusBadRequest, result
+	}
+
 	a := models.ArtifactV1{
-		OS:   ctx.Params(":os"),
-		Arch: ctx.Params(":arch"),
-		App:  ctx.Params(":app"),
-		Tag:  ctx.Params(":tag"),
-		Size: int64(len(data)),
+		OS:            ctx.Params(":os"),
+		Arch:          ctx.Params(":arch"),
+		App:           ctx.Params(":app"),
+		Tag:           ctx.Params(":tag"),
+		EncryptMethod: string(encryptMethod),
+		Size:          int64(len(data)),
 	}
 
 	// Add to update service
@@ -192,7 +203,7 @@ func AppPutFileV1Handler(ctx *macaron.Context) (int, []byte) {
 		return http.StatusBadRequest, result
 	}
 
-	tmpPath, err := appV1.Put(namespace+"/"+repository, a.GetName(), data)
+	tmpPath, err := appV1.Put(namespace+"/"+repository, a.GetName(), data, encryptMethod)
 	if err != nil {
 		log.Errorf("[%s] put to update service error: %s", ctx.Req.RequestURI, err.Error())
 

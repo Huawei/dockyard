@@ -31,8 +31,9 @@ type Meta struct {
 
 // MetaItem represents the meta information of a repository app/vm/image
 type MetaItem struct {
-	Name string
-	Hash string
+	Name   string
+	Hash   string
+	Method EncryptMethod
 
 	Created time.Time
 	Expired time.Time
@@ -59,6 +60,14 @@ func GenerateMetaItem(file string, contentByte []byte) (meta MetaItem) {
 // GetHash get the hash string of a file
 func (a MetaItem) GetHash() string {
 	return a.Hash
+}
+
+func (a *MetaItem) SetEncryption(method EncryptMethod) {
+	a.Method = method
+}
+
+func (a MetaItem) GetEncryption() EncryptMethod {
+	return a.Method
 }
 
 // IsExpired tells if an application is expired

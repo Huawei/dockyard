@@ -35,6 +35,27 @@ import (
 	"time"
 )
 
+type EncryptMethod string
+
+const (
+	EncryptGPG          = "gpg"
+	EncryptNone         = "none"
+	EncryptNotSupported = "not-supported"
+)
+
+func NewEncryptMethod(method string) EncryptMethod {
+	switch method {
+	case string(EncryptGPG):
+		return EncryptGPG
+	case "":
+		return EncryptNone
+	case string(EncryptNone):
+		return EncryptNone
+	}
+
+	return EncryptNotSupported
+}
+
 // IsDirExist checks if a path is an existed dir
 func IsDirExist(path string) bool {
 	fi, err := os.Stat(path)
