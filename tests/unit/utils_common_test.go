@@ -26,6 +26,23 @@ import (
 	"github.com/containerops/dockyard/utils"
 )
 
+// TestEncryptMethod
+func TestEncryptMethod(t *testing.T) {
+	cases := []struct {
+		data     string
+		expected utils.EncryptMethod
+	}{
+		{"gpg", utils.EncryptGPG},
+		{"", utils.EncryptNone},
+		{"anyother", utils.EncryptNotSupported},
+	}
+
+	for _, c := range cases {
+		assert.Equal(t, utils.NewEncryptMethod(c.data), c.expected, "Fail to get encrypt method")
+	}
+}
+
+// TestRSAGenerateEnDe
 func TestRSAGenerateEnDe(t *testing.T) {
 	privBytes, pubBytes, err := utils.GenerateRSAKeyPair(1024)
 	assert.Nil(t, err, "Fail to genereate RSA Key Pair")
