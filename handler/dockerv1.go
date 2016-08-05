@@ -58,6 +58,8 @@ func PostUsersV1Handler(ctx *macaron.Context) (int, []byte) {
 
 //PutTagV1Handler
 func PutTagV1Handler(ctx *macaron.Context) (int, []byte) {
+	//TODO: If standalone == true, Dockyard will check HEADER Authorization; if standalone == false, Dockyard will check HEADER TOEKN.
+
 	//In Docker Registry V1, the repository json data in the body of `PUT /v1/:namespace/:repository`
 	if body, err := ctx.Req.Body().String(); err != nil {
 		log.Errorf("[%s] get tag from http body error: %s", ctx.Req.RequestURI, err.Error())
@@ -74,7 +76,7 @@ func PutTagV1Handler(ctx *macaron.Context) (int, []byte) {
 
 		t := new(models.DockerTagV1)
 		if err := t.Put(imageID[1], tag, namespace, repository); err != nil {
-			log.Errorf("[%s] put repository tagerror: %s", ctx.Req.RequestURI, err.Error())
+			log.Errorf("[%s] put repository tag error: %s", ctx.Req.RequestURI, err.Error())
 
 			result, _ := json.Marshal(map[string]string{"Error": "Put Repository Tag Error"})
 			return http.StatusBadRequest, result
@@ -87,8 +89,21 @@ func PutTagV1Handler(ctx *macaron.Context) (int, []byte) {
 
 //PutRepositoryImagesV1Handler
 func PutRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
+	//TODO: If standalone == true, Dockyard will check HEADER Authorization; if standalone == false, Dockyard will check HEADER TOEKN.
+
+	namespace := ctx.Params(":namespace")
+	repository := ctx.Params(":repository")
+
+	r := new(models.DockerV1)
+	if err := r.Unlocked(namespace, repository); err != nil {
+		log.Errorf("[%s] unlock repository error: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"Error": "Unlock Repository Error"})
+		return http.StatusBadRequest, result
+	}
+
 	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
+	return http.StatusNoContent, result
 }
 
 //GetRepositoryImagesV1Handler
