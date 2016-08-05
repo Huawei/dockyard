@@ -238,7 +238,7 @@ func (r Repo) Get(name string) ([]byte, error) {
 }
 
 // Put adds an application to a repository
-func (r Repo) Put(name string, content []byte) (string, error) {
+func (r Repo) Put(name string, content []byte, method utils.EncryptMethod) (string, error) {
 	topDir := r.GetTopDir()
 	if !utils.IsDirExist(topDir) {
 		if err := os.MkdirAll(topDir, 0777); err != nil {
@@ -261,7 +261,14 @@ func (r Repo) Put(name string, content []byte) (string, error) {
 		}
 
 	}
-	item := utils.GenerateMetaItem(name, content)
+
+	encryptContent, err := r.encrypt(method, content)
+	if err != nil {
+		return "", err
+	}
+
+	item := utils.GenerateMetaItem(name, encryptContent)
+	item.SetEncryption(method)
 
 	// Using the 'hash' value to rename the original file
 	dataFileName := item.GetHash()
@@ -273,7 +280,7 @@ func (r Repo) Put(name string, content []byte) (string, error) {
 	}
 
 	// write data
-	if err := ioutil.WriteFile(dataFile, content, 0644); err != nil {
+	if err := ioutil.WriteFile(dataFile, encryptContent, 0644); err != nil {
 		return "", err
 	}
 
@@ -290,13 +297,26 @@ func (r Repo) Put(name string, content []byte) (string, error) {
 	}
 
 	// write meta data
-	err := r.saveMeta(meta)
+	err = r.saveMeta(meta)
 	if err != nil {
 		os.Remove(dataFile)
 		return "", err
 	}
 
 	return dataFile, nil
+}
+
+func (r Repo) encrypt(method utils.EncryptMethod, content []byte) ([]byte, error) {
+	switch method {
+	case utils.EncryptGPG:
+		pubBytes, err := ioutil.ReadFile(r.GetPublicKeyFile())
+		if err != nil {
+			return nil, err
+		}
+		return utils.RSAEncrypt(pubBytes, content)
+	default:
+		return content, nil
+	}
 }
 
 func (r Repo) saveMeta(meta utils.Meta) error {

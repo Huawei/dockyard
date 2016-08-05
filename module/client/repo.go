@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+
+	"github.com/containerops/dockyard/utils"
 )
 
 // UpdateClientRepo reprensents the local repo interface
@@ -32,7 +34,7 @@ type UpdateClientRepo interface {
 	GetPublicKey() ([]byte, error)
 	GetMeta() ([]byte, error)
 	GetMetaSign() ([]byte, error)
-	Put(name string, content []byte) error
+	Put(name string, content []byte, method utils.EncryptMethod) error
 	Delete(name string) error
 	NRString() string
 	String() string

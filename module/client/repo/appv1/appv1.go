@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/containerops/dockyard/module/client"
+	"github.com/containerops/dockyard/utils"
 )
 
 const (
@@ -167,13 +168,16 @@ func (ap UpdateClientAppV1Repo) getFromURL(url string) ([]byte, error) {
 }
 
 // Put adds an application with a name to a repository
-func (ap UpdateClientAppV1Repo) Put(name string, content []byte) error {
+func (ap UpdateClientAppV1Repo) Put(name string, content []byte, method utils.EncryptMethod) error {
 	url := fmt.Sprintf("%s/%s", ap.generateURL(), name)
 	r := bytes.NewReader(content)
 	req, err := http.NewRequest("PUT", url, r)
+	req.Header.Set("Dockyard-Encrypt-Method", string(method))
+
 	if err != nil {
 		return err
 	}
+	//TODO: set head
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
