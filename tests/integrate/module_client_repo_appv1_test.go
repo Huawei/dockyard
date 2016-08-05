@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-package appV1
+package integratetest
 
 import (
 	"fmt"
@@ -23,46 +23,30 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/containerops/dockyard/cmd/client/module"
+	"github.com/containerops/dockyard/module/client/repo/appv1"
 	"github.com/containerops/dockyard/utils"
 )
 
 func getTestURL() string {
-	// Start a dus server and set the enviornment like this:
-	//     $ export US_TEST_SERVER=appV1://localhost:1234
+	// Start a dockyard web server and set the enviornment like this:
+	//     $ export US_TEST_SERVER=http://localhost:1234
 	server := os.Getenv("US_TEST_SERVER")
 	if server == "" {
 		return ""
 	}
 
-	return server + "/namespaceonlyfortest/repoonlyfortest"
-}
-
-// TestInitConfig tests the Init function
-func TestInitConfig(t *testing.T) {
-	var appV1 UpdateClientAppV1Repo
-
-	invalidURL := "appInvalid://containerops.me/containerops/official"
-	_, err := appV1.New(invalidURL)
-	assert.Equal(t, err, module.ErrorsUCRepoInvalid, "Fail to parse invalid url")
-
-	invalidURL2 := "appV1://containerops.me/containerops"
-	_, err = appV1.New(invalidURL2)
-	assert.Equal(t, err, module.ErrorsUCRepoInvalid, "Fail to parse invalid url")
-
-	validURL := "appV1://containerops.me/containerops/official"
-	f, err := appV1.New(validURL)
-	assert.Nil(t, err, "Fail to setup a valid repo")
-	assert.Equal(t, appV1.generateURL(), "http://"+"containerops.me/app/v1/containerops/official", "Fail to compose a url")
-	assert.Equal(t, f.String(), validURL, "Fail to parse url")
-
+	//TODO: need to clean the repo in the server after finish the testing
+	namespace := "namespace-" + uuid.NewV4().String()
+	repository := "repository-" + uuid.NewV4().String()
+	return fmt.Sprintf("%s/%s/%s", server, namespace, repository)
 }
 
 // TestOper tests add/get/getmeta/getmetasign/list
 func TestOper(t *testing.T) {
-	var appV1 UpdateClientAppV1Repo
+	var appV1Repo appV1.UpdateClientAppV1Repo
 
 	validURL := getTestURL()
 
@@ -72,14 +56,22 @@ func TestOper(t *testing.T) {
 		return
 	}
 
-	f, _ := appV1.New(validURL)
+	testFiles := []string{"osA/archA/appA", "osB/archB/appB"}
+
+	f, _ := appV1Repo.New(validURL)
+	defer func() {
+		for _, tf := range testFiles {
+			err := f.Delete(tf)
+			assert.Nil(t, err, "Fail to delete file")
+		}
+	}()
 
 	// Init the data and also test the put function
 	_, path, _, _ := runtime.Caller(0)
-	for _, n := range []string{"appA", "appB"} {
-		file := filepath.Join(filepath.Dir(path), "testdata", n)
+	for _, tf := range testFiles {
+		file := filepath.Join(filepath.Dir(path), "testdata", tf)
 		content, _ := ioutil.ReadFile(file)
-		err := f.Put(n, content)
+		err := f.Put(tf, content)
 		assert.Nil(t, err, "Fail to put file")
 	}
 
@@ -87,13 +79,13 @@ func TestOper(t *testing.T) {
 	l, err := f.List()
 	assert.Nil(t, err, "Fail to list")
 	assert.Equal(t, len(l), 2, "Fail to list or something wrong in put")
-	ok := (l[0] == "appA" && l[1] == "appB") || (l[0] == "appB" && l[1] == "appA")
+	ok := (l[0] == testFiles[0] && l[1] == testFiles[1]) || (l[0] == testFiles[1] && l[1] == testFiles[0])
 	assert.Equal(t, true, ok, "Fail to list the correct data")
 
 	// Test get file
-	fileBytes, err := f.GetFile("appA")
+	fileBytes, err := f.GetFile(testFiles[0])
 	assert.Nil(t, err, "Fail to get file")
-	expectedBytes, _ := ioutil.ReadFile(filepath.Join(filepath.Dir(path), "testdata", "appA"))
+	expectedBytes, _ := ioutil.ReadFile(filepath.Join(filepath.Dir(path), "testdata", testFiles[0]))
 	assert.Equal(t, fileBytes, expectedBytes, "Fail to get the correct data")
 
 	// Test get meta

@@ -60,6 +60,12 @@ func (app *UpdateServiceAppV1) Put(nr, name string, data []byte) (string, error)
 	return app.storage.Put(appV1Protocal, key, data)
 }
 
+// Delete removes a appV1 file from a repository
+func (app *UpdateServiceAppV1) Delete(nr, name string) error {
+	key := nr + "/" + name
+	return app.storage.Delete(appV1Protocal, key)
+}
+
 // Get gets the appV1 file data of a repository
 func (app *UpdateServiceAppV1) Get(nr, name string) ([]byte, error) {
 	key := nr + "/" + name

@@ -33,6 +33,7 @@ type UpdateService interface {
 	Get(nr string, name string) ([]byte, error)
 	// Return the path of local storage or key of object store
 	Put(nr string, name string, data []byte) (string, error)
+	Delete(nr string, name string) error
 }
 
 var (

@@ -69,11 +69,11 @@ func TestCCCAddRemoveConfig(t *testing.T) {
 
 	var conf cutils.UpdateClientConfig
 	invalidURL := ""
-	validURL := "app://containerops/official/duc.rpm"
+	validURL := "app#http://containerops/official/duc.rpm"
 
 	// 'add'
 	err := conf.Add(invalidURL)
-	assert.Equal(t, err, cutils.ErrorsUCEmptyURL)
+	assert.Equal(t, err, cutils.ErrorsUCInvalidURL)
 	err = conf.Add(validURL)
 	assert.Nil(t, err, "Failed to add repository")
 	err = conf.Add(validURL)

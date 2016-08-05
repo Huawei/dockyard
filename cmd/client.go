@@ -25,6 +25,7 @@ import (
 	"github.com/urfave/cli"
 
 	cutils "github.com/containerops/dockyard/cmd/client"
+	"github.com/containerops/dockyard/module/client"
 )
 
 var CmdClient = cli.Command{
@@ -38,6 +39,7 @@ var CmdClient = cli.Command{
 		listCommand,
 		pushCommand,
 		pullCommand,
+		deleteCommand,
 	},
 }
 
@@ -64,18 +66,13 @@ var addCommand = cli.Command{
 	Action: func(context *cli.Context) error {
 		var ucc cutils.UpdateClientConfig
 
-		repo, err := cutils.NewUCRepo(context.Args().Get(0))
-		if err != nil {
+		url := context.Args().Get(0)
+		if err := ucc.Add(url); err != nil {
 			fmt.Println(err)
 			return err
 		}
 
-		if err := ucc.Add(repo.String()); err != nil {
-			fmt.Println(err)
-			return err
-		}
-
-		fmt.Printf("Success in adding %s.\n", repo.String())
+		fmt.Printf("Success in adding %s.\n", url)
 		return nil
 	},
 }
@@ -87,18 +84,13 @@ var removeCommand = cli.Command{
 	Action: func(context *cli.Context) error {
 		var ucc cutils.UpdateClientConfig
 
-		repo, err := cutils.NewUCRepo(context.Args().Get(0))
-		if err != nil {
+		url := context.Args().Get(0)
+		if err := ucc.Remove(url); err != nil {
 			fmt.Println(err)
 			return err
 		}
 
-		if err := ucc.Remove(repo.String()); err != nil {
-			fmt.Println(err)
-			return err
-		}
-
-		fmt.Printf("Success in removing %s.\n", repo.String())
+		fmt.Printf("Success in removing %s.\n", url)
 		return nil
 	},
 }
@@ -142,27 +134,30 @@ var pushCommand = cli.Command{
 	Usage: "push a file to a repository",
 
 	Action: func(context *cli.Context) error {
-		//TODO: we can have a default repo
-		if len(context.Args()) != 2 {
-			err := errors.New("wrong syntax: push 'filepath' 'repo url'")
+		//TODO: we can have a default server
+		if len(context.Args()) != 3 {
+			err := errors.New("wrong syntax: push  'repo url' 'file url', 'file prefix', prefix in appv1 means 'os/arch'")
 			fmt.Println(err)
 			return err
 		}
 
-		repo, err := cutils.NewUCRepo(context.Args().Get(1))
+		repoURL := context.Args().Get(0)
+		fileURL := context.Args().Get(1)
+		prefix := context.Args().Get(2)
+
+		repo, err := module.NewUCRepo(repoURL)
 		if err != nil {
 			fmt.Println(err)
 			return err
 		}
 
-		file := context.Args().Get(0)
-		content, err := ioutil.ReadFile(file)
+		content, err := ioutil.ReadFile(fileURL)
 		if err != nil {
 			fmt.Println(err)
 			return err
 		}
 
-		err = repo.Put(filepath.Base(file), content)
+		err = repo.Put(prefix+"/"+filepath.Base(fileURL), content)
 		if err != nil {
 			fmt.Println(err)
 			return err
@@ -176,7 +171,7 @@ var pullCommand = cli.Command{
 	Usage: "pull a file from a repository",
 
 	Action: func(context *cli.Context) error {
-		//TODO: we can have a default repo
+		//TODO: we can have a default server
 		if len(context.Args()) != 2 {
 			err := errors.New("wrong syntax: pull 'repo url' 'filename'")
 			fmt.Println(err)
@@ -193,31 +188,31 @@ var pullCommand = cli.Command{
 			fmt.Println(err)
 			return err
 		}
-		fmt.Println("file downloaded to: ", localFile)
+		fmt.Println("success in downloading and verifing file: ", localFile)
+		return nil
+	},
+}
 
-		fmt.Println("start to download public key")
-		pubFile, err := uc.GetPublicKey(repoURL)
-		if err != nil {
-			fmt.Println("Fail to get public key: ", err)
+var deleteCommand = cli.Command{
+	Name:  "delete",
+	Usage: "delete a file from a repository",
+
+	Action: func(context *cli.Context) error {
+		if len(context.Args()) != 2 {
+			err := errors.New("wrong syntax: pull 'repo url' 'filename'")
+			fmt.Println(err)
 			return err
 		}
-		fmt.Println("success in downloading public key to: ", pubFile)
 
-		fmt.Println("start to download meta data and signature file")
-		metaFile, err := uc.GetMeta(repoURL)
+		repoURL := context.Args().Get(0)
+		fileName := context.Args().Get(1)
+		uc := new(cutils.UpdateClient)
+
+		err := uc.Delete(repoURL, fileName)
 		if err != nil {
-			fmt.Println("Fail to get meta data: ", err)
+			fmt.Println(err)
 			return err
 		}
-		signFile, err := uc.GetMetaSign(repoURL)
-		if err != nil {
-			fmt.Println("Fail to get sign data: ", err)
-			return err
-		}
-		fmt.Println("success in downloading meta data and signature file: %s %s", metaFile, signFile)
-
-		//TODO
-		//fmt.Println("start to verify meta data and downloaded file")
-		return err
+		return nil
 	},
 }

@@ -131,19 +131,6 @@ func setGlobalConfig(conf config.Configer) error {
 		return fmt.Errorf("Email config value is null")
 	}
 
-	//config update service
-	if uskeymanager := conf.String("updateserver::keymanager"); uskeymanager != "" {
-		KeyManager = uskeymanager
-	} else if uskeymanager == "" {
-		return fmt.Errorf("Update Server Key manager config value is null")
-	}
-
-	if usstorage := conf.String("updateserver::storage"); usstorage != "" {
-		Storage = usstorage
-	} else if usstorage == "" {
-		return fmt.Errorf("Update Server Storage config value is null")
-	}
-
 	return nil
 }
 
@@ -222,6 +209,19 @@ func setServerConfig(conf config.Configer) error {
 		DockerDistributionVersion = distribution
 	} else if distribution == "" {
 		return fmt.Errorf("DockerV2 Distribution Version value is null")
+	}
+
+	//config update service
+	if uskeymanager := conf.String("updateserver::keymanager"); uskeymanager != "" {
+		KeyManager = uskeymanager
+	} else if uskeymanager == "" {
+		return fmt.Errorf("Update Server Key manager config value is null")
+	}
+
+	if usstorage := conf.String("updateserver::storage"); usstorage != "" {
+		Storage = usstorage
+	} else if usstorage == "" {
+		return fmt.Errorf("Update Server Storage config value is null")
 	}
 
 	return nil
