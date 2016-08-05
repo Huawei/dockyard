@@ -22,6 +22,7 @@ import (
 	"sync"
 
 	"github.com/containerops/dockyard/setting"
+	"github.com/containerops/dockyard/utils"
 )
 
 // UpdateServiceStorage represents the storage interface
@@ -40,9 +41,10 @@ type UpdateServiceStorage interface {
 	// key: namespace/repository
 	GetMetaSign(protocal, key string) ([]byte, error)
 	// key: namespace/repository
+	// We don't provide GetPrivateKeyFile since we don't save it on the storage server
 	GetPublicKey(protocal, key string) ([]byte, error)
 	// key: namespace/repository/appname
-	Put(protocal, key string, data []byte) (string, error)
+	Put(protocal, key string, data []byte, method utils.EncryptMethod) (string, error)
 	// key: namespace/repository/appname
 	Delete(protocal, key string) error
 	// key: namespace/repository

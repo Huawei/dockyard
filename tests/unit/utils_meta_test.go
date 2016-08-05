@@ -28,6 +28,14 @@ import (
 	"github.com/containerops/dockyard/utils"
 )
 
+// TestMetaEncrypt
+func TestMetaEncrypt(t *testing.T) {
+	var item utils.MetaItem
+
+	item.SetEncryption(utils.EncryptGPG)
+	assert.Equal(t, true, item.GetEncryption() == utils.EncryptGPG, "Fail to set/get entrypt method")
+}
+
 // TestMetaItemGenerate
 func TestMetaItemGenerate(t *testing.T) {
 	_, path, _, _ := runtime.Caller(0)

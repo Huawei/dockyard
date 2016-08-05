@@ -38,6 +38,12 @@ type KeyManager interface {
 	// protocal: 'app/v1' for example
 	// nr : namespace/repository
 	Sign(protocal string, nr string, data []byte) ([]byte, error)
+	// protocal: 'app/v1' for example
+	// nr : namespace/repository
+	Decrypt(protocal string, nr string, data []byte) ([]byte, error)
+	// WARNING! it is dangrous to privide this, so mask it now.
+	// In replace, we provides Sign and Decrypt as a service.
+	// GetPrivateKey(protocal string, nr string) ([]byte, error)
 }
 
 var (

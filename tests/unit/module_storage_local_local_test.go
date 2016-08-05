@@ -27,6 +27,7 @@ import (
 	"github.com/containerops/dockyard/module"
 	_ "github.com/containerops/dockyard/module/km/local"
 	sl "github.com/containerops/dockyard/module/storage/local"
+	"github.com/containerops/dockyard/utils"
 )
 
 func loadSLTestData(t *testing.T) (module.UpdateServiceStorage, string) {
@@ -84,11 +85,11 @@ func TestSLPutDelete(t *testing.T) {
 	assert.Nil(t, err, "Fail to setup local repo")
 
 	invalidKey := "containerops/official"
-	_, err = l.Put(protocal, invalidKey, []byte(testData))
+	_, err = l.Put(protocal, invalidKey, []byte(testData), utils.EncryptNone)
 	assert.NotNil(t, err, "Fail to put with invalid key")
 
 	validKey := "containerops/official/os/arch/appA"
-	_, err = l.Put(protocal, validKey, []byte(testData))
+	_, err = l.Put(protocal, validKey, []byte(testData), utils.EncryptNone)
 	assert.Nil(t, err, "Fail to put key")
 
 	_, err = l.GetMeta(protocal, "containerops/official")
