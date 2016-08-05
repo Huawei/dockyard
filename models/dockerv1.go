@@ -31,9 +31,9 @@ type DockerV1 struct {
 	Description string     `json:"description" sql:"null;type:text"`
 	Size        int64      `json:"size" sql:"default:0"`
 	Locked      bool       `json:"locked" sql:"default:false"` //When create/update the repository, the locked will be true.
-	CreatedAt time.Time  `json:"create_at" sql:""`
-	UpdatedAt time.Time  `json:"update_at" sql:""`
-	DeletedAt *time.Time `json:"delete_at" sql:"index"`
+	CreatedAt   time.Time  `json:"create_at" sql:""`
+	UpdatedAt   time.Time  `json:"update_at" sql:""`
+	DeletedAt   *time.Time `json:"delete_at" sql:"index"`
 }
 
 //TableName in mysql is "docker_v1".
@@ -47,7 +47,7 @@ type DockerImageV1 struct {
 	ImageId   string     `json:"image_id" sql:"not null;unique;varchar(255)"`
 	JSON      string     `json:"json" sql:"null;type:text"`
 	Ancestry  string     `json:"ancestry" sql:"null;type:text"`
-	Checksum  string     `json:"checksum" sql:"null;unique;type:varchar(255)"`
+	Checksum  string     `json:"checksum" sql:"null;type:varchar(255)"`
 	Payload   string     `json:"payload" sql:"null;type:varchar(255)"`
 	Path      string     `json:"path" sql:"null;type:text"`
 	OSS       string     `json:"oss" sql:"null;type:text"`
@@ -109,4 +109,27 @@ func (i *DockerImageV1) Get(imageID string) (DockerImageV1, error) {
 	} else {
 		return *i, nil
 	}
+}
+
+//Put image json by ImageID.
+func (i *DockerImageV1) PutJSON(imageID, json string) error {
+	i.ImageId = imageID
+
+	tx := db.Begin()
+
+	if err := db.Debug().Where("image_id = ?", imageID).FirstOrCreate(&i).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Debug().Model(&i).Updates(map[string]interface{}{"json": json}).Error; err != nil {
+		tx.Rollback()
+		return err
+	} else if err == nil {
+		tx.Commit()
+		return nil
+	}
+
+	tx.Commit()
+	return nil
 }
