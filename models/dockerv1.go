@@ -41,20 +41,21 @@ func (r *DockerV1) TableName() string {
 
 //
 type DockerImageV1 struct {
-	Id        int64      `json:"id" gorm:"primary_key"`
-	ImageId   string     `json:"image_id" sql:"not null;unique;varchar(255)"`
-	JSON      string     `json:"json" sql:"null;type:text"`
-	Ancestry  string     `json:"ancestry" sql:"null;type:text"`
-	Checksum  string     `json:"checksum" sql:"null;type:varchar(255)"`
-	Payload   string     `json:"payload" sql:"null;type:varchar(255)"`
-	Path      string     `json:"path" sql:"null;type:text"`
-	OSS       string     `json:"oss" sql:"null;type:text"`
-	Size      int64      `json:"size" sql:"default:0"`
-	Uploaded  bool       `json:"uploaded" sql:"default:false"`
-	Locked    bool       `json:"locked" sql:"default:false"`
-	CreatedAt time.Time  `json:"create_at" sql:""`
-	UpdatedAt time.Time  `json:"update_at" sql:""`
-	DeletedAt *time.Time `json:"delete_at" sql:"index"`
+	Id         int64      `json:"id" gorm:"primary_key"`
+	ImageId    string     `json:"image_id" sql:"not null;unique;varchar(255)"`
+	JSON       string     `json:"json" sql:"null;type:text"`
+	Ancestry   string     `json:"ancestry" sql:"null;type:text"`
+	Checksum   string     `json:"checksum" sql:"null;type:varchar(255)"`
+	Payload    string     `json:"payload" sql:"null;type:varchar(255)"`
+	Path       string     `json:"path" sql:"null;type:text"`
+	OSS        string     `json:"oss" sql:"null;type:text"`
+	Size       int64      `json:"size" sql:"default:0"`
+	Uploaded   bool       `json:"uploaded" sql:"default:false"`
+	Checksumed bool       `json:"checksumed" sql:"default:false"`
+	Locked     bool       `json:"locked" sql:"default:false"`
+	CreatedAt  time.Time  `json:"create_at" sql:""`
+	UpdatedAt  time.Time  `json:"update_at" sql:""`
+	DeletedAt  *time.Time `json:"delete_at" sql:"index"`
 }
 
 //TableName in mysql is "docker_image_v1".
@@ -121,7 +122,7 @@ func (i *DockerImageV1) PutJSON(imageID, json string) error {
 		return err
 	}
 
-	if err := tx.Debug().Model(&i).Updates(map[string]interface{}{"json": json, "uploaded": false}).Error; err != nil {
+	if err := tx.Debug().Model(&i).Updates(map[string]interface{}{"json": json, "uploaded": false, "checksumed": false}).Error; err != nil {
 		tx.Rollback()
 		return err
 	} else if err == nil {
@@ -138,6 +139,18 @@ func (i *DockerImageV1) PutLayer(imageID, path string, size int64) error {
 	tx := db.Begin()
 
 	if err := tx.Debug().Where("image_id = ?", imageID).First(&i).Updates(map[string]interface{}{"path": path, "uploaded": true, "size": size}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+func (i *DockerImageV1) PutChecksum(imageID, checksum, payload string) error {
+	tx := db.Begin()
+
+	if err := tx.Debug().Where("image_id = ?", imageID).First(&i).Updates(map[string]interface{}{"checksum": checksum, "payload": payload}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}

@@ -226,7 +226,7 @@ func PutImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
 
 	data, _ := ctx.Req.Body().Bytes()
 	if err := ioutil.WriteFile(layerfile, data, 0777); err != nil {
-		log.Errorf("[%s] Failed to save image layer: %s", ctx.Req.RequestURI, err.Error())
+		log.Errorf("[%s] Failed to save image layer error: %s", ctx.Req.RequestURI, err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Put Image Layer File Error"})
 		return http.StatusBadRequest, result
@@ -234,7 +234,7 @@ func PutImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
 
 	image := new(models.DockerImageV1)
 	if err := image.PutLayer(imageID, layerfile, int64(len(data))); err != nil {
-		log.Errorf("[%s] Failed to save image layer data: %s", ctx.Req.RequestURI, err.Error())
+		log.Errorf("[%s] Failed to save image layer data error: %s", ctx.Req.RequestURI, err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Put Image Layer Data Error"})
 		return http.StatusBadRequest, result
@@ -246,6 +246,20 @@ func PutImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
 
 //PutImageChecksumV1Handler
 func PutImageChecksumV1Handler(ctx *macaron.Context) (int, []byte) {
+	//TODO: If standalone == true, Dockyard will check HEADER Authorization; if standalone == false, Dockyard will check HEADER TOEKN.
+	imageID := ctx.Params(":image")
+
+	checksum := ctx.Req.Header.Get("X-Docker-Checksum")
+	payload := ctx.Req.Header.Get("X-Docker-Checksum-Payload")
+
+	image := new(models.DockerImageV1)
+	if err := image.PutChecksum(imageID, checksum, payload); err != nil {
+		log.Errorf("[%s] Failed to set image checksum and payload error: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"message": "Put Image Checksum And Payload Data Error"})
+		return http.StatusBadRequest, result
+	}
+
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
