@@ -20,6 +20,8 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+
+	"github.com/containerops/dockyard/utils"
 )
 
 // UpdateService represents the update service interface
@@ -32,7 +34,7 @@ type UpdateService interface {
 	GetMetaSign(nr string) ([]byte, error)
 	Get(nr string, name string) ([]byte, error)
 	// Return the path of local storage or key of object store
-	Put(nr string, name string, data []byte) (string, error)
+	Put(nr string, name string, data []byte, method utils.EncryptMethod) (string, error)
 	Delete(nr string, name string) error
 }
 
