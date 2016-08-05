@@ -34,6 +34,7 @@ var (
 func init() {
 }
 
+//
 func OpenDatabase() {
 	var err error
 	if db, err = gorm.Open(setting.DatabaseDriver, setting.DatabaseURI); err != nil {
