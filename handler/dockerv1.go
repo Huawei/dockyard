@@ -19,7 +19,9 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"os"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/jinzhu/gorm"
@@ -166,6 +168,10 @@ func GetImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 		result, _ := json.Marshal(map[string]string{"Error": "Get Image Error"})
 		return http.StatusBadRequest, result
 	} else {
+		ctx.Resp.Header().Set("X-Docker-Checksum-Payload", i.Checksum)
+		ctx.Resp.Header().Set("X-Docker-Size", fmt.Sprint(i.Size))
+		ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(i.JSON)))
+
 		return http.StatusOK, []byte(i.JSON)
 	}
 }
@@ -203,6 +209,37 @@ func PutImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 
 //PutImageLayerV1Handler
 func PutImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
+	//TODO: If standalone == true, Dockyard will check HEADER Authorization; if standalone == false, Dockyard will check HEADER TOEKN.
+	imageID := ctx.Params(":image")
+
+	basePath := setting.DcokerV1Storage
+	imagePath := fmt.Sprintf("%s/images/%s", basePath, imageID)
+	layerfile := fmt.Sprintf("%s/images/%s/%s", basePath, imageID, imageID)
+
+	if !utils.IsDirExist(imagePath) {
+		os.MkdirAll(imagePath, os.ModePerm)
+	}
+
+	if _, err := os.Stat(layerfile); err == nil {
+		os.Remove(layerfile)
+	}
+
+	data, _ := ctx.Req.Body().Bytes()
+	if err := ioutil.WriteFile(layerfile, data, 0777); err != nil {
+		log.Errorf("[%s] Failed to save image layer: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"message": "Put Image Layer File Error"})
+		return http.StatusBadRequest, result
+	}
+
+	image := new(models.DockerImageV1)
+	if err := image.PutLayer(imageID, layerfile, int64(len(data))); err != nil {
+		log.Errorf("[%s] Failed to save image layer data: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"message": "Put Image Layer Data Error"})
+		return http.StatusBadRequest, result
+	}
+
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }

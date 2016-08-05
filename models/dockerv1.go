@@ -16,9 +16,7 @@ limitations under the License.
 
 package models
 
-import (
-	"time"
-)
+import "time"
 
 //DockerV1 is Docker Repository V1 repository.
 type DockerV1 struct {
@@ -52,6 +50,7 @@ type DockerImageV1 struct {
 	Path      string     `json:"path" sql:"null;type:text"`
 	OSS       string     `json:"oss" sql:"null;type:text"`
 	Size      int64      `json:"size" sql:"default:0"`
+	Uploaded  bool       `json:"uploaded" sql:"default:false"`
 	Locked    bool       `json:"locked" sql:"default:false"`
 	CreatedAt time.Time  `json:"create_at" sql:""`
 	UpdatedAt time.Time  `json:"update_at" sql:""`
@@ -111,7 +110,7 @@ func (i *DockerImageV1) Get(imageID string) (DockerImageV1, error) {
 	}
 }
 
-//Put image json by ImageID.
+//PutJSON is put image json by ImageID.
 func (i *DockerImageV1) PutJSON(imageID, json string) error {
 	i.ImageId = imageID
 
@@ -122,12 +121,25 @@ func (i *DockerImageV1) PutJSON(imageID, json string) error {
 		return err
 	}
 
-	if err := tx.Debug().Model(&i).Updates(map[string]interface{}{"json": json}).Error; err != nil {
+	if err := tx.Debug().Model(&i).Updates(map[string]interface{}{"json": json, "uploaded": false}).Error; err != nil {
 		tx.Rollback()
 		return err
 	} else if err == nil {
 		tx.Commit()
 		return nil
+	}
+
+	tx.Commit()
+	return nil
+}
+
+//PutLayer is put image layer, path, uploaded and size.
+func (i *DockerImageV1) PutLayer(imageID, path string, size int64) error {
+	tx := db.Begin()
+
+	if err := tx.Debug().Where("image_id = ?", imageID).First(&i).Updates(map[string]interface{}{"path": path, "uploaded": true, "size": size}).Error; err != nil {
+		tx.Rollback()
+		return err
 	}
 
 	tx.Commit()

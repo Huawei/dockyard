@@ -50,7 +50,8 @@ Offical Docker Registry V1 Doc is [here](https://docs.docker.com/v1.7/docker/ref
 
   - 2.1 (Docker Client -> Docker Registry) `GET /v1/images/:image/json`
   - 2.2 (Docker Client -> Docker Registry) `PUT /v1/images/:image/json`
-  - 2.3 (Docker Client -> Docker Registry) `PUT /v1/images/:image/layer` 
+  - 2.3 (Docker Client -> Docker Registry) `PUT /v1/images/:image/layer`
+  - 2.3 (Docker Client -> Docker Registry) `PUT /v1/images/:image/checksum` 
 
 ### Docker Registry V1 Pull
 
