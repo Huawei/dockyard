@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"regexp"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/jinzhu/gorm"
@@ -57,6 +58,29 @@ func PostUsersV1Handler(ctx *macaron.Context) (int, []byte) {
 
 //PutTagV1Handler
 func PutTagV1Handler(ctx *macaron.Context) (int, []byte) {
+	//In Docker Registry V1, the repository json data in the body of `PUT /v1/:namespace/:repository`
+	if body, err := ctx.Req.Body().String(); err != nil {
+		log.Errorf("[%s] get tag from http body error: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"Error": "Get Tag JSON Error"})
+		return http.StatusBadRequest, result
+	} else {
+		rege, _ := regexp.Compile(`"([[:alnum:]]+)"`)
+		imageID := rege.FindStringSubmatch(body)
+
+		tag := ctx.Params(":tag")
+		namespace := ctx.Params(":namespace")
+		repository := ctx.Params(":repository")
+
+		t := new(models.DockerTagV1)
+		if err := t.Put(imageID[1], tag, namespace, repository); err != nil {
+			log.Errorf("[%s] put repository tagerror: %s", ctx.Req.RequestURI, err.Error())
+
+			result, _ := json.Marshal(map[string]string{"Error": "Put Repository Tag Error"})
+			return http.StatusBadRequest, result
+		}
+	}
+
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
@@ -157,7 +181,7 @@ func GetImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 	image := new(models.DockerImageV1)
 	if i, err := image.Get(imageID); err != nil && err == gorm.ErrRecordNotFound {
 		log.WithFields(log.Fields{
-			"image": i.ImageId,
+			"image": i.ImageID,
 		}).Info("Image Not Found.")
 
 		result, _ := json.Marshal(map[string]string{})
@@ -207,7 +231,7 @@ func PutImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusOK, result
 }
 
-//PutImageLayerV1Handler
+//PutImageLayerV1Handler is save image layer file in the server.
 func PutImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
 	//TODO: If standalone == true, Dockyard will check HEADER Authorization; if standalone == false, Dockyard will check HEADER TOEKN.
 	imageID := ctx.Params(":image")
@@ -244,7 +268,7 @@ func PutImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusOK, result
 }
 
-//PutImageChecksumV1Handler
+//PutImageChecksumV1Handler is put image checksum and payload value in the database.
 func PutImageChecksumV1Handler(ctx *macaron.Context) (int, []byte) {
 	//TODO: If standalone == true, Dockyard will check HEADER Authorization; if standalone == false, Dockyard will check HEADER TOEKN.
 	imageID := ctx.Params(":image")
@@ -259,6 +283,8 @@ func PutImageChecksumV1Handler(ctx *macaron.Context) (int, []byte) {
 		result, _ := json.Marshal(map[string]string{"message": "Put Image Checksum And Payload Data Error"})
 		return http.StatusBadRequest, result
 	}
+
+	//TODO: Verify the file's checksum.
 
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result

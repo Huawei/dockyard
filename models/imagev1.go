@@ -22,7 +22,7 @@ import (
 
 //
 type ImageV1 struct {
-	Id          int64      `json:"id" gorm:"primary_key"`
+	ID          int64      `json:"id" gorm:"primary_key"`
 	Namespace   string     `json:"namespace" sql:"not null;type:varchar(255)"`
 	Repository  string     `json:"repository" sql:"not null;type:varchar(255)"`
 	Description string     `json:"description" sql:"null;type:text"`
@@ -43,7 +43,7 @@ func (*ImageV1) TableName() string {
 
 //
 type VirtualV1 struct {
-	Id        int64      `json:"id" gorm:"primary_key"`
+	ID        int64      `json:"id" gorm:"primary_key"`
 	ImageV1   int64      `json:"image_v1" sql:"not null"`
 	OS        string     `json:"os" sql:"null;type:varchar(255)"`
 	Arch      string     `json:"arch" sql:"null;type:varchar(255)"`

@@ -16,11 +16,13 @@ limitations under the License.
 
 package models
 
-import "time"
+import (
+	"time"
+)
 
 //DockerV1 is Docker Repository V1 repository.
 type DockerV1 struct {
-	Id          int64      `json:"id" gorm:"primary_key"`
+	ID          int64      `json:"id" gorm:"primary_key"`
 	Namespace   string     `json:"namespace" sql:"not null;type:varchar(255)" gorm:"unique_index:v1_repository"`
 	Repository  string     `json:"repository" sql:"not null;type:varchar(255)" gorm:"unique_index:v1_repository"`
 	JSON        string     `json:"json" sql:"null;type:text"`
@@ -41,8 +43,8 @@ func (r *DockerV1) TableName() string {
 
 //
 type DockerImageV1 struct {
-	Id         int64      `json:"id" gorm:"primary_key"`
-	ImageId    string     `json:"image_id" sql:"not null;unique;varchar(255)"`
+	ID         int64      `json:"id" gorm:"primary_key"`
+	ImageID    string     `json:"image_id" sql:"not null;unique;varchar(255)"`
 	JSON       string     `json:"json" sql:"null;type:text"`
 	Ancestry   string     `json:"ancestry" sql:"null;type:text"`
 	Checksum   string     `json:"checksum" sql:"null;type:varchar(255)"`
@@ -65,10 +67,10 @@ func (i *DockerImageV1) TableName() string {
 
 //
 type DockerTagV1 struct {
-	Id        int64      `json:"id" gorm:"primary_key"`
+	ID        int64      `json:"id" gorm:"primary_key"`
 	DockerV1  int64      `json:"docker_v1" sql:"not null"`
 	Tag       string     `json:"tag" sql:"not null;varchar(255)"`
-	ImageId   string     `json:"image_id" sql:"not null;varchar(255)"`
+	ImageID   string     `json:"image_id" sql:"not null;varchar(255)"`
 	CreatedAt time.Time  `json:"create_at" sql:""`
 	UpdatedAt time.Time  `json:"update_at" sql:""`
 	DeletedAt *time.Time `json:"delete_at" sql:"index"`
@@ -113,7 +115,7 @@ func (i *DockerImageV1) Get(imageID string) (DockerImageV1, error) {
 
 //PutJSON is put image json by ImageID.
 func (i *DockerImageV1) PutJSON(imageID, json string) error {
-	i.ImageId = imageID
+	i.ImageID = imageID
 
 	tx := db.Begin()
 
@@ -147,10 +149,38 @@ func (i *DockerImageV1) PutLayer(imageID, path string, size int64) error {
 	return nil
 }
 
+//PutChecksum is put image's checksum and payload.
 func (i *DockerImageV1) PutChecksum(imageID, checksum, payload string) error {
 	tx := db.Begin()
 
 	if err := tx.Debug().Where("image_id = ?", imageID).First(&i).Updates(map[string]interface{}{"checksum": checksum, "payload": payload}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+//Put is set tag in the database.
+func (t *DockerTagV1) Put(imageID, tag, namespace, repository string) error {
+	tx := db.Begin()
+
+	r := new(DockerV1)
+	if err := tx.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	t.DockerV1 = r.ID
+	t.ImageID = imageID
+	t.Tag = tag
+	if err := tx.Debug().Where("docker_v1 = ? AND tag = ?", r.ID, tag).FirstOrCreate(&t).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Debug().Model(&t).Updates(map[string]interface{}{"image_id": imageID}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}

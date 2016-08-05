@@ -24,7 +24,7 @@ import (
 
 // AppV1 is the App V1 repository
 type AppV1 struct {
-	Id          int64      `json:"id" gorm:"primary_key"`
+	ID          int64      `json:"id" gorm:"primary_key"`
 	Namespace   string     `json:"namespace" sql:"not null;type:varchar(255)"`
 	Repository  string     `json:"repository" sql:"not null;type:varchar(255)"`
 	Description string     `json:"description" sql:"null;type:text"`
@@ -75,7 +75,7 @@ func (app *AppV1) Delete(artifact ArtifactV1) error {
 
 // ArtifactV1 is the Artifcat V1 object
 type ArtifactV1 struct {
-	Id            int64  `json:"id" gorm:"primary_key"`
+	ID            int64  `json:"id" gorm:"primary_key"`
 	AppV1ID       int64  `json:"app_v1_id" sql:"not null"`
 	OS            string `json:"os" sql:"null;type:varchar(255)"`
 	Arch          string `json:"arch" sql:"null;type:varchar(255)"`

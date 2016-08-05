@@ -22,7 +22,7 @@ import (
 
 //Docker
 type DockerV2 struct {
-	Id            int64      `json:"id" gorm:"primary_key"`
+	ID            int64      `json:"id" gorm:"primary_key"`
 	Namespace     string     `json:"namespace" sql:"not null;type:varchar(255)"  gorm:"unique_index:v2_repository"`
 	Repository    string     `json:"repository" sql:"not null;type:varchar(255)"  gorm:"unique_index:v2_repository"`
 	SchemaVersion string     `json:"schema_version" sql:"not null;type:varchar(255)"`
@@ -43,8 +43,8 @@ func (*DockerV2) TableName() string {
 
 //
 type DockerImageV2 struct {
-	Id              int64      `json:"id" gorm:"primary_key"`
-	ImageId         string     `json:"image_id" sql:"unique;type:varchar(255)"`
+	ID              int64      `json:"id" gorm:"primary_key"`
+	ImageID         string     `json:"image_id" sql:"unique;type:varchar(255)"`
 	BlobSum         string     `json:"blob_sum" sql:"null;unique;type:varchar(255)"`
 	V1Compatibility string     `json:"v1_compatibility" sql:"null;type:text"`
 	Path            string     `json:"path" sql:"null;type:text"`
@@ -63,10 +63,10 @@ func (*DockerImageV2) TableName() string {
 
 //
 type DockerTagV2 struct {
-	Id        int64      `json:"id" gorm:"primary_key"`
+	ID        int64      `json:"id" gorm:"primary_key"`
 	DockerV2  int64      `json:"docker_v2" sql:"not null"`
 	Tag       string     `json:"tag" sql:"not null;type:varchar(255)"`
-	ImageId   string     `json:"image_id" sql:"not null;type:varchar(255)"`
+	ImageID   string     `json:"image_id" sql:"not null;type:varchar(255)"`
 	Manifest  string     `json:"manifest" sql:"null;type:text"`
 	Schema    int64      `json:"schema" sql:""`
 	CreatedAt time.Time  `json:"create_at" sql:""`
