@@ -188,3 +188,21 @@ func (t *DockerTagV1) Put(imageID, tag, namespace, repository string) error {
 	tx.Commit()
 	return nil
 }
+
+//Unlocked is Unlocked repository data so could pull.
+func (r *DockerV1) Unlocked(namespace, repository string) error {
+	tx := db.Begin()
+
+	if err := tx.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Debug().Model(&r).Updates(map[string]interface{}{"locked": false}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
