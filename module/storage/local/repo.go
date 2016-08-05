@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/containerops/dockyard/module"
 	"github.com/containerops/dockyard/setting"
@@ -190,15 +191,16 @@ func (r Repo) List() ([]string, error) {
 		return nil, err
 	}
 
-	var metas []utils.Meta
-	err = json.Unmarshal(data, &metas)
+	var meta utils.Meta
+	err = json.Unmarshal(data, &meta)
 	if err != nil {
-		return nil, err
+		//This may happend in migration, meta struct changes.
+		return nil, nil
 	}
 
 	var files []string
-	for _, meta := range metas {
-		files = append(files, meta.Name)
+	for _, m := range meta.Items {
+		files = append(files, m.Name)
 	}
 
 	return files, nil
@@ -206,7 +208,7 @@ func (r Repo) List() ([]string, error) {
 
 // Get gets the data of an application
 func (r Repo) Get(name string) ([]byte, error) {
-	var metas []utils.Meta
+	var meta utils.Meta
 	metaFile := r.GetMetaFile()
 	if !utils.IsFileExist(metaFile) {
 		return nil, ErrorEmptyRepo
@@ -216,17 +218,19 @@ func (r Repo) Get(name string) ([]byte, error) {
 		return nil, err
 	}
 
-	err = json.Unmarshal(data, &metas)
+	err = json.Unmarshal(data, &meta)
 	if err != nil {
-		return nil, err
+		//This may happend in migration, meta struct changes.
+		os.Remove(metaFile)
+		return nil, nil
 	}
 
-	for i := range metas {
-		if metas[i].Name != name {
+	for i := range meta.Items {
+		if meta.Items[i].Name != name {
 			continue
 		}
 
-		dataFile := filepath.Join(r.GetTopDir(), defaultTargetDir, metas[i].Hash)
+		dataFile := filepath.Join(r.GetTopDir(), defaultTargetDir, meta.Items[i].Hash)
 		return ioutil.ReadFile(dataFile)
 	}
 
@@ -242,7 +246,7 @@ func (r Repo) Put(name string, content []byte) (string, error) {
 		}
 	}
 
-	var metas []utils.Meta
+	var meta utils.Meta
 	metaFile := r.GetMetaFile()
 	if utils.IsFileExist(metaFile) {
 		data, err := ioutil.ReadFile(metaFile)
@@ -250,16 +254,17 @@ func (r Repo) Put(name string, content []byte) (string, error) {
 			return "", err
 		}
 
-		err = json.Unmarshal(data, &metas)
+		err = json.Unmarshal(data, &meta)
 		if err != nil {
-			return "", err
+			//This may happend in migration, meta struct changes.
+			os.Remove(metaFile)
 		}
 
 	}
-	meta := utils.GenerateMeta(name, content)
+	item := utils.GenerateMetaItem(name, content)
 
 	// Using the 'hash' value to rename the original file
-	dataFileName := meta.GetHash()
+	dataFileName := item.GetHash()
 	dataFile := filepath.Join(topDir, defaultTargetDir, dataFileName)
 	if !utils.IsDirExist(filepath.Dir(dataFile)) {
 		if err := os.MkdirAll(filepath.Dir(dataFile), 0777); err != nil {
@@ -274,19 +279,18 @@ func (r Repo) Put(name string, content []byte) (string, error) {
 
 	// get meta content
 	exist := false
-	for i := range metas {
-		if metas[i].Name == name {
-			metas[i] = meta
+	for i := range meta.Items {
+		if meta.Items[i].Name == name {
+			meta.Items[i] = item
 			exist = true
 		}
 	}
 	if !exist {
-		metas = append(metas, meta)
+		meta.Items = append(meta.Items, item)
 	}
-	metasContent, _ := json.Marshal(metas)
 
 	// write meta data
-	err := r.saveMeta(metasContent)
+	err := r.saveMeta(meta)
 	if err != nil {
 		os.Remove(dataFile)
 		return "", err
@@ -295,15 +299,17 @@ func (r Repo) Put(name string, content []byte) (string, error) {
 	return dataFile, nil
 }
 
-func (r Repo) saveMeta(metasContent []byte) error {
+func (r Repo) saveMeta(meta utils.Meta) error {
+	meta.Updated = time.Now()
+	metaContent, _ := json.Marshal(meta)
 	metaFile := r.GetMetaFile()
-	err := ioutil.WriteFile(metaFile, metasContent, 0644)
+	err := ioutil.WriteFile(metaFile, metaContent, 0644)
 	if err != nil {
 		return err
 	}
 
 	// write sign file
-	err = r.saveSign(metasContent)
+	err = r.saveSign(metaContent)
 	if err != nil {
 		os.Remove(metaFile)
 		return err
@@ -312,13 +318,13 @@ func (r Repo) saveMeta(metasContent []byte) error {
 	return nil
 }
 
-func (r Repo) saveSign(metasContent []byte) error {
+func (r Repo) saveSign(metaContent []byte) error {
 	if r.kmURL == "" {
 		return nil
 	}
 
 	km, _ := module.NewKeyManager(r.kmURL)
-	signContent, _ := km.Sign(r.Protocal, r.Namespace+"/"+r.Repository, metasContent)
+	signContent, _ := km.Sign(r.Protocal, r.Namespace+"/"+r.Repository, metaContent)
 	signFile := r.GetMetaSignFile()
 	if err := ioutil.WriteFile(signFile, signContent, 0644); err != nil {
 		return err
@@ -327,9 +333,9 @@ func (r Repo) saveSign(metasContent []byte) error {
 	return nil
 }
 
-// Remove removes an application from a repository
-func (r Repo) Remove(name string) error {
-	var metas []utils.Meta
+// Delete removes an application from a repository
+func (r Repo) Delete(name string) error {
+	var meta utils.Meta
 	metaFile := r.GetMetaFile()
 	if !utils.IsFileExist(metaFile) {
 		return ErrorEmptyRepo
@@ -339,25 +345,25 @@ func (r Repo) Remove(name string) error {
 		return err
 	}
 
-	err = json.Unmarshal(data, &metas)
+	err = json.Unmarshal(data, &meta)
 	if err != nil {
-		return err
+		//This may happend in migration, meta struct changes.
+		os.Remove(metaFile)
+		return nil
 	}
 
-	for i := range metas {
-		if metas[i].Name != name {
+	for i := range meta.Items {
+		if meta.Items[i].Name != name {
 			continue
 		}
 
-		dataFile := filepath.Join(r.GetTopDir(), defaultTargetDir, metas[i].Hash)
+		dataFile := filepath.Join(r.GetTopDir(), defaultTargetDir, meta.Items[i].Hash)
 		if err := os.Remove(dataFile); err != nil {
 			return err
 		}
 
-		metas = append(metas[:i], metas[i+1:]...)
-		metasContent, _ := json.Marshal(metas)
-
-		if err := r.saveMeta(metasContent); err != nil {
+		meta.Items = append(meta.Items[:i], meta.Items[i+1:]...)
+		if err := r.saveMeta(meta); err != nil {
 			return err
 		}
 		return nil

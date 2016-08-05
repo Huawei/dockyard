@@ -28,8 +28,8 @@ import (
 	"github.com/containerops/dockyard/utils"
 )
 
-// TestGenerate
-func TestGenerate(t *testing.T) {
+// TestMetaItemGenerate
+func TestMetaItemGenerate(t *testing.T) {
 	_, path, _, _ := runtime.Caller(0)
 	dir := filepath.Join(filepath.Dir(path), "testdata")
 
@@ -37,23 +37,23 @@ func TestGenerate(t *testing.T) {
 	testHashFile := filepath.Join(dir, "hello.hash")
 	contentByte, _ := ioutil.ReadFile(testContentFile)
 	hashByte, _ := ioutil.ReadFile(testHashFile)
-	meta := utils.GenerateMeta("hello.txt", contentByte)
-	assert.Equal(t, meta.GetHash(), strings.TrimSpace(string(hashByte)), "Fail to get correct hash value")
+	metaItem := utils.GenerateMetaItem("hello.txt", contentByte)
+	assert.Equal(t, metaItem.GetHash(), strings.TrimSpace(string(hashByte)), "Fail to get correct hash value")
 }
 
-// TestTime
-func TestTime(t *testing.T) {
+// TestMetaTime
+func TestMetaTime(t *testing.T) {
 	test1 := "test1"
 	test1Byte := []byte("test1 byte")
-	meta1 := utils.GenerateMeta(test1, test1Byte)
-	meta2 := meta1
-	assert.Equal(t, meta1, meta2, "Fail to compare meta, should be the same")
+	metaItem1 := utils.GenerateMetaItem(test1, test1Byte)
+	metaItem2 := metaItem1
+	assert.Equal(t, metaItem1, metaItem2, "Fail to compare metaItem, should be the same")
 
-	meta2.SetCreated(meta2.GetCreated().Add(time.Hour * 1))
-	cmp := meta1.Compare(meta2)
-	assert.Equal(t, cmp < 0, true, "Fail to compare meta, should be smaller")
+	metaItem2.SetCreated(metaItem2.GetCreated().Add(time.Hour * 1))
+	cmp := metaItem1.Compare(metaItem2)
+	assert.Equal(t, cmp < 0, true, "Fail to compare metaItem, should be smaller")
 
-	assert.Equal(t, meta2.IsExpired(), false, "Fail to get expired information")
-	meta2.SetExpired(time.Now().Add(time.Hour * (-1)))
-	assert.Equal(t, meta2.IsExpired(), true, "Fail to get expired information")
+	assert.Equal(t, metaItem2.IsExpired(), false, "Fail to get expired information")
+	metaItem2.SetExpired(time.Now().Add(time.Hour * (-1)))
+	assert.Equal(t, metaItem2.IsExpired(), true, "Fail to get expired information")
 }

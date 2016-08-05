@@ -73,9 +73,9 @@ func TestSLRepoBasic(t *testing.T) {
 
 	// remove
 	removeFile := "appA"
-	err = r.Remove(removeFile)
+	err = r.Delete(removeFile)
 	assert.Nil(t, err, "Fail to remove valid file")
-	err = r.Remove(removeFile)
+	err = r.Delete(removeFile)
 	assert.NotNil(t, err, "Fail to remove invalid file")
 
 	// update (add with a exist name)

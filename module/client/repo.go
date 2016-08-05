@@ -14,11 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package utils
+package module
 
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 )
 
@@ -32,6 +33,7 @@ type UpdateClientRepo interface {
 	GetMeta() ([]byte, error)
 	GetMetaSign() ([]byte, error)
 	Put(name string, content []byte) error
+	Delete(name string) error
 	NRString() string
 	String() string
 }
@@ -70,9 +72,15 @@ func RegisterRepo(name string, f UpdateClientRepo) {
 
 // NewUCRepo creates a update client repo by a url
 func NewUCRepo(url string) (UpdateClientRepo, error) {
+	//URL should be protocal#repourl
+	s := strings.Split(url, "#")
+	if len(s) != 2 {
+		return nil, ErrorsUCRepoInvalid
+	}
+
 	for _, f := range ucRepos {
-		if f.Supported(url) {
-			return f.New(url)
+		if f.Supported(s[0]) {
+			return f.New(s[1])
 		}
 	}
 

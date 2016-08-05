@@ -64,6 +64,15 @@ func (app *AppV1) Put(artifact ArtifactV1) error {
 	return nil
 }
 
+// Delete removes an artifact from a repository
+func (app *AppV1) Delete(artifact ArtifactV1) error {
+	if app.Locked {
+		return fmt.Errorf("AppV1 repository %s/%s is locked, please try it later.", app.Namespace, app.Repository)
+	}
+
+	return nil
+}
+
 // ArtifactV1 is the Artifcat V1 object
 type ArtifactV1 struct {
 	Id        int64  `json:"id" gorm:"primary_key"`

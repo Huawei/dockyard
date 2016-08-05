@@ -43,6 +43,8 @@ type UpdateServiceStorage interface {
 	GetPublicKey(protocal, key string) ([]byte, error)
 	// key: namespace/repository/appname
 	Put(protocal, key string, data []byte) (string, error)
+	// key: namespace/repository/appname
+	Delete(protocal, key string) error
 	// key: namespace/repository
 	List(protocal, key string) ([]string, error)
 }

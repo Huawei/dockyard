@@ -22,18 +22,20 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 
-	"github.com/containerops/dockyard/setting"
 	"github.com/containerops/dockyard/utils"
 )
 
 var (
-	// ErrorsUCEmptyURL occurs when a repository url is nil
-	ErrorsUCEmptyURL = errors.New("empty repository url")
+	// ErrorsUCInvalidURL occurs when a repository url is invalid
+	ErrorsUCInvalidURL = errors.New("invalid repository url, should be '@protocal#@runmode://@site/@n/@r/@app'")
 	// ErrorsUCRepoExist occurs when a repository is exist
 	ErrorsUCRepoExist = errors.New("repository is already exist")
 	// ErrorsUCRepoNotExist occurs when a repository is not exist
 	ErrorsUCRepoNotExist = errors.New("repository is not exist")
+
+	repoRegexp = regexp.MustCompile(`^(.+)#(.+)://(.+)/(.+)/(.+)$`)
 )
 
 const (
@@ -45,7 +47,8 @@ const (
 // UpdateClientConfig is the local configuation of a update client
 type UpdateClientConfig struct {
 	DefaultServer string
-	Repos         []string
+	//Repo should be:   protocal#https://containerops.me/namespace/repository/apps
+	Repos []string
 }
 
 func (ucc *UpdateClientConfig) exist() bool {
@@ -66,8 +69,10 @@ func (ucc *UpdateClientConfig) Init() error {
 			return err
 		}
 	}
-	if !utils.IsDirExist(setting.Storage) {
-		if err := os.MkdirAll(setting.Storage, os.ModePerm); err != nil {
+
+	cachePath := filepath.Join(homeDir, topDir, cacheDir)
+	if !utils.IsDirExist(cachePath) {
+		if err := os.MkdirAll(cachePath, os.ModePerm); err != nil {
 			return err
 		}
 	}
@@ -99,8 +104,13 @@ func (ucc *UpdateClientConfig) Load() error {
 		return errors.New("Cannot get home directory")
 	}
 
+	if !utils.IsFileExist(filepath.Join(homeDir, topDir, configName)) {
+		ucc.Init()
+	}
+
 	content, err := ioutil.ReadFile(filepath.Join(homeDir, topDir, configName))
 	if err != nil {
+
 		return err
 	}
 
@@ -113,8 +123,9 @@ func (ucc *UpdateClientConfig) Load() error {
 
 // Add adds a repo url to the config file
 func (ucc *UpdateClientConfig) Add(url string) error {
-	if url == "" {
-		return ErrorsUCEmptyURL
+	parts := repoRegexp.FindStringSubmatch(url)
+	if len(parts) != 6 {
+		return ErrorsUCInvalidURL
 	}
 
 	var err error
@@ -139,8 +150,9 @@ func (ucc *UpdateClientConfig) Add(url string) error {
 
 // Remove removes a repo url from the config file
 func (ucc *UpdateClientConfig) Remove(url string) error {
-	if url == "" {
-		return ErrorsUCEmptyURL
+	parts := repoRegexp.FindStringSubmatch(url)
+	if len(parts) != 6 {
+		return ErrorsUCInvalidURL
 	}
 
 	if !ucc.exist() {
