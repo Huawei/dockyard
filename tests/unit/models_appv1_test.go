@@ -48,11 +48,10 @@ func TestAppV1Put(t *testing.T) {
 
 // TestArtifactV1GetName
 func TestArtifactV1GetName(t *testing.T) {
-	type testA struct {
+	cases := []struct {
 		a        models.ArtifactV1
 		expected string
-	}
-	cases := []testA{
+	}{
 		{a: models.ArtifactV1{OS: "os", Arch: "arch", App: "app", Tag: "tag"}, expected: "os/arch/app:tag"},
 		{a: models.ArtifactV1{OS: "os", Arch: "arch", App: "app", Tag: ""}, expected: "os/arch/app"},
 		{a: models.ArtifactV1{OS: "os", Arch: "arch", App: "", Tag: "tag"}, expected: ""},

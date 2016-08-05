@@ -81,6 +81,20 @@ func (kml *KeyManagerLocal) GetPublicKey(protocal string, nr string) ([]byte, er
 }
 
 // Sign signs a data of a namespace/repository
+func (kml *KeyManagerLocal) Decrypt(protocal string, nr string, data []byte) ([]byte, error) {
+	keyDir := filepath.Join(kml.Path, protocal, nr, defaultKeyDirName)
+	if !isKeyExist(keyDir) {
+		err := generateKey(keyDir)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	privBytes, _ := ioutil.ReadFile(filepath.Join(keyDir, defaultPrivateKey))
+	return utils.RSADecrypt(privBytes, data)
+}
+
+// Sign signs a data of a namespace/repository
 func (kml *KeyManagerLocal) Sign(protocal string, nr string, data []byte) ([]byte, error) {
 	keyDir := filepath.Join(kml.Path, protocal, nr, defaultKeyDirName)
 	if !isKeyExist(keyDir) {

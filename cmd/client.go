@@ -26,6 +26,7 @@ import (
 
 	cutils "github.com/containerops/dockyard/cmd/client"
 	"github.com/containerops/dockyard/module/client"
+	"github.com/containerops/dockyard/utils"
 )
 
 var CmdClient = cli.Command{
@@ -40,6 +41,7 @@ var CmdClient = cli.Command{
 		pushCommand,
 		pullCommand,
 		deleteCommand,
+		decryptCommand,
 	},
 }
 
@@ -135,8 +137,22 @@ var pushCommand = cli.Command{
 
 	Action: func(context *cli.Context) error {
 		//TODO: we can have a default server
-		if len(context.Args()) != 3 {
-			err := errors.New("wrong syntax: push  'repo url' 'file url', 'file prefix', prefix in appv1 means 'os/arch'")
+		var encrypt utils.EncryptMethod
+		argsLen := len(context.Args())
+		if argsLen == 4 {
+			method := context.Args().Get(3)
+			encrypt = utils.NewEncryptMethod(method)
+			if encrypt == utils.EncryptNotSupported {
+				err := fmt.Errorf("Encrypt method %s is not supported, should neither be 'none' or 'gpg'", method)
+				fmt.Println(err)
+				return err
+			}
+		} else {
+			encrypt = utils.EncryptNone
+		}
+
+		if argsLen < 3 || argsLen > 4 {
+			err := errors.New("wrong syntax: 'repoURL' 'fileURL' 'prefix' 'encryptMethod(default to none)'. prefix in appv1 means 'os/arch'")
 			fmt.Println(err)
 			return err
 		}
@@ -157,7 +173,7 @@ var pushCommand = cli.Command{
 			return err
 		}
 
-		err = repo.Put(prefix+"/"+filepath.Base(fileURL), content)
+		err = repo.Put(prefix+"/"+filepath.Base(fileURL), content, encrypt)
 		if err != nil {
 			fmt.Println(err)
 			return err
@@ -213,6 +229,46 @@ var deleteCommand = cli.Command{
 			fmt.Println(err)
 			return err
 		}
+		return nil
+	},
+}
+
+var decryptCommand = cli.Command{
+	Name:  "decrypt",
+	Usage: "initiate default setting",
+	Action: func(context *cli.Context) error {
+		if len(context.Args()) != 2 {
+			err := errors.New("wrong syntax: decrypt 'private key url' 'encrypted file url'")
+			fmt.Println(err)
+			return err
+		}
+
+		privFile := context.Args().Get(0)
+		encryptedFile := context.Args().Get(1)
+		privBytes, err := ioutil.ReadFile(privFile)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		encryptedBytes, err := ioutil.ReadFile(encryptedFile)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+
+		decryptedBytes, err := utils.RSADecrypt(privBytes, encryptedBytes)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+
+		decryptedFile := encryptedFile + "-decrypted"
+		err = ioutil.WriteFile(decryptedFile, decryptedBytes, 0644)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		fmt.Printf("Success to decrypt %s to %s\n", encryptedFile, decryptedFile)
 		return nil
 	},
 }

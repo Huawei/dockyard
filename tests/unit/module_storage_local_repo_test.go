@@ -17,12 +17,13 @@ package unittest
 
 import (
 	"io/ioutil"
-	"os"
+	//	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/containerops/dockyard/module"
 	_ "github.com/containerops/dockyard/module/km/local"
 	sl "github.com/containerops/dockyard/module/storage/local"
 	"github.com/containerops/dockyard/utils"
@@ -31,7 +32,7 @@ import (
 // TestSLRepoBasic
 func TestSLRepoBasic(t *testing.T) {
 	topDir, err := ioutil.TempDir("", "dus-repo-test-")
-	defer os.RemoveAll(topDir)
+	//	defer os.RemoveAll(topDir)
 	assert.Nil(t, err, "Fail to create temp dir")
 
 	protocal := "app/v1"
@@ -48,7 +49,8 @@ func TestSLRepoBasic(t *testing.T) {
 	assert.Equal(t, r.GetTopDir(), filepath.Join(topDir, protocal, validURL), "Fail to get the correct top dir")
 	assert.Equal(t, r.GetMetaFile(), filepath.Join(topDir, protocal, validURL, "meta.json"), "Fail to get the default meta file")
 
-	err = r.SetKM("local:/" + topDir)
+	kmDir := "local:/" + topDir
+	err = r.SetKM(kmDir)
 	assert.Nil(t, err, "Fail to set key manager")
 
 	// add
@@ -58,7 +60,7 @@ func TestSLRepoBasic(t *testing.T) {
 	}
 
 	for name, value := range testData {
-		_, err := r.Put(name, []byte(value))
+		_, err := r.Put(name, []byte(value), utils.EncryptNone)
 		assert.Nil(t, err, "Fail to add a file")
 	}
 
@@ -78,19 +80,34 @@ func TestSLRepoBasic(t *testing.T) {
 	err = r.Delete(removeFile)
 	assert.NotNil(t, err, "Fail to remove invalid file")
 
+	// get removed file
+	_, err = r.Get(removeFile)
+	assert.NotNil(t, err, "Fail to get removed file")
+
 	// update (add with a exist name)
 	updateFile := "appB"
 	updateContent := "This is the content of updated appB."
-	_, err = r.Put(updateFile, []byte(updateContent))
+	_, err = r.Put(updateFile, []byte(updateContent), utils.EncryptNone)
 	assert.Nil(t, err, "Fail to add an exist file")
-
-	// get
-	_, err = r.Get(removeFile)
-	assert.NotNil(t, err, "Fail to get removed file")
 
 	res, err := r.Get(updateFile)
 	assert.Nil(t, err, "Fail to get file")
 	assert.Equal(t, string(res), updateContent)
+
+	// update with encrypt gpg method
+	_, err = r.Put(updateFile, []byte(updateContent), utils.EncryptGPG)
+	assert.Nil(t, err, "Fail to add an exist file")
+
+	encryptdRes, err := r.Get(updateFile)
+	assert.Nil(t, err, "Fail to get file")
+	assert.NotEqual(t, string(encryptdRes), updateContent)
+
+	// decrypt by keymanager
+	km, err := module.NewKeyManager(kmDir)
+	assert.Nil(t, err, "Fail to get key manager")
+	decryptdRes, err := km.Decrypt(protocal, validURL, encryptdRes)
+	assert.Nil(t, err, "Fail to decrypt")
+	assert.Equal(t, string(decryptdRes), updateContent)
 
 	// get meta
 	_, err = r.GetMeta()

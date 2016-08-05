@@ -18,6 +18,7 @@ package appV1
 
 import (
 	"github.com/containerops/dockyard/module"
+	"github.com/containerops/dockyard/utils"
 )
 
 const (
@@ -55,9 +56,9 @@ func (app *UpdateServiceAppV1) New(protocal string, storageURL string, kmURL str
 }
 
 // Put adds a appV1 file to a repository
-func (app *UpdateServiceAppV1) Put(nr, name string, data []byte) (string, error) {
+func (app *UpdateServiceAppV1) Put(nr, name string, data []byte, method utils.EncryptMethod) (string, error) {
 	key := nr + "/" + name
-	return app.storage.Put(appV1Protocal, key, data)
+	return app.storage.Put(appV1Protocal, key, data, method)
 }
 
 // Delete removes a appV1 file from a repository

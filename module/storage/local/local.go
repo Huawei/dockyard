@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/containerops/dockyard/module"
+	"github.com/containerops/dockyard/utils"
 )
 
 const (
@@ -132,7 +133,7 @@ func (ussl *UpdateServiceStorageLocal) GetPublicKey(protocal string, key string)
 }
 
 // Put adds a file with a key. Key is "namespace/repository/os/arch/appname"
-func (ussl *UpdateServiceStorageLocal) Put(protocal string, key string, content []byte) (string, error) {
+func (ussl *UpdateServiceStorageLocal) Put(protocal string, key string, content []byte, method utils.EncryptMethod) (string, error) {
 	s := strings.Split(key, "/")
 	if len(s) != 5 {
 		return "", errors.New("invalid key detected in StorageLocal.Put")
@@ -143,7 +144,7 @@ func (ussl *UpdateServiceStorageLocal) Put(protocal string, key string, content 
 		return "", err
 	}
 
-	return r.Put(strings.Join(s[2:], "/"), content)
+	return r.Put(strings.Join(s[2:], "/"), content, method)
 }
 
 // Delete removes a file by a key. Key is "namespace/repositoryi/os/arch/appname"

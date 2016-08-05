@@ -67,14 +67,29 @@ func TestKMLGetPublicKey(t *testing.T) {
 }
 
 func TestKMLSign(t *testing.T) {
-	l, realPath := loadTestKMLData(t)
+	protocal := "app/v1"
 	nr := "containerops/official"
-
+	l, realPath := loadTestKMLData(t)
 	testFile := filepath.Join(realPath, "hello.txt")
-	testByte, _ := ioutil.ReadFile(testFile)
+	testBytes, _ := ioutil.ReadFile(testFile)
 	signFile := filepath.Join(realPath, "hello.sig")
-	signByte, _ := ioutil.ReadFile(signFile)
-	data, err := l.Sign("app/v1", nr, testByte)
+	signBytes, _ := ioutil.ReadFile(signFile)
+
+	data, err := l.Sign(protocal, nr, testBytes)
 	assert.Nil(t, err, "Fail to sign")
-	assert.Equal(t, data, signByte, "Fail to sign correctly")
+	assert.Equal(t, data, signBytes, "Fail to sign correctly")
+}
+
+func TestKMLDecrypt(t *testing.T) {
+	protocal := "app/v1"
+	nr := "containerops/official"
+	l, realPath := loadTestKMLData(t)
+	testFile := filepath.Join(realPath, "hello.txt")
+	testBytes, _ := ioutil.ReadFile(testFile)
+	testEncryptedFile := filepath.Join(realPath, "hello.encrypt")
+	testEncryptedBytes, _ := ioutil.ReadFile(testEncryptedFile)
+
+	testDecryptedBytes, err := l.Decrypt(protocal, nr, testEncryptedBytes)
+	assert.Nil(t, err, "Fail to decrypt")
+	assert.Equal(t, testDecryptedBytes, testBytes, "Fail to decrypt correctly")
 }
