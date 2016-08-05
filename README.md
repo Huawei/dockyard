@@ -41,9 +41,11 @@ domains = containerops.me
 [dockerv1]
 standalone = true
 version = 0.9
+storage = /tmp/data/dockerv1
 
 [dockerv2]
 distribution = registry/2.0
+storage = /tmp/data/dockerv2
 
 [updateserver]
 keymanager = "local://tmp/containerops_keymanager_cache"

@@ -51,10 +51,12 @@ var (
 
 	DockerStandalone      string
 	DockerRegistryVersion string
+	DcokerV1Storage       string
 
 	//@Docker V2 Config
 
 	DockerDistributionVersion string
+	DockerV2Storage           string
 
 	//@UpdateService
 	KeyManager string
@@ -205,10 +207,22 @@ func setServerConfig(conf config.Configer) error {
 		return fmt.Errorf("DockerV1 Registry Version value is null")
 	}
 
+	if storage := conf.String("dockerv1::storage"); storage != "" {
+		DcokerV1Storage = storage
+	} else if storage == "" {
+		return fmt.Errorf("DockerV1 Storage value is null")
+	}
+
 	if distribution := conf.String("dockerv2::distribution"); distribution != "" {
 		DockerDistributionVersion = distribution
 	} else if distribution == "" {
 		return fmt.Errorf("DockerV2 Distribution Version value is null")
+	}
+
+	if storage := conf.String("dockerv2::storage"); storage != "" {
+		DockerV2Storage = storage
+	} else if storage == "" {
+		return fmt.Errorf("DockerV1 Storage value is null")
 	}
 
 	//config update service
