@@ -106,16 +106,65 @@ func PutRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusNoContent, result
 }
 
-//GetRepositoryImagesV1Handler
+//GetRepositoryImagesV1Handler will return images json data.
 func GetRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
+	var username string
+	var err error
+
+	if username, _, err = utils.DecodeBasicAuth(ctx.Req.Header.Get("Authorization")); err != nil {
+		log.Errorf("[%s] decode Authorization error: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"Error": "Decode Authorization Error"})
+		return http.StatusUnauthorized, result
+	}
+
+	namespace := ctx.Params(":namespace")
+	repository := ctx.Params(":repository")
+
+	r := new(models.DockerV1)
+	if v1, err := r.Get(namespace, repository); err != nil {
+		log.Errorf("[%s] get repository images data error: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"Error": "Get Repository Images Error"})
+		return http.StatusBadRequest, result
+	} else {
+
+		//If the Docker client use "X-Docker-Token", will return a randon token value.
+		if ctx.Req.Header.Get("X-Docker-Token") == "true" {
+			token := fmt.Sprintf("Token signature=%v,repository=\"%v/%v\",access=%v",
+				utils.MD5(username), namespace, repository, "read")
+
+			ctx.Resp.Header().Set("X-Docker-Token", token)
+			ctx.Resp.Header().Set("WWW-Authenticate", token)
+		}
+
+		ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(v1.JSON)))
+
+		return http.StatusOK, []byte(v1.JSON)
+	}
+
 }
 
 //GetTagV1Handler
 func GetTagV1Handler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
+	//TODO: If standalone == true, Dockyard will check HEADER Authorization; if standalone == false, Dockyard will check HEADER TOEKN.
+
+	namespace := ctx.Params(":namespace")
+	repository := ctx.Params(":repository")
+
+	r := new(models.DockerV1)
+	if tags, err := r.GetTags(namespace, repository); err != nil {
+		log.Errorf("[%s] get repository tags data error: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"Error": "Get Repository Tags Error"})
+		return http.StatusBadRequest, result
+	} else {
+		result, _ := json.Marshal(tags)
+
+		ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(result)))
+
+		return http.StatusOK, result
+	}
 }
 
 //PutRepositoryV1Handler will create or update the repository, it's first step of Docker push.
@@ -182,8 +231,20 @@ func PutRepositoryV1Handler(ctx *macaron.Context) (int, []byte) {
 
 //GetImageAncestryV1Handler
 func GetImageAncestryV1Handler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
+	//TODO: If standalone == true, Dockyard will check HEADER Authorization; if standalone == false, Dockyard will check HEADER TOEKN.
+	imageID := ctx.Params(":image")
+
+	image := new(models.DockerImageV1)
+	if i, err := image.Get(imageID); err != nil {
+		log.Errorf("[%s] get image ancestry error: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"Error": "Get Image Ancestry Error"})
+		return http.StatusBadRequest, result
+	} else {
+		ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(i.Ancestry)))
+
+		return http.StatusOK, []byte(i.Ancestry)
+	}
 }
 
 //GetImageJSONV1Handler is getting image json data function.
@@ -217,8 +278,35 @@ func GetImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 
 //GetImageLayerV1Handler
 func GetImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
+	//TODO: If standalone == true, Dockyard will check HEADER Authorization; if standalone == false, Dockyard will check HEADER TOEKN.
+	imageID := ctx.Params(":image")
+
+	image := new(models.DockerImageV1)
+	if i, err := image.Get(imageID); err != nil {
+		log.Errorf("[%s] get image ancestry error: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"Error": "Get Image Layer Error"})
+		return http.StatusBadRequest, result
+	} else {
+		if _, err := os.Stat(i.Path); err != nil {
+			log.Errorf("[%s] get image layer file status: %s", ctx.Req.RequestURI, err.Error())
+
+			result, _ := json.Marshal(map[string]string{"Error": "Get Image Layer File Status Error"})
+			return http.StatusBadRequest, result
+		}
+
+		if file, err := ioutil.ReadFile(i.Path); err != nil {
+			log.Errorf("[%s] get image layer file data: %s", ctx.Req.RequestURI, err.Error())
+
+			result, _ := json.Marshal(map[string]string{"Error": "Get Image Layer File Data Error"})
+			return http.StatusBadRequest, result
+		} else {
+			ctx.Resp.Header().Set("Content-Type", "application/octet-stream")
+			ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(file)))
+
+			return http.StatusOK, file
+		}
+	}
 }
 
 //PutImageJSONV1Handler

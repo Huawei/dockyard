@@ -17,6 +17,7 @@ limitations under the License.
 package models
 
 import (
+	"encoding/json"
 	"time"
 )
 
@@ -149,11 +150,45 @@ func (i *DockerImageV1) PutLayer(imageID, path string, size int64) error {
 	return nil
 }
 
-//PutChecksum is put image's checksum and payload.
+//PutChecksum is put image's checksum, payload and ancestry.
 func (i *DockerImageV1) PutChecksum(imageID, checksum, payload string) error {
 	tx := db.Begin()
 
-	if err := tx.Debug().Where("image_id = ?", imageID).First(&i).Updates(map[string]interface{}{"checksum": checksum, "payload": payload}).Error; err != nil {
+	var data map[string]interface{}
+	var ancestries []string
+	var parentAnestries []string
+
+	if err := tx.Debug().Where("image_id = ?", imageID).First(&i).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	ancestries = append(ancestries, imageID)
+
+	if err := json.Unmarshal([]byte(i.JSON), &data); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if value, has := data["parent"]; has == true {
+		image := new(DockerImageV1)
+
+		if err := tx.Debug().Where("image_id = ?", value.(string)).First(&image).Error; err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		if err := json.Unmarshal([]byte(image.Ancestry), &parentAnestries); err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		ancestries = append(ancestries, parentAnestries...)
+	}
+
+	ancestry, _ := json.Marshal(ancestries)
+
+	if err := tx.Debug().Model(&i).Updates(map[string]interface{}{"checksum": checksum, "payload": payload, "ancestry": string(ancestry)}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -205,4 +240,33 @@ func (r *DockerV1) Unlocked(namespace, repository string) error {
 
 	tx.Commit()
 	return nil
+}
+
+//Get return Docker V1 repository data.
+func (r *DockerV1) Get(namespace, repository string) (DockerV1, error) {
+	if err := db.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
+		return *new(DockerV1), err
+	} else {
+		return *r, nil
+	}
+}
+
+//GetTags return tas data of repository.
+func (r *DockerV1) GetTags(namespace, repository string) (map[string]string, error) {
+	if err := db.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
+		return map[string]string{}, err
+	} else {
+		var tags []DockerTagV1
+		result := map[string]string{}
+
+		if err := db.Debug().Where("docker_v1 = ?", r.ID).Find(&tags).Error; err != nil {
+			return map[string]string{}, err
+		}
+
+		for _, tag := range tags {
+			result[tag.Tag] = tag.ImageID
+		}
+
+		return result, nil
+	}
 }
