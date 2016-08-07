@@ -14,47 +14,32 @@ Offical Docker Registry V1 Doc is [here](https://docs.docker.com/v1.7/docker/ref
 ![Docker Registry V1 Push](images/docker-v1-push-chart.png "Dockyard - Docker Registry V1 Push")
 
 1. Contact the Docker Registry to allocate the repository name “samalba/busybox” (authentication required with user credentials). If authentication works and namespace available, “samalba/busybox” is allocated and a temporary token is returned.
-  - (Docker Client -> Docker Registry) `PUT /v1/repositories/:namespace/:repository`
-  - Request Headers:
+  
+  - 1.1 (Docker Client -> Docker Registry) `PUT /v1/repositories/:namespace/:repository`
 
-    ```
-      Authorization: Basic sdkjfskdjfhsdkjfh== 
-      X-Docker-Token: true
-    ```
-
-  - Request Body:
-
-    ```
-      [{“id”: “9e89cc6f0bc3c38722009fe6857087b486531f9a779a0c17e3ed29dae8f12c4f”}]
-    ```
-
-  - Response HTTP Code:
-
-    ```
-      200
-    ```
-
-  - Response Header:
-
-    ```
-      WWW-Authenticate: Token signature=123abc,repository=”samalba/busybox”,access=write
-      X-Docker-Endpoints: registry.docker.io [, registry2.docker.io]
-    ```
-
-  - Response Body:
-
-    ```
-   	  {}
-    ```
 2. Push the image on the registry along with the token.
 
   - 2.1 (Docker Client -> Docker Registry) `GET /v1/images/:image/json`
   - 2.2 (Docker Client -> Docker Registry) `PUT /v1/images/:image/json`
   - 2.3 (Docker Client -> Docker Registry) `PUT /v1/images/:image/layer`
   - 2.4 (Docker Client -> Docker Registry) `PUT /v1/images/:image/checksum` 
-  - 2.5 (Docker Client -> Docker Registry) `PUT /v1/:namespace/:repository/tags/:tag`
-  - 2.5 (Docker Client -> Docker Registry) `PUT /v1/:namespace/:repository/images`
+
+3. Push the tag data.
+
+  - 3.1 (Docker Client -> Docker Registry) `PUT /v1/:namespace/:repository/tags/:tag`
+  - 3.2 (Docker Client -> Docker Registry) `PUT /v1/:namespace/:repository/images`
 
 ### Docker Registry V1 Pull
 
 ![Docker Registry V1 Pull](images/docker-v1-pull-chart.png "Dockyard - Docker Registry V1 Pull")
+
+1. Pull images json data and tags.
+
+  - 1.1 (Docker Client -> Docker Registry) `GET /v1/repositories/:namespace/:repository/images`
+  - 1.2 (Docker Client -> Docker Registry) `GET /v1/repositories/:namespace/:repository/tags`
+
+2. Pull image json and data.
+
+  - 2.1 (Docker Client -> Docker Registry) `GET /v1/images/:image/:image/ancestry`
+  - 2.2 (Docker Client -> Docker Registry) `GET /v1/images/:image/:image/json`
+  - 2.3 (Docker Client -> Docker Registry) `GET /v1/images/:image/:image/layer`
