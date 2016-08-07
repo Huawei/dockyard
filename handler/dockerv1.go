@@ -145,7 +145,7 @@ func GetRepositoryImagesV1Handler(ctx *macaron.Context) (int, []byte) {
 
 }
 
-//GetTagV1Handler
+//GetTagV1Handler is
 func GetTagV1Handler(ctx *macaron.Context) (int, []byte) {
 	//TODO: If standalone == true, Dockyard will check HEADER Authorization; if standalone == false, Dockyard will check HEADER TOEKN.
 

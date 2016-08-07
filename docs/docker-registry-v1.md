@@ -9,6 +9,10 @@ Offical Docker Registry V1 Doc is [here](https://docs.docker.com/v1.7/docker/ref
 - vendor registry: such a registry is provided by a software vendor who wants to distribute docker images. It would be operated and managed by the vendor. Only users authorized by the vendor would be able to get write access. Some images would be public (accessible for anyone), others private (accessible only for authorized users). Authentication and authorization would be delegated to the Docker Hub. The goal of vendor registries is to let someone do docker pull basho/riak1.3 and automatically push from the vendor registry (instead of a sponsor registry); i.e., vendors get all the convenience of a sponsor registry, while retaining control on the asset distribution.
 - private registry: such a registry is located behind a firewall, or protected by an additional security layer (HTTP authorization, SSL client-side certificates, IP address authorization…). The registry is operated by a private entity, outside of Docker’s control. It can optionally delegate additional authorization to the Docker Hub, but it is not mandatory.
 
+### Docker Registry V1 Ping
+
+(Docker Client -> Docker Registry) `GET /v1/_ping`
+
 ### Docker Registry V1 Push 
 
 ![Docker Registry V1 Push](images/docker-v1-push-chart.png "Dockyard - Docker Registry V1 Push")
