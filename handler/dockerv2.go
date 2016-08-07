@@ -23,9 +23,10 @@ import (
 	"gopkg.in/macaron.v1"
 )
 
+//GetPingV2Handler is https://github.com/docker/distribution/blob/master/docs/spec/api.md#api-version-check
 func GetPingV2Handler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusNotFound, result
+	result, _ := json.Marshal(map[string]string{"message": ""})
+	return http.StatusOK, result
 }
 
 func GetCatalogV2Handler(ctx *macaron.Context) (int, []byte) {
