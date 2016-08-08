@@ -18,14 +18,27 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"gopkg.in/macaron.v1"
+
+	"github.com/containerops/dockyard/setting"
 )
 
 //GetPingV2Handler is https://github.com/docker/distribution/blob/master/docs/spec/api.md#api-version-check
 func GetPingV2Handler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{"message": ""})
+	if len(ctx.Req.Header.Get("Authorization")) == 0 {
+		ctx.Resp.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		ctx.Resp.Header().Set("WWW-Authenticate", fmt.Sprintf("Basic realm=\"%v\"", setting.Domains))
+
+		result, _ := json.Marshal(map[string]string{})
+		return http.StatusUnauthorized, result
+	}
+
+	//TODO Decode baic authorizate data in HEADER ["Authorization"]
+	//TODO Authenticate with crew project.
+	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
 
