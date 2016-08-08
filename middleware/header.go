@@ -28,13 +28,13 @@ import (
 //TODO: Add a config option for provide Docker Registry V1.
 func setRespHeaders() macaron.Handler {
 	return func(ctx *macaron.Context) {
-		if flag := strings.Contains(ctx.Req.RequestURI, "/v1/"); flag == true {
+		if flag := strings.Contains(ctx.Req.RequestURI, "/v1"); flag == true {
 			//Docker Registry V1
 			ctx.Resp.Header().Set("Content-Type", "application/json")
 			ctx.Resp.Header().Set("X-Docker-Registry-Standalone", setting.DockerStandalone)
 			ctx.Resp.Header().Set("X-Docker-Registry-Version", setting.DockerRegistryVersion)
 			ctx.Resp.Header().Set("X-Docker-Registry-Config", setting.RunMode)
-		} else if flag := strings.Contains(ctx.Req.RequestURI, "/v2/"); flag == true {
+		} else if flag := strings.Contains(ctx.Req.RequestURI, "/v2"); flag == true {
 			//Docker Registry V2
 			ctx.Resp.Header().Set("Docker-Distribution-Api-Version", setting.DockerDistributionVersion)
 		} else {
