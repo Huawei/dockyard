@@ -71,7 +71,7 @@ func TestOper(t *testing.T) {
 	for _, tf := range testFiles {
 		file := filepath.Join(filepath.Dir(path), "testdata", tf)
 		content, _ := ioutil.ReadFile(file)
-		err := f.Put(tf, content)
+		err := f.Put(tf, content, utils.EncryptNone)
 		assert.Nil(t, err, "Fail to put file")
 	}
 

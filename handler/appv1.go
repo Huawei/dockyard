@@ -283,3 +283,40 @@ func AppDeleteFileV1Handler(ctx *macaron.Context) (int, []byte) {
 
 	return httpRet("AppV1 Delete data", nil, err)
 }
+
+func AppRegistScanHooksHandler(ctx *macaron.Context) (int, []byte) {
+	data, err := ctx.Req.Body().Bytes()
+	if err != nil {
+		log.Errorf("[%s] Req.Body.Bytes error: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"Error": "Req.Body.Bytes Error"})
+		return http.StatusBadRequest, result
+	}
+
+	var reg models.ScanHookRegist
+	err = json.Unmarshal(data, &reg)
+	if err != nil {
+		log.Errorf("[%s] Invalid body data: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"Error": "Parse Req.Body.Bytes Error"})
+		return http.StatusBadRequest, result
+	}
+
+	namespace := ctx.Params(":namespace")
+	repository := ctx.Params(":repository")
+	err = reg.Regist(namespace, repository, reg.ImageName)
+	if err != nil {
+		log.Errorf("[%s] scan hook regist error: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"Error": "Scan Hook Regist Error"})
+		return http.StatusBadRequest, result
+	}
+
+	return httpRet("AppV1 Scan Hook Regist", nil, err)
+}
+
+//
+func AppCallbackScanHooksHandler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
