@@ -109,6 +109,10 @@ func SetRouters(m *macaron.Macaron) {
 				m.Put("/:os/:arch/:app/manifests/?:tag", handler.AppPutManifestV1Handler)
 				m.Patch("/:os/:arch/:app/:status/?:tag", handler.AppPatchFileV1Handler)
 				m.Delete("/:os/:arch/:app/?:tag", handler.AppDeleteFileV1Handler)
+
+				// Content Scan
+				m.Post("/shook", handler.AppRegistScanHooksHandler)
+				m.Post("/shook/:callbackID", handler.AppCallbackScanHooksHandler)
 			})
 		})
 	})
