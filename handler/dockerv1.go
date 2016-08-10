@@ -339,7 +339,7 @@ func PutImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
 	//TODO: If standalone == true, Dockyard will check HEADER Authorization; if standalone == false, Dockyard will check HEADER TOEKN.
 	imageID := ctx.Params(":image")
 
-	basePath := setting.DcokerV1Storage
+	basePath := setting.DockerV1Storage
 	imagePath := fmt.Sprintf("%s/images/%s", basePath, imageID)
 	layerfile := fmt.Sprintf("%s/images/%s/%s", basePath, imageID, imageID)
 

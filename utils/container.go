@@ -38,13 +38,12 @@ func init() {
 	var err error
 	dockerClient, err = client.NewClient("unix:///var/run/docker.sock", "", nil, nil)
 	if err != nil {
-		fmt.Printf("Fail in NewClient: %v", err)
 		return
 	}
 
 	v, err := dockerClient.ServerVersion(context.Background())
 	if err != nil {
-		fmt.Printf("Fail in get ServerVersion: %v", err)
+		dockerClient = nil
 		return
 	}
 
@@ -93,12 +92,12 @@ func PullImage(imageName string) error {
 }
 
 // StartContainer start and create a container
-func StartContainer(imageName string, containerName string) error {
+func StartContainer(config container.Config, hostConfig container.HostConfig, containerName string) error {
 	if dockerClient == nil {
 		return ErrorsNoDockerClient
 	}
 
-	resp, err := dockerClient.ContainerCreate(context.Background(), &container.Config{Image: imageName}, nil, nil, containerName)
+	resp, err := dockerClient.ContainerCreate(context.Background(), &config, &hostConfig, nil, containerName)
 	if err != nil {
 		return err
 	}
