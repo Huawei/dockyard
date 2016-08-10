@@ -200,7 +200,6 @@ func setServerConfig(conf config.Configer) error {
 
 	//TODO: Add a config option for provide Docker Registry V1.
 	//TODO: Link @middle/header/setRespHeaders, @handler/dockerv1/-functions.
-
 	if standalone := conf.String("dockerv1::standalone"); standalone != "" {
 		DockerStandalone = standalone
 	} else if standalone == "" {
