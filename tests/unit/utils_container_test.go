@@ -17,19 +17,23 @@ package unittest
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"testing"
 
+	"github.com/docker/engine-api/types/container"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/containerops/dockyard/utils"
 )
 
 func TestUtilsContainer(t *testing.T) {
-	imageName := "ospaf/centos-ntp"
-	containerName := "testcontainer"
+	//TODO: dockyard dev team should provide small testing containers.
+	imageName := "google/nodejs"
+	containerName := ""
 	cached, err := utils.IsImageCached(imageName)
 	if err == utils.ErrorsNoDockerClient {
-		fmt.Println("Please start a docker daemon to continue the test")
+		fmt.Println("Please start a docker daemon to continue the container operation test")
 		return
 	}
 
@@ -40,6 +44,19 @@ func TestUtilsContainer(t *testing.T) {
 		assert.Nil(t, err, "Fail to pull image")
 	}
 
-	utils.StartContainer(imageName, containerName)
+	tmpFile, err := ioutil.TempFile("/tmp", "dockyard-test-container-oper")
+	assert.Nil(t, err, "System err, fail to create temp file")
+	defer os.Remove(tmpFile.Name())
+
+	var config container.Config
+	config.Image = imageName
+	config.Cmd = []string{"touch", tmpFile.Name()}
+	var hostConfig container.HostConfig
+	hostConfig.Binds = append(hostConfig.Binds, "/tmp:/tmp")
+
+	utils.StartContainer(config, hostConfig, containerName)
 	//TODO: stop, remove the container process
+
+	assert.Equal(t, true, utils.IsFileExist(tmpFile.Name()), "Fail to touch file by using StartContainer")
+
 }

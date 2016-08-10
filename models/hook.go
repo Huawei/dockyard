@@ -19,6 +19,9 @@ package models
 import (
 	"errors"
 	"time"
+
+	"github.com/containerops/dockyard/setting"
+	"github.com/containerops/dockyard/utils"
 )
 
 // ScanHookRegist:
@@ -89,6 +92,28 @@ func (t *ScanHookTask) Put(p, c string, rID int64) error {
 
 func (t *ScanHookTask) Update(status string) error {
 	//TODO: update status and updatedAt
+	return nil
+}
+
+func (t *ScanHookTask) Find(encodedCallbackID string) error {
+	//TODO: update status and updatedAt
+	var id int
+	err := utils.TokenUnmarshal(encodedCallbackID, setting.ScanKey, &id)
+
+	return err
+}
+
+func (t *ScanHookTask) UpdateResult(encodedCallbackID string, data []byte) error {
+	var id int
+	err := utils.TokenUnmarshal(encodedCallbackID, setting.ScanKey, &id)
+	if err != nil {
+		return err
+	}
+	//TODO find task from db by id
+
+	t.Result = string(data)
+	t.Update("finish")
+
 	return nil
 }
 
