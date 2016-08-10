@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 
 	"github.com/astaxie/beego/config"
+	"github.com/fernet/fernet-go"
 )
 
 var (
@@ -51,7 +52,7 @@ var (
 
 	DockerStandalone      string
 	DockerRegistryVersion string
-	DcokerV1Storage       string
+	DockerV1Storage       string
 
 	//@Docker V2 Config
 
@@ -61,6 +62,10 @@ var (
 	//@UpdateService
 	KeyManager string
 	Storage    string
+
+	//@ScanContent
+	// 32-bit URL-safe base64 key used to encrypt id in database
+	ScanKey string
 )
 
 //
@@ -195,6 +200,7 @@ func setServerConfig(conf config.Configer) error {
 
 	//TODO: Add a config option for provide Docker Registry V1.
 	//TODO: Link @middle/header/setRespHeaders, @handler/dockerv1/-functions.
+
 	if standalone := conf.String("dockerv1::standalone"); standalone != "" {
 		DockerStandalone = standalone
 	} else if standalone == "" {
@@ -208,7 +214,7 @@ func setServerConfig(conf config.Configer) error {
 	}
 
 	if storage := conf.String("dockerv1::storage"); storage != "" {
-		DcokerV1Storage = storage
+		DockerV1Storage = storage
 	} else if storage == "" {
 		return fmt.Errorf("DockerV1 Storage value is null")
 	}
@@ -222,7 +228,7 @@ func setServerConfig(conf config.Configer) error {
 	if storage := conf.String("dockerv2::storage"); storage != "" {
 		DockerV2Storage = storage
 	} else if storage == "" {
-		return fmt.Errorf("DockerV1 Storage value is null")
+		return fmt.Errorf("DockerV2 Storage value is null")
 	}
 
 	//config update service
@@ -236,6 +242,17 @@ func setServerConfig(conf config.Configer) error {
 		Storage = usstorage
 	} else if usstorage == "" {
 		return fmt.Errorf("Update Server Storage config value is null")
+	}
+
+	//scan content
+	if scanKey := conf.String("scancontent:scanKey"); scanKey != "" {
+		ScanKey = scanKey
+	} else if scanKey == "" {
+		//auto-generate the scan key if it is empty
+		//WARNING: if the dockyard server restarts, user received data like callbackID will be useless.
+		var key fernet.Key
+		key.Generate()
+		ScanKey = string(key.Encode())
 	}
 
 	return nil

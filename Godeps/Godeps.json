@@ -142,6 +142,10 @@
 			"Rev": "c8d2b36d60a84f3fa7d5e5e355be64f0fbe0b481"
 		},
 		{
+			"ImportPath": "github.com/fernet/fernet-go",
+			"Rev": "1b2437bc582b3cfbb341ee5a29f8ef5b42912ff2"
+		},
+		{
 			"ImportPath": "github.com/go-macaron/inject",
 			"Rev": "c5ab7bf3a307593cd44cb272d1a5beea473dd072"
 		},
