@@ -90,13 +90,16 @@ func (t *DockerTagV2) Put(namespace, repository, tag, imageID, manifest string, 
 	t.DockerV2, t.Tag, t.ImageID, t.Manifest, t.SchemaVersion = r.ID, tag, imageID, manifest, string(schema)
 
 	if err := tx.Debug().Where("docker_v2 = ? AND tag = ?").FirstOrCreate(&t).Error; err != nil {
+		tx.Rollback()
 		return err
 	}
 
 	if err := tx.Debug().Model(&t).Updates(map[string]interface{}{"image_id": imageID, "manifest": manifest, "schema_version": string(schema)}).Error; err != nil {
+		tx.Rollback()
 		return err
 	}
 
+	tx.Commit()
 	return nil
 }
 
@@ -110,6 +113,7 @@ func (r *DockerV2) Put(namespace, repository, agent, version string) error {
 		return err
 	}
 
+	tx.Commit()
 	return nil
 }
 
