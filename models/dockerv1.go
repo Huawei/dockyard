@@ -88,7 +88,7 @@ func (r *DockerV1) Put(namespace, repository, json, agent string) error {
 
 	tx := db.Begin()
 
-	if err := db.Debug().Where("namespace = ? AND repository = ? ", namespace, repository).FirstOrCreate(&r).Error; err != nil {
+	if err := tx.Debug().Where("namespace = ? AND repository = ? ", namespace, repository).FirstOrCreate(&r).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -120,7 +120,7 @@ func (i *DockerImageV1) PutJSON(imageID, json string) error {
 
 	tx := db.Begin()
 
-	if err := db.Debug().Where("image_id = ?", imageID).FirstOrCreate(&i).Error; err != nil {
+	if err := tx.Debug().Where("image_id = ?", imageID).FirstOrCreate(&i).Error; err != nil {
 		tx.Rollback()
 		return err
 	}

@@ -44,8 +44,8 @@ func (*DockerV2) TableName() string {
 //
 type DockerImageV2 struct {
 	ID              int64      `json:"id" gorm:"primary_key"`
-	ImageID         string     `json:"image_id" sql:"unique;type:varchar(255)"`
-	BlobSum         string     `json:"blob_sum" sql:"null;unique;type:varchar(255)"`
+	ImageID         string     `json:"image_id" sql:"null;type:varchar(255)"`
+	BlobSum         string     `json:"blob_sum" sql:"null;type:varchar(255)"`
 	V1Compatibility string     `json:"v1_compatibility" sql:"null;type:text"`
 	Path            string     `json:"path" sql:"null;type:text"`
 	OSS             string     `json:"oss" sql:"null;type:text"`
@@ -63,18 +63,67 @@ func (*DockerImageV2) TableName() string {
 
 //
 type DockerTagV2 struct {
-	ID        int64      `json:"id" gorm:"primary_key"`
-	DockerV2  int64      `json:"docker_v2" sql:"not null"`
-	Tag       string     `json:"tag" sql:"not null;type:varchar(255)"`
-	ImageID   string     `json:"image_id" sql:"not null;type:varchar(255)"`
-	Manifest  string     `json:"manifest" sql:"null;type:text"`
-	Schema    int64      `json:"schema" sql:""`
-	CreatedAt time.Time  `json:"create_at" sql:""`
-	UpdatedAt time.Time  `json:"update_at" sql:""`
-	DeletedAt *time.Time `json:"delete_at" sql:"index"`
+	ID            int64      `json:"id" gorm:"primary_key"`
+	DockerV2      int64      `json:"docker_v2" sql:"not null"`
+	Tag           string     `json:"tag" sql:"not null;type:varchar(255)"`
+	ImageID       string     `json:"image_id" sql:"not null;type:varchar(255)"`
+	Manifest      string     `json:"manifest" sql:"null;type:text"`
+	SchemaVersion string     `json:"schema_version" sql:"not null;type:varchar(255)"`
+	CreatedAt     time.Time  `json:"create_at" sql:""`
+	UpdatedAt     time.Time  `json:"update_at" sql:""`
+	DeletedAt     *time.Time `json:"delete_at" sql:"index"`
 }
 
 //
-func (*DockerTagV2) TableName() string {
+func (t *DockerTagV2) TableName() string {
 	return "docker_tag_V2"
+}
+
+func (t *DockerTagV2) Put(namespace, repository, tag, imageID, manifest string, schema int64) error {
+	r := new(DockerV2)
+
+	if err := db.Debug().Where("namespace = ? AND repository = ? ", namespace, repository).First(&r).Error; err != nil {
+		return err
+	}
+
+	tx := db.Begin()
+	t.DockerV2, t.Tag, t.ImageID, t.Manifest, t.SchemaVersion = r.ID, tag, imageID, manifest, string(schema)
+
+	if err := tx.Debug().Where("docker_v2 = ? AND tag = ?").FirstOrCreate(&t).Error; err != nil {
+		return err
+	}
+
+	if err := tx.Debug().Model(&t).Updates(map[string]interface{}{"image_id": imageID, "manifest": manifest, "schema_version": string(schema)}).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//Put is
+func (r *DockerV2) Put(namespace, repository, agent, version string) error {
+	r.Namespace, r.Repository, r.Agent, r.SchemaVersion = namespace, repository, agent, version
+	tx := db.Begin()
+
+	if err := tx.Debug().Where("namespace = ? AND repository = ? ", namespace, repository).FirstOrCreate(&r).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return nil
+}
+
+//Put is
+func (i *DockerImageV2) Put(tarsum, path string, size int64) error {
+	i.BlobSum, i.Path, i.Size = tarsum, path, size
+
+	tx := db.Begin()
+
+	if err := tx.Debug().Where("blob_sum = ? ", tarsum).FirstOrCreate(&i).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
 }

@@ -9,4 +9,6 @@ Offical Docker Registry V2 Doc is [here](https://github.com/docker/distribution/
 
 ### Docker Registry V2 Push
 
+2.1 (Docker Client -> Docker Registry) `PUT /:namespace/:repository/blobs/uploads`
+
 ### Docker Registry V2 Pull 
