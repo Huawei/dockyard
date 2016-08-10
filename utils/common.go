@@ -17,6 +17,7 @@ limitations under the License.
 package utils
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/md5"
 	"crypto/rand"
@@ -25,6 +26,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -33,6 +35,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/fernet/fernet-go"
 )
 
 type EncryptMethod string
@@ -248,4 +252,34 @@ func getPubKey(pubBytes []byte) (*rsa.PublicKey, error) {
 	}
 
 	return pubKey, nil
+}
+
+// TokenMarshal encrypts data in `v`
+func TokenMarshal(v interface{}, key string) ([]byte, error) {
+	var buf bytes.Buffer
+	err := json.NewEncoder(&buf).Encode(v)
+	if err != nil {
+		return nil, err
+	}
+
+	k, err := fernet.DecodeKey(key)
+	if err != nil {
+		return nil, err
+	}
+	return fernet.EncryptAndSign(buf.Bytes(), k)
+}
+
+// TokenUnmarshal decryptes a token and save the original data to `v`.
+func TokenUnmarshal(token string, key string, v interface{}) error {
+	k, err := fernet.DecodeKey(key)
+	if err != nil {
+		return err
+	}
+
+	msg := fernet.VerifyAndDecrypt([]byte(token), time.Hour, []*fernet.Key{k})
+	if msg == nil {
+		return errors.New("invalid or expired token")
+	}
+
+	return json.NewDecoder(bytes.NewBuffer(msg)).Decode(&v)
 }

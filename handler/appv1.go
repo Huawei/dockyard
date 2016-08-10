@@ -315,8 +315,25 @@ func AppRegistScanHooksHandler(ctx *macaron.Context) (int, []byte) {
 	return httpRet("AppV1 Scan Hook Regist", nil, err)
 }
 
-//
+// AppCallbackScanHooksHandler gets callback from container and save the scan result.
 func AppCallbackScanHooksHandler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
+	data, err := ctx.Req.Body().Bytes()
+	if err != nil {
+		log.Errorf("[%s] Req.Body.Bytes error: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"Error": "Req.Body.Bytes Error"})
+		return http.StatusBadRequest, result
+	}
+
+	var t models.ScanHookTask
+	callbackID := ctx.Params(":callbackID")
+	err = t.UpdateResult(callbackID, data)
+	if err != nil {
+		log.Errorf("[%s] scan hook callback error: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"Error": "Scan Hook Callback Error"})
+		return http.StatusBadRequest, result
+	}
+
+	return httpRet("AppV1 Scan Hook Callback", nil, err)
 }

@@ -21,6 +21,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/fernet/fernet-go"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/containerops/dockyard/utils"
@@ -88,4 +89,35 @@ func TestSHA256Verify(t *testing.T) {
 	assert.Nil(t, err, "Fail to verify valid signed data")
 	err = utils.SHA256Verify(pubBytes, []byte("Invalid content data"), signBytes)
 	assert.NotNil(t, err, "Fail to verify invalid signed data")
+}
+
+func TestTokenMarshalUnmarshal(t *testing.T) {
+	var fkey fernet.Key
+	fkey.Generate()
+	key := string(fkey.Encode())
+	invalidKey := "invalidKey"
+
+	var retInt int
+	var testInt int
+	testInt = 1024
+
+	intResult, err := utils.TokenMarshal(testInt, invalidKey)
+	assert.NotNil(t, err, "Fail to marshal int with invalid key")
+	err = utils.TokenUnmarshal(string(intResult), key, &retInt)
+	assert.NotNil(t, err, "Fail to unmarshal int with invalid key")
+
+	intResult, err = utils.TokenMarshal(testInt, key)
+	assert.Nil(t, err, "Fail to marshal int")
+	err = utils.TokenUnmarshal(string(intResult), key, &retInt)
+	assert.Nil(t, err, "Fail to unmarshal int")
+	assert.Equal(t, testInt, retInt, "Fail to get the original int data")
+
+	var retStr string
+	var testStr string
+	testStr = "hello, world"
+	strResult, err := utils.TokenMarshal(testStr, key)
+	assert.Nil(t, err, "Fail to marshal string")
+	err = utils.TokenUnmarshal(string(strResult), key, &retStr)
+	assert.Nil(t, err, "Fail to unmarshal string")
+	assert.Equal(t, testStr, retStr, "Fail to get the original string data")
 }
