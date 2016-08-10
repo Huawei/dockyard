@@ -75,11 +75,7 @@ func PostBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 	uuid := utils.MD5(uuid.NewV4().String())
 	state := utils.MD5(fmt.Sprintf("%s/%s/%d", namespace, repository, time.Now().UnixNano()/int64(time.Millisecond)))
 	random := fmt.Sprintf("https://%s/v2/%s/%s/blobs/uploads/%s?_state=%s",
-		setting.Domains,
-		namespace,
-		repository,
-		uuid,
-		state)
+		setting.Domains, namespace, repository, uuid, state)
 
 	ctx.Resp.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	ctx.Resp.Header().Set("Docker-Upload-Uuid", uuid)
