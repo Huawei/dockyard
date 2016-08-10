@@ -38,7 +38,7 @@ type DockerV2 struct {
 
 //
 func (*DockerV2) TableName() string {
-	return "docker_V2"
+	return "docker_v2"
 }
 
 //
@@ -76,7 +76,7 @@ type DockerTagV2 struct {
 
 //
 func (t *DockerTagV2) TableName() string {
-	return "docker_tag_V2"
+	return "docker_tag_v2"
 }
 
 func (t *DockerTagV2) Put(namespace, repository, tag, imageID, manifest string, schema int64) error {

@@ -38,7 +38,6 @@ import (
 
 //GetPingV2Handler is https://github.com/docker/distribution/blob/master/docs/spec/api.md#api-version-check
 func GetPingV2Handler(ctx *macaron.Context) (int, []byte) {
-
 	if len(ctx.Req.Header.Get("Authorization")) == 0 {
 		ctx.Resp.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		ctx.Resp.Header().Set("WWW-Authenticate", fmt.Sprintf("Basic realm=\"%v\"", setting.Domains))
