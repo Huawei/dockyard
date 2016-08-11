@@ -37,7 +37,7 @@ type DockerV2 struct {
 }
 
 //
-func (*DockerV2) TableName() string {
+func (r *DockerV2) TableName() string {
 	return "docker_v2"
 }
 
@@ -57,7 +57,7 @@ type DockerImageV2 struct {
 }
 
 //
-func (*DockerImageV2) TableName() string {
+func (i *DockerImageV2) TableName() string {
 	return "docker_image_v2"
 }
 
@@ -104,11 +104,31 @@ func (t *DockerTagV2) Put(namespace, repository, tag, imageID, manifest string, 
 }
 
 //Put is
-func (r *DockerV2) Put(namespace, repository, agent, version string) error {
-	r.Namespace, r.Repository, r.Agent, r.SchemaVersion = namespace, repository, agent, version
+func (r *DockerV2) Put(namespace, repository string) error {
+	r.Namespace, r.Repository = namespace, repository
+
 	tx := db.Begin()
 
 	if err := tx.Debug().Where("namespace = ? AND repository = ? ", namespace, repository).FirstOrCreate(&r).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+func (r *DockerV2) PutAgent(namespace, repository, agent, version string) error {
+	r.Namespace, r.Repository = namespace, repository
+
+	tx := db.Begin()
+
+	if err := tx.Debug().Where("namespace = ? AND repository = ? ", namespace, repository).FirstOrCreate(&r).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Debug().Model(&r).Updates(map[string]string{"agent": agent, "schema_version": version}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
