@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-//Docker
+//DockerV2
 type DockerV2 struct {
 	ID            int64      `json:"id" gorm:"primary_key"`
 	Namespace     string     `json:"namespace" sql:"not null;type:varchar(255)"  gorm:"unique_index:v2_repository"`
@@ -36,12 +36,12 @@ type DockerV2 struct {
 	DeletedAt     *time.Time `json:"delete_at" sql:"index"`
 }
 
-//
+//TableName is
 func (r *DockerV2) TableName() string {
 	return "docker_v2"
 }
 
-//
+//DockerImageV2 is
 type DockerImageV2 struct {
 	ID              int64      `json:"id" gorm:"primary_key"`
 	ImageID         string     `json:"image_id" sql:"null;type:varchar(255)"`
@@ -56,12 +56,12 @@ type DockerImageV2 struct {
 	DeletedAt       *time.Time `json:"delete_at" sql:"index"`
 }
 
-//
+//TableName is
 func (i *DockerImageV2) TableName() string {
 	return "docker_image_v2"
 }
 
-//
+//DockerTagV2 is
 type DockerTagV2 struct {
 	ID            int64      `json:"id" gorm:"primary_key"`
 	DockerV2      int64      `json:"docker_v2" sql:"not null"`
@@ -74,9 +74,48 @@ type DockerTagV2 struct {
 	DeletedAt     *time.Time `json:"delete_at" sql:"index"`
 }
 
+//GetTags return tas data of repository.
+func (r *DockerV2) GetTags(namespace, repository string) (map[string]string, error) {
+	if err := db.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
+		return map[string]string{}, err
+	} else {
+		var tags []DockerTagV2
+		result := map[string]string{}
+
+		if err := db.Debug().Where("docker_v2 = ?", r.ID).Find(&tags).Error; err != nil {
+			return map[string]string{}, err
+		}
+
+		for _, tag := range tags {
+			result[tag.Tag] = tag.ImageID
+		}
+
+		return result, nil
+	}
+}
+
 //TableName is
 func (t *DockerTagV2) TableName() string {
 	return "docker_tag_v2"
+}
+
+func (r *DockerV2) Get(namespace, repository string) error {
+	if err := db.Debug().Where("namespace = ? AND repository =? ", namespace, repository).First(&r).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//Get is
+func (i *DockerImageV2) Get(blobsum string) error {
+	i.BlobSum = blobsum
+
+	if err := db.Debug().Where("blob_sum = ?", blobsum).First(&i).Error; err != nil {
+		return err
+	}
+
+	return nil
 }
 
 //Put is
