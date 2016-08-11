@@ -27,6 +27,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/jinzhu/gorm"
 	"github.com/satori/go.uuid"
 	"gopkg.in/macaron.v1"
 
@@ -63,6 +64,27 @@ func GetCatalogV2Handler(ctx *macaron.Context) (int, []byte) {
 
 //HeadBlobsV2Handler is
 func HeadBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
+	digest := ctx.Params(":digest")
+	tarsum := strings.Split(digest, ":")[1]
+
+	i := new(models.DockerImageV2)
+	if err := i.Get(tarsum); err != nil && err == gorm.ErrRecordNotFound {
+		log.Info("Not found blob: %s", tarsum)
+
+		result, _ := module.EncodingError(module.BLOB_UNKNOWN, digest)
+		return http.StatusNotFound, result
+	} else if err != nil && err != gorm.ErrRecordNotFound {
+		log.Info("Failed to get blob %s: %s", tarsum, err.Error())
+
+		result, _ := module.EncodingError(module.UNKNOWN, err.Error())
+		return http.StatusBadRequest, result
+	}
+
+	ctx.Resp.Header().Set("Content-Type", "application/json; charset=utf-8")
+	ctx.Resp.Header().Set("Content-Type", "application/octet-stream")
+	ctx.Resp.Header().Set("Docker-Content-Digest", digest)
+	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(i.Size))
+
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
@@ -241,8 +263,37 @@ func PutBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 
 //GetBlobsV2Handler is
 func GetBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
+	var file []byte
+	digest := ctx.Params(":digest")
+	tarsum := strings.Split(digest, ":")[1]
+
+	i := new(models.DockerImageV2)
+	if err := i.Get(tarsum); err != nil && err == gorm.ErrRecordNotFound {
+		log.Info("Not found blob: %s", tarsum)
+
+		result, _ := module.EncodingError(module.BLOB_UNKNOWN, digest)
+		return http.StatusNotFound, result
+	} else if err != nil && err != gorm.ErrRecordNotFound {
+		log.Info("Failed to get blob %s: %s", tarsum, err.Error())
+
+		result, _ := module.EncodingError(module.UNKNOWN, err.Error())
+		return http.StatusBadRequest, result
+	}
+
+	if data, err := ioutil.ReadFile(i.Path); err != nil {
+		log.Info("Failed to get blob %s: %s", tarsum, err.Error())
+
+		result, _ := module.EncodingError(module.UNKNOWN, err.Error())
+		return http.StatusBadRequest, result
+	} else {
+		file = data
+	}
+
+	ctx.Resp.Header().Set("Content-Type", "application/octet-stream")
+	ctx.Resp.Header().Set("Docker-Content-Digest", digest)
+	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(file)))
+
+	return http.StatusOK, file
 }
 
 //PutManifestsV2Handler is
@@ -293,12 +344,42 @@ func PutManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
 
 //GetTagsListV2Handler is
 func GetTagsListV2Handler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{})
+
+	repository := ctx.Params(":repository")
+	namespace := ctx.Params(":namespace")
+
+	r := new(models.DockerV2)
+	if err := r.Get(namespace, repository); err != nil && err == gorm.ErrRecordNotFound {
+		log.Info("Not found tags: %s/%s", namespace, repository)
+
+		result, _ := module.EncodingError(module.BLOB_UNKNOWN, fmt.Sprintf("%s/%s", namespace, repository))
+		return http.StatusNotFound, result
+	} else if err != nil && err != gorm.ErrRecordNotFound {
+		log.Info("Failed to get tags %s/%s: %s", namespace, repository, err.Error())
+
+		result, _ := module.EncodingError(module.UNKNOWN, err.Error())
+		return http.StatusBadRequest, result
+	}
+
+	var err error
+
+	data := map[string]interface{}{}
+	data["name"] = fmt.Sprintf("%s/%s", namespace, repository)
+
+	if data["tags"], err = r.GetTags(namespace, repository); err != nil {
+		log.Info("Failed to get tags %s/%s: %s", namespace, repository, err.Error())
+
+		result, _ := module.EncodingError(module.UNKNOWN, err.Error())
+		return http.StatusBadRequest, result
+	}
+
+	result, _ := json.Marshal(data)
 	return http.StatusOK, result
 }
 
 //GetManifestsV2Handler is
 func GetManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
+
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
