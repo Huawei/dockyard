@@ -72,6 +72,15 @@ func PostBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
+	r := new(models.DockerV2)
+
+	if err := r.Put(namespace, repository); err != nil {
+		log.Errorf("Put or search repository error: %s", err.Error())
+
+		result, _ := module.EncodingError(module.UNKNOWN, map[string]string{"namespace": namespace, "repository": repository})
+		return http.StatusBadRequest, result
+	}
+
 	uuid := utils.MD5(uuid.NewV4().String())
 	state := utils.MD5(fmt.Sprintf("%s/%s/%d", namespace, repository, time.Now().UnixNano()/int64(time.Millisecond)))
 	random := fmt.Sprintf("https://%s/v2/%s/%s/blobs/uploads/%s?_state=%s",
@@ -251,7 +260,7 @@ func PutManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
 		digest, _ := signature.DigestManifest([]byte(data))
 
 		r := new(models.DockerV2)
-		if err := r.Put(namespace, repository, agent, string(version)); err != nil {
+		if err := r.PutAgent(namespace, repository, agent, string(version)); err != nil {
 			log.Errorf("Put the manifest data error: %s", err.Error())
 
 			result, _ := json.Marshal(map[string]string{})
