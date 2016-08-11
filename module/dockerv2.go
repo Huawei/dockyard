@@ -120,20 +120,22 @@ func CheckDockerVersion19(headers string) (bool, error) {
 }
 
 //GetTarsumlist is
-func GetTarsumlist(data []byte) ([]string, int64, error) {
+func GetTarsumlist(data []byte) ([]string, string, int64, error) {
 	var tarsumlist []string
+	var imageID string
 	var layers = []string{"", "fsLayers", "layers"}
 	var tarsums = []string{"", "blobSum", "digest"}
 
 	var manifest map[string]interface{}
 	if err := json.Unmarshal(data, &manifest); err != nil {
-		return []string{}, 0, err
+		return []string{}, "", 0, err
 	}
 
 	schemaVersion := int64(manifest["schemaVersion"].(float64))
 
 	if schemaVersion == 2 {
 		confblobsum := manifest["config"].(map[string]interface{})["digest"].(string)
+		imageID = strings.Split(manifest["config"].(map[string]interface{})["digest"].(string), ":")[1]
 		tarsum := strings.Split(confblobsum, ":")[1]
 		tarsumlist = append(tarsumlist, tarsum)
 	}
@@ -146,5 +148,5 @@ func GetTarsumlist(data []byte) ([]string, int64, error) {
 		tarsumlist = append(tarsumlist, tarsum)
 	}
 
-	return tarsumlist, schemaVersion, nil
+	return tarsumlist, imageID, schemaVersion, nil
 }
