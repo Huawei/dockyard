@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -54,11 +55,13 @@ func GetPingV2Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusOK, result
 }
 
+//GetCatalogV2Handler is
 func GetCatalogV2Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
 
+//HeadBlobsV2Handler is
 func HeadBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
@@ -109,10 +112,9 @@ func PatchBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 	if upload, err := module.CheckDockerVersion19(ctx.Req.Header.Get("User-Agent")); err != nil {
 		log.Errorf("Decode docker version error: %s", err.Error())
 
-		result, _ := json.Marshal(map[string]string{})
+		result, _ := module.EncodingError(module.BLOB_UPLOAD_UNKNOWN, map[string]string{"namespace": namespace, "repository": repository})
 		return http.StatusBadRequest, result
 	} else if upload == true {
-
 		//It's run above docker 1.9.0
 		basePath := setting.DockerV2Storage
 		uuidPath := fmt.Sprintf("%s/uuid/%s", basePath, uuid)
@@ -130,7 +132,7 @@ func PatchBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 		if err := ioutil.WriteFile(uuidFile, data, 0777); err != nil {
 			log.Errorf("Save the temp file %s error: %s", uuidFile, err.Error())
 
-			result, _ := json.Marshal(map[string]string{})
+			result, _ := module.EncodingError(module.BLOB_UPLOAD_UNKNOWN, map[string]string{"namespace": namespace, "repository": repository})
 			return http.StatusBadRequest, result
 		}
 
@@ -138,13 +140,8 @@ func PatchBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 	}
 
 	state := utils.MD5(fmt.Sprintf("%s/%v", fmt.Sprintf("%s/%s", namespace, repository), time.Now().UnixNano()/int64(time.Millisecond)))
-
 	random := fmt.Sprintf("https://%s/v2/%s/%s/blobs/uploads/%s?_state=%s",
-		setting.Domains,
-		namespace,
-		repository,
-		uuid,
-		state)
+		setting.Domains, namespace, repository, uuid, state)
 
 	ctx.Resp.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	ctx.Resp.Header().Set("Docker-Upload-Uuid", uuid)
@@ -164,12 +161,13 @@ func PutBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 
 	desc := ctx.Params(":uuid")
 	uuid := strings.Split(desc, "?")[0]
+
 	digest := ctx.Query("digest")
 	tarsum := strings.Split(digest, ":")[1]
 
 	basePath := setting.DockerV2Storage
-	imagePath := fmt.Sprintf("%s/uuid/%s", basePath, tarsum)
-	imageFile := fmt.Sprintf("%s/uuid/%s/%s", basePath, tarsum, tarsum)
+	imagePath := fmt.Sprintf("%s/image/%s", basePath, tarsum)
+	imageFile := fmt.Sprintf("%s/image/%s/%s", basePath, tarsum, tarsum)
 
 	//Save from uuid path save too image path
 	if !utils.IsDirExist(imagePath) {
@@ -183,10 +181,14 @@ func PutBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 	if upload, err := module.CheckDockerVersion19(ctx.Req.Header.Get("User-Agent")); err != nil {
 		log.Errorf("Decode docker version error: %s", err.Error())
 
-		result, _ := json.Marshal(map[string]string{})
+		result, _ := module.EncodingError(module.BLOB_UPLOAD_INVALID, map[string]string{"namespace": namespace, "repository": repository})
 		return http.StatusBadRequest, result
 	} else if upload == true {
+		body, _ := ctx.Req.Body().String()
+		log.Info(body)
+
 		//Docker 1.9.x above version saves layer in PATCH method, in PUT method move from uuid to image:sha256
+		uuidPath := fmt.Sprintf("%s/uuid/%s", basePath, uuid)
 		uuidFile := fmt.Sprintf("%s/uuid/%s/%s", basePath, uuid, uuid)
 
 		var data []byte
@@ -195,11 +197,14 @@ func PutBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 			if err := ioutil.WriteFile(imageFile, data, 0777); err != nil {
 				log.Errorf("Move the temp file to image folder %s error: %s", imageFile, err.Error())
 
-				result, _ := json.Marshal(map[string]string{})
+				result, _ := module.EncodingError(module.BLOB_UPLOAD_INVALID, map[string]string{"namespace": namespace, "repository": repository})
 				return http.StatusBadRequest, result
 			}
+
 			size = int64(len(data))
+
 			os.RemoveAll(uuidFile)
+			os.RemoveAll(uuidPath)
 		}
 	} else if upload == false {
 		//Docker 1.9.x below version saves layer in PUT methord, save data to file directly.
@@ -207,9 +212,10 @@ func PutBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 		if err := ioutil.WriteFile(imageFile, data, 0777); err != nil {
 			log.Errorf("Save the file %s error: %s", imageFile, err.Error())
 
-			result, _ := json.Marshal(map[string]string{})
+			result, _ := module.EncodingError(module.BLOB_UPLOAD_INVALID, map[string]string{"namespace": namespace, "repository": repository})
 			return http.StatusBadRequest, result
 		}
+
 		size = int64(len(data))
 	}
 
@@ -217,18 +223,13 @@ func PutBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 	if err := i.Put(tarsum, imageFile, size); err != nil {
 		log.Errorf("Save the iamge data %s error: %s", tarsum, err.Error())
 
-		result, _ := json.Marshal(map[string]string{})
+		result, _ := module.EncodingError(module.BLOB_UPLOAD_INVALID, map[string]string{"namespace": namespace, "repository": repository})
 		return http.StatusBadRequest, result
 	}
 
 	state := utils.MD5(fmt.Sprintf("%s/%v", fmt.Sprintf("%s/%s", namespace, repository), time.Now().UnixNano()/int64(time.Millisecond)))
-
 	random := fmt.Sprintf("https://%s/v2/%s/%s/blobs/uploads/%s?_state=%s",
-		setting.Domains,
-		namespace,
-		repository,
-		uuid,
-		state)
+		setting.Domains, namespace, repository, uuid, state)
 
 	ctx.Resp.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	ctx.Resp.Header().Set("Docker-Content-Digest", digest)
@@ -238,6 +239,7 @@ func PutBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusOK, result
 }
 
+//GetBlobsV2Handler is
 func GetBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
@@ -256,11 +258,11 @@ func PutManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
 		result, _ := json.Marshal(map[string]string{})
 		return http.StatusBadRequest, result
 	} else {
-		_, version, _ := module.GetTarsumlist([]byte(data))
+		_, imageID, version, _ := module.GetTarsumlist([]byte(data))
 		digest, _ := signature.DigestManifest([]byte(data))
 
 		r := new(models.DockerV2)
-		if err := r.PutAgent(namespace, repository, agent, string(version)); err != nil {
+		if err := r.PutAgent(namespace, repository, agent, strconv.FormatInt(version, 10)); err != nil {
 			log.Errorf("Put the manifest data error: %s", err.Error())
 
 			result, _ := json.Marshal(map[string]string{})
@@ -268,7 +270,7 @@ func PutManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
 		}
 
 		t := new(models.DockerTagV2)
-		if err := t.Put(namespace, repository, tag, "", data, version); err != nil {
+		if err := t.Put(namespace, repository, tag, imageID, data, strconv.FormatInt(version, 10)); err != nil {
 			log.Errorf("Put the manifest data error: %s", err.Error())
 
 			result, _ := json.Marshal(map[string]string{})
@@ -276,10 +278,7 @@ func PutManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
 		}
 
 		random := fmt.Sprintf("https://%s/v2/%s/%s/manifests/%s",
-			setting.Domains,
-			namespace,
-			repository,
-			digest)
+			setting.Domains, namespace, repository, digest)
 
 		ctx.Resp.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		ctx.Resp.Header().Set("Docker-Content-Digest", digest)
@@ -292,21 +291,25 @@ func PutManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
 	}
 }
 
+//GetTagsListV2Handler is
 func GetTagsListV2Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
 
+//GetManifestsV2Handler is
 func GetManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
 
+//DeleteBlobsV2Handler is
 func DeleteBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
 
+//DeleteManifestsV2Handler is
 func DeleteManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result

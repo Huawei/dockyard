@@ -74,12 +74,13 @@ type DockerTagV2 struct {
 	DeletedAt     *time.Time `json:"delete_at" sql:"index"`
 }
 
-//
+//TableName is
 func (t *DockerTagV2) TableName() string {
 	return "docker_tag_v2"
 }
 
-func (t *DockerTagV2) Put(namespace, repository, tag, imageID, manifest string, schema int64) error {
+//Put is
+func (t *DockerTagV2) Put(namespace, repository, tag, imageID, manifest, schema string) error {
 	r := new(DockerV2)
 
 	if err := db.Debug().Where("namespace = ? AND repository = ? ", namespace, repository).First(&r).Error; err != nil {
@@ -87,9 +88,9 @@ func (t *DockerTagV2) Put(namespace, repository, tag, imageID, manifest string, 
 	}
 
 	tx := db.Begin()
-	t.DockerV2, t.Tag, t.ImageID, t.Manifest, t.SchemaVersion = r.ID, tag, imageID, manifest, string(schema)
+	t.DockerV2, t.Tag, t.ImageID, t.Manifest, t.SchemaVersion = r.ID, tag, imageID, manifest, schema
 
-	if err := tx.Debug().Where("docker_v2 = ? AND tag = ?").FirstOrCreate(&t).Error; err != nil {
+	if err := tx.Debug().Where("docker_v2 = ? AND tag = ?", r.ID, tag).FirstOrCreate(&t).Error; err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -118,6 +119,7 @@ func (r *DockerV2) Put(namespace, repository string) error {
 	return nil
 }
 
+//PutAgent is
 func (r *DockerV2) PutAgent(namespace, repository, agent, version string) error {
 	r.Namespace, r.Repository = namespace, repository
 
