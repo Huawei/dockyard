@@ -43,7 +43,7 @@ func (*AppcV1) TableName() string {
 //
 type ACIv1 struct {
 	ID        int64      `json:"id" gorm:"primary_key"`
-	AppcV1    int64      `json:"appc_v1" sql:"not null"`
+	AppcV1    int64      `json:"appc_v1" sql:"not null;default:0"`
 	OS        string     `json:"os" sql:"null;type:varchar(255)"`
 	Arch      string     `json:"arch" sql:"null;type:varchar(255)"`
 	Name      string     `json:"name" sql:"not null;type:text"`
