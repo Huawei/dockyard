@@ -37,6 +37,36 @@ type AppV1 struct {
 	DeletedAt   *time.Time `json:"delete_at" sql:"index"`
 }
 
+// TableName returns the name of AppV1 table in mysql
+func (*AppV1) TableName() string {
+	return "app_v1"
+}
+
+// ArtifactV1 is the Artifcat V1 object
+type ArtifactV1 struct {
+	ID            int64  `json:"id" gorm:"primary_key"`
+	AppV1ID       int64  `json:"app_v1_id" sql:"not null;default:0"`
+	OS            string `json:"os" sql:"null;type:varchar(255)"`
+	Arch          string `json:"arch" sql:"null;type:varchar(255)"`
+	App           string `json:"app" sql:"not null;varchar(255)" gorm:"unique_index:app_tag"`
+	Tag           string `json:"tag" sql:"null;varchar(255)" gorm:"unique_index:app_tag"`
+	Manifests     string `json:"manifests" sql:"null;type:text"`
+	OSS           string `json:"oss" sql:"null;type:text"`
+	EncryptMethod string `json:"encrypt" sql:"null;type:text"`
+	// FIXME: Path is both the `URL` of the local storage and the `KEY` of the object storage
+	Path      string     `json:"path" sql:"null;type:text"`
+	Size      int64      `json:"size" sql:"default:0"`
+	Locked    bool       `json:"locked" sql:"default:false"`
+	CreatedAt time.Time  `json:"create_at" sql:""`
+	UpdatedAt time.Time  `json:"update_at" sql:""`
+	DeletedAt *time.Time `json:"delete_at" sql:"index"`
+}
+
+// TableName returns the name of ArtifactV1 table in mysql
+func (*ArtifactV1) TableName() string {
+	return "artifact_v1"
+}
+
 // NewAppV1 returns the namespace/repository, it will create the repository if it is not exist
 func NewAppV1(namespace, repository string) (AppV1, error) {
 	var app AppV1
@@ -45,11 +75,6 @@ func NewAppV1(namespace, repository string) (AppV1, error) {
 
 	//TODO: create or query in db
 	return app, nil
-}
-
-// TableName returns the name of AppV1 table in mysql
-func (*AppV1) TableName() string {
-	return "app_v1"
 }
 
 // Put adds an artifact to a repository
@@ -71,31 +96,6 @@ func (app *AppV1) Delete(artifact ArtifactV1) error {
 	}
 
 	return nil
-}
-
-// ArtifactV1 is the Artifcat V1 object
-type ArtifactV1 struct {
-	ID            int64  `json:"id" gorm:"primary_key"`
-	AppV1ID       int64  `json:"app_v1_id" sql:"not null"`
-	OS            string `json:"os" sql:"null;type:varchar(255)"`
-	Arch          string `json:"arch" sql:"null;type:varchar(255)"`
-	App           string `json:"app" sql:"not null;varchar(255)" gorm:"unique_index:app_tag"`
-	Tag           string `json:"tag" sql:"null;varchar(255)" gorm:"unique_index:app_tag"`
-	Manifests     string `json:"manifests" sql:"null;type:text"`
-	OSS           string `json:"oss" sql:"null;type:text"`
-	EncryptMethod string `json:"encrypt" sql:"null;type:text"`
-	// FIXME: Path is both the `URL` of the local storage and the `KEY` of the object storage
-	Path      string     `json:"path" sql:"null;type:text"`
-	Size      int64      `json:"size" sql:"default:0"`
-	Locked    bool       `json:"locked" sql:"default:false"`
-	CreatedAt time.Time  `json:"create_at" sql:""`
-	UpdatedAt time.Time  `json:"update_at" sql:""`
-	DeletedAt *time.Time `json:"delete_at" sql:"index"`
-}
-
-// TableName returns the name of ArtifactV1 table in mysql
-func (*ArtifactV1) TableName() string {
-	return "artifact_v1"
 }
 
 func (a *ArtifactV1) GetName() string {

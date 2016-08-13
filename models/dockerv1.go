@@ -69,7 +69,7 @@ func (i *DockerImageV1) TableName() string {
 //
 type DockerTagV1 struct {
 	ID        int64      `json:"id" gorm:"primary_key"`
-	DockerV1  int64      `json:"docker_v1" sql:"not null"`
+	DockerV1  int64      `json:"docker_v1" sql:"not null;default:0"`
 	Tag       string     `json:"tag" sql:"not null;varchar(255)"`
 	ImageID   string     `json:"image_id" sql:"not null;varchar(255)"`
 	CreatedAt time.Time  `json:"create_at" sql:""`

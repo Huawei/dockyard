@@ -64,7 +64,7 @@ func (i *DockerImageV2) TableName() string {
 //DockerTagV2 is
 type DockerTagV2 struct {
 	ID            int64      `json:"id" gorm:"primary_key"`
-	DockerV2      int64      `json:"docker_v2" sql:"not null"`
+	DockerV2      int64      `json:"docker_v2" sql:"not null;default:0"`
 	Tag           string     `json:"tag" sql:"not null;type:varchar(255)"`
 	ImageID       string     `json:"image_id" sql:"not null;type:varchar(255)"`
 	Manifest      string     `json:"manifest" sql:"null;type:text"`
