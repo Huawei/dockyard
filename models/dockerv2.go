@@ -74,6 +74,11 @@ type DockerTagV2 struct {
 	DeletedAt     *time.Time `json:"delete_at" sql:"index"`
 }
 
+//TableName is
+func (t *DockerTagV2) TableName() string {
+	return "docker_tag_v2"
+}
+
 //GetTags return tas data of repository.
 func (r *DockerV2) GetTags(namespace, repository string) ([]string, error) {
 	if err := db.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
@@ -94,11 +99,11 @@ func (r *DockerV2) GetTags(namespace, repository string) ([]string, error) {
 	}
 }
 
-//TableName is
-func (t *DockerTagV2) TableName() string {
-	return "docker_tag_v2"
+func (t *DockerTagV2) Get(namespace, repository, tag string) (string, error) {
+	return "", nil
 }
 
+//Get is
 func (r *DockerV2) Get(namespace, repository string) error {
 	if err := db.Debug().Where("namespace = ? AND repository =? ", namespace, repository).First(&r).Error; err != nil {
 		return err
