@@ -341,29 +341,21 @@ func PutManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
 
 //GetTagsListV2Handler is
 func GetTagsListV2Handler(ctx *macaron.Context) (int, []byte) {
-
+	var err error
 	repository := ctx.Params(":repository")
 	namespace := ctx.Params(":namespace")
 
+	data := map[string]interface{}{}
+	data["name"] = fmt.Sprintf("%s/%s", namespace, repository)
+
 	r := new(models.DockerV2)
-	if err := r.Get(namespace, repository); err != nil && err == gorm.ErrRecordNotFound {
+
+	if data["tags"], err = r.GetTags(namespace, repository); err != nil && err == gorm.ErrRecordNotFound {
 		log.Info("Not found tags: %s/%s", namespace, repository)
 
 		result, _ := module.EncodingError(module.BLOB_UNKNOWN, fmt.Sprintf("%s/%s", namespace, repository))
 		return http.StatusNotFound, result
 	} else if err != nil && err != gorm.ErrRecordNotFound {
-		log.Info("Failed to get tags %s/%s: %s", namespace, repository, err.Error())
-
-		result, _ := module.EncodingError(module.UNKNOWN, err.Error())
-		return http.StatusBadRequest, result
-	}
-
-	var err error
-
-	data := map[string]interface{}{}
-	data["name"] = fmt.Sprintf("%s/%s", namespace, repository)
-
-	if data["tags"], err = r.GetTags(namespace, repository); err != nil {
 		log.Info("Failed to get tags %s/%s: %s", namespace, repository, err.Error())
 
 		result, _ := module.EncodingError(module.UNKNOWN, err.Error())
