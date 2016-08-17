@@ -99,8 +99,19 @@ func (r *DockerV2) GetTags(namespace, repository string) ([]string, error) {
 	}
 }
 
-func (t *DockerTagV2) Get(namespace, repository, tag string) (string, error) {
-	return "", nil
+//Get is get DockerTagV2 data
+func (t *DockerTagV2) Get(namespace, repository, tag string) (*DockerTagV2, error) {
+	r := new(DockerV2)
+
+	if err := db.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
+		return t, err
+	}
+
+	if err := db.Debug().Where("docker_v2 = ? AND tag = ?", r.ID, tag).First(&t).Error; err != nil {
+		return t, err
+	}
+
+	return t, nil
 }
 
 //Get is
