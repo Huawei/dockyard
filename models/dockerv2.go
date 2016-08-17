@@ -75,19 +75,19 @@ type DockerTagV2 struct {
 }
 
 //GetTags return tas data of repository.
-func (r *DockerV2) GetTags(namespace, repository string) (map[string]string, error) {
+func (r *DockerV2) GetTags(namespace, repository string) ([]string, error) {
 	if err := db.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
-		return map[string]string{}, err
+		return []string{}, err
 	} else {
 		var tags []DockerTagV2
-		result := map[string]string{}
+		result := []string{}
 
 		if err := db.Debug().Where("docker_v2 = ?", r.ID).Find(&tags).Error; err != nil {
-			return map[string]string{}, err
+			return []string{}, err
 		}
 
 		for _, tag := range tags {
-			result[tag.Tag] = tag.ImageID
+			result = append(result, tag.Tag)
 		}
 
 		return result, nil

@@ -206,9 +206,6 @@ func PutBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 		result, _ := module.EncodingError(module.BLOB_UPLOAD_INVALID, map[string]string{"namespace": namespace, "repository": repository})
 		return http.StatusBadRequest, result
 	} else if upload == true {
-		body, _ := ctx.Req.Body().String()
-		log.Info(body)
-
 		//Docker 1.9.x above version saves layer in PATCH method, in PUT method move from uuid to image:sha256
 		uuidPath := fmt.Sprintf("%s/uuid/%s", basePath, uuid)
 		uuidFile := fmt.Sprintf("%s/uuid/%s/%s", basePath, uuid, uuid)
