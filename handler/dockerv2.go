@@ -351,12 +351,12 @@ func GetTagsListV2Handler(ctx *macaron.Context) (int, []byte) {
 	r := new(models.DockerV2)
 
 	if data["tags"], err = r.GetTags(namespace, repository); err != nil && err == gorm.ErrRecordNotFound {
-		log.Info("Not found tags: %s/%s", namespace, repository)
+		log.Info("Not found repository in getting tags list: %s/%s", namespace, repository)
 
 		result, _ := module.EncodingError(module.BLOB_UNKNOWN, fmt.Sprintf("%s/%s", namespace, repository))
 		return http.StatusNotFound, result
 	} else if err != nil && err != gorm.ErrRecordNotFound {
-		log.Info("Failed to get tags %s/%s: %s", namespace, repository, err.Error())
+		log.Info("Failed found repository in getting tags list %s/%s: %s", namespace, repository, err.Error())
 
 		result, _ := module.EncodingError(module.UNKNOWN, err.Error())
 		return http.StatusBadRequest, result
@@ -368,9 +368,30 @@ func GetTagsListV2Handler(ctx *macaron.Context) (int, []byte) {
 
 //GetManifestsV2Handler is
 func GetManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
+	repository := ctx.Params(":repository")
+	namespace := ctx.Params(":namespace")
+	tag := ctx.Params(":tag")
 
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
+	t := new(models.DockerTagV2)
+	if _, err := t.Get(namespace, repository, tag); err != nil && err == gorm.ErrRecordNotFound {
+		log.Info("Not found repository in tetting tag manifest: %s/%s:%s", namespace, repository, tag)
+
+		result, _ := module.EncodingError(module.BLOB_UNKNOWN, fmt.Sprintf("%s/%s", namespace, repository))
+		return http.StatusNotFound, result
+	} else if err != nil && err != gorm.ErrRecordNotFound {
+		log.Info("Failed to get tag manifest %s/%s:%s : ", namespace, repository, tag, err.Error())
+
+		result, _ := module.EncodingError(module.UNKNOWN, err.Error())
+		return http.StatusBadRequest, result
+	}
+
+	digest, _ := signature.DigestManifest([]byte(t.Manifest))
+
+	ctx.Resp.Header().Set("Content-Type", "application/vnd.docker.distribution.manifest.v2+json")
+	ctx.Resp.Header().Set("Docker-Content-Digest", digest)
+	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(t.Manifest)))
+
+	return http.StatusOK, []byte(t.Manifest)
 }
 
 //DeleteBlobsV2Handler is
