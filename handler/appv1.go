@@ -24,8 +24,8 @@ import (
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/dockyard/models"
-	"github.com/containerops/dockyard/module"
 	"github.com/containerops/dockyard/setting"
+	"github.com/containerops/dockyard/updateservice/us"
 	"github.com/containerops/dockyard/utils"
 )
 
@@ -75,7 +75,7 @@ func AppGetListAppV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
-	appV1, _ := module.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
+	appV1, _ := us.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
 	apps, err := appV1.List(namespace + "/" + repository)
 
 	return httpRet("AppV1 List files", apps, err)
@@ -84,10 +84,9 @@ func AppGetListAppV1Handler(ctx *macaron.Context) (int, []byte) {
 // AppGetPublicKeyV1Handler gets the public key of the namespace/repository
 func AppGetPublicKeyV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
-	repository := ctx.Params(":repository")
 
-	appV1, _ := module.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
-	data, err := appV1.GetPublicKey(namespace + "/" + repository)
+	appV1, _ := us.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
+	data, err := appV1.GetPublicKey(namespace)
 	if err == nil {
 		return http.StatusOK, data
 	} else {
@@ -100,7 +99,7 @@ func AppGetMetaV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
-	appV1, _ := module.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
+	appV1, _ := us.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
 	data, err := appV1.GetMeta(namespace + "/" + repository)
 	if err == nil {
 		return http.StatusOK, data
@@ -114,7 +113,7 @@ func AppGetMetaSignV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
-	appV1, _ := module.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
+	appV1, _ := us.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
 	data, err := appV1.GetMetaSign(namespace + "/" + repository)
 	if err == nil {
 		return http.StatusOK, data
@@ -134,7 +133,7 @@ func AppGetFileV1Handler(ctx *macaron.Context) (int, []byte) {
 		Tag:  ctx.Params(":tag"),
 	}
 
-	appV1, _ := module.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
+	appV1, _ := us.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
 	data, err := appV1.Get(namespace+"/"+repository, a.GetName())
 	if err == nil {
 		return http.StatusOK, data
@@ -195,7 +194,7 @@ func AppPutFileV1Handler(ctx *macaron.Context) (int, []byte) {
 	}
 
 	// Add to update service
-	appV1, err := module.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
+	appV1, err := us.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
 	if err != nil {
 		log.Errorf("[%s] create update service: %s", ctx.Req.RequestURI, err.Error())
 
@@ -257,7 +256,7 @@ func AppDeleteFileV1Handler(ctx *macaron.Context) (int, []byte) {
 	}
 
 	// Remove from update service
-	appV1, err := module.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
+	appV1, err := us.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
 	if err != nil {
 		log.Errorf("[%s] create update service: %s", ctx.Req.RequestURI, err.Error())
 

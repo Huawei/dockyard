@@ -14,26 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package local
+package storage
 
 import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"regexp"
+	"net/url"
 	"strings"
 
-	"github.com/containerops/dockyard/module"
 	"github.com/containerops/dockyard/utils"
 )
 
 const (
-	LocalPrefix = "local"
-)
-
-var (
-	// Parse "local://tmp/containerops" and get  "Path" : "/tmp/containerops"
-	localRegexp = regexp.MustCompile(`^(.+):/(.+)$`)
+	localPrefix = "local"
 )
 
 // UpdateServiceStorageLocal is the local file implementation of storage service
@@ -44,40 +38,49 @@ type UpdateServiceStorageLocal struct {
 }
 
 func init() {
-	module.RegisterStorage(LocalPrefix, &UpdateServiceStorageLocal{})
+	RegisterStorage(localPrefix, &UpdateServiceStorageLocal{})
 }
 
-// Supported checks if a url begin with 'local://'
-func (ussl *UpdateServiceStorageLocal) Supported(url string) bool {
-	return strings.HasPrefix(url, LocalPrefix+"://")
+// Supported checks if a uri is a local path
+func (ussl *UpdateServiceStorageLocal) Supported(uri string) bool {
+	if uri == "" {
+		return false
+	}
+
+	if u, err := url.Parse(uri); err != nil {
+		return false
+	} else if u.Scheme == "" {
+		return true
+	}
+
+	return false
 }
 
 // New creates an UpdateServceStorage interface with a local implmentation
-func (ussl *UpdateServiceStorageLocal) New(url string, km string) (module.UpdateServiceStorage, error) {
-	parts := localRegexp.FindStringSubmatch(url)
-	if len(parts) != 3 || parts[1] != LocalPrefix {
-		return nil, fmt.Errorf("invalid url set in StorageLocal.New: %s", url)
+func (ussl *UpdateServiceStorageLocal) New(uri string, km string) (UpdateServiceStorage, error) {
+	if !ussl.Supported(uri) {
+		return nil, fmt.Errorf("invalid url set in StorageLocal.New: %s", uri)
 	}
 
-	ussl.Path = parts[2]
+	ussl.Path = uri
 	ussl.kmURL = km
 
 	return ussl, nil
 }
 
-// String returns the composed url
+// String returns 'Path'
 func (ussl *UpdateServiceStorageLocal) String() string {
-	return fmt.Sprintf("%s:/%s", LocalPrefix, ussl.Path)
+	return ussl.Path
 }
 
 // Get the data of an input key. Key is "namespace/repository/os/arch/appname"
-func (ussl *UpdateServiceStorageLocal) Get(protocal string, key string) ([]byte, error) {
+func (ussl *UpdateServiceStorageLocal) Get(proto string, key string) ([]byte, error) {
 	s := strings.Split(key, "/")
 	if len(s) != 5 {
 		return nil, fmt.Errorf("invalid key detected in StorageLocal.Get: %s", key)
 	}
 
-	r, err := NewRepoWithKM(ussl.Path, protocal, strings.Join(s[:2], "/"), ussl.kmURL)
+	r, err := NewLocalRepoWithKM(ussl.Path, proto, strings.Join(s[:2], "/"), ussl.kmURL)
 	if err != nil {
 		return nil, err
 	}
@@ -86,13 +89,13 @@ func (ussl *UpdateServiceStorageLocal) Get(protocal string, key string) ([]byte,
 }
 
 // GetMeta gets the metadata of an input key. Key is "namespace/repository"
-func (ussl *UpdateServiceStorageLocal) GetMeta(protocal string, key string) ([]byte, error) {
+func (ussl *UpdateServiceStorageLocal) GetMeta(proto string, key string) ([]byte, error) {
 	s := strings.Split(key, "/")
 	if len(s) != 2 {
 		return nil, fmt.Errorf("invalid key detected in StorageLocal.GetMeta: %s", key)
 	}
 
-	r, err := NewRepoWithKM(ussl.Path, protocal, key, ussl.kmURL)
+	r, err := NewLocalRepoWithKM(ussl.Path, proto, key, ussl.kmURL)
 	if err != nil {
 		return nil, err
 	}
@@ -101,13 +104,13 @@ func (ussl *UpdateServiceStorageLocal) GetMeta(protocal string, key string) ([]b
 }
 
 // GetMetaSign gets the meta signature data. Key is "namespace/repository"
-func (ussl *UpdateServiceStorageLocal) GetMetaSign(protocal string, key string) ([]byte, error) {
+func (ussl *UpdateServiceStorageLocal) GetMetaSign(proto string, key string) ([]byte, error) {
 	s := strings.Split(key, "/")
 	if len(s) != 2 {
 		return nil, errors.New("invalid key detected in StorageLocal.GetMetaSign")
 	}
 
-	r, err := NewRepoWithKM(ussl.Path, protocal, key, ussl.kmURL)
+	r, err := NewLocalRepoWithKM(ussl.Path, proto, key, ussl.kmURL)
 	if err != nil {
 		return nil, err
 	}
@@ -116,14 +119,13 @@ func (ussl *UpdateServiceStorageLocal) GetMetaSign(protocal string, key string) 
 	return ioutil.ReadFile(file)
 }
 
-// GetPublicKey gets the public key data. Key is "namespace/repository"
-func (ussl *UpdateServiceStorageLocal) GetPublicKey(protocal string, key string) ([]byte, error) {
-	s := strings.Split(key, "/")
-	if len(s) != 2 {
+// GetPublicKey gets the public key data. Key is "namespace"
+func (ussl *UpdateServiceStorageLocal) GetPublicKey(proto string, key string) ([]byte, error) {
+	if key == "" {
 		return nil, errors.New("invalid key detected in StorageLocal.GetPublicKey")
 	}
 
-	r, err := NewRepoWithKM(ussl.Path, protocal, key, ussl.kmURL)
+	r, err := NewLocalRepoWithKM(ussl.Path, proto, key, ussl.kmURL)
 	if err != nil {
 		return nil, err
 	}
@@ -133,13 +135,13 @@ func (ussl *UpdateServiceStorageLocal) GetPublicKey(protocal string, key string)
 }
 
 // Put adds a file with a key. Key is "namespace/repository/os/arch/appname"
-func (ussl *UpdateServiceStorageLocal) Put(protocal string, key string, content []byte, method utils.EncryptMethod) (string, error) {
+func (ussl *UpdateServiceStorageLocal) Put(proto string, key string, content []byte, method utils.EncryptMethod) (string, error) {
 	s := strings.Split(key, "/")
 	if len(s) != 5 {
 		return "", errors.New("invalid key detected in StorageLocal.Put")
 	}
 
-	r, err := NewRepoWithKM(ussl.Path, protocal, strings.Join(s[:2], "/"), ussl.kmURL)
+	r, err := NewLocalRepoWithKM(ussl.Path, proto, strings.Join(s[:2], "/"), ussl.kmURL)
 	if err != nil {
 		return "", err
 	}
@@ -148,13 +150,13 @@ func (ussl *UpdateServiceStorageLocal) Put(protocal string, key string, content 
 }
 
 // Delete removes a file by a key. Key is "namespace/repositoryi/os/arch/appname"
-func (ussl *UpdateServiceStorageLocal) Delete(protocal string, key string) error {
+func (ussl *UpdateServiceStorageLocal) Delete(proto string, key string) error {
 	s := strings.Split(key, "/")
 	if len(s) != 5 {
 		return errors.New("invalid key detected in StorageLocal.Delete")
 	}
 
-	r, err := NewRepoWithKM(ussl.Path, protocal, strings.Join(s[:2], "/"), ussl.kmURL)
+	r, err := NewLocalRepoWithKM(ussl.Path, proto, strings.Join(s[:2], "/"), ussl.kmURL)
 	if err != nil {
 		return err
 	}
@@ -163,13 +165,13 @@ func (ussl *UpdateServiceStorageLocal) Delete(protocal string, key string) error
 }
 
 // List lists the content of a key. Key is "namespace/repository"
-func (ussl *UpdateServiceStorageLocal) List(protocal string, key string) ([]string, error) {
+func (ussl *UpdateServiceStorageLocal) List(proto string, key string) ([]string, error) {
 	s := strings.Split(key, "/")
 	if len(s) != 2 {
 		return nil, errors.New("invalid key deteced in StorageLocal.List")
 	}
 
-	r, err := NewRepoWithKM(ussl.Path, protocal, key, ussl.kmURL)
+	r, err := NewLocalRepoWithKM(ussl.Path, proto, key, ussl.kmURL)
 	if err != nil {
 		return nil, err
 	}

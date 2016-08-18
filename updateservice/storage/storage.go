@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package module
+package storage
 
 import (
 	"errors"
@@ -27,7 +27,7 @@ import (
 
 // UpdateServiceStorage represents the storage interface
 type UpdateServiceStorage interface {
-	// `url` is the database address or local directory (local://tmp/cache)
+	// `url` is the database address or local directory (/tmp/cache)
 	// `km` is the key manager address
 	New(url string, km string) (UpdateServiceStorage, error)
 	// get the 'url' set by 'New'
@@ -40,7 +40,7 @@ type UpdateServiceStorage interface {
 	GetMeta(protocal, key string) ([]byte, error)
 	// key: namespace/repository
 	GetMetaSign(protocal, key string) ([]byte, error)
-	// key: namespace/repository
+	// key: namespace
 	// We don't provide GetPrivateKeyFile since we don't save it on the storage server
 	GetPublicKey(protocal, key string) ([]byte, error)
 	// key: namespace/repository/appname
@@ -64,21 +64,22 @@ var (
 //
 // If RegisterStorage is called twice with the same name if 'storage type' is nil,
 // or if the name is blank, it panics.
-func RegisterStorage(name string, f UpdateServiceStorage) {
+func RegisterStorage(name string, f UpdateServiceStorage) error {
 	if name == "" {
-		panic("Could not register a Storage with an empty name")
+		return errors.New("Could not register a Storage with an empty name")
 	}
 	if f == nil {
-		panic("Could not register a nil Storage")
+		return errors.New("Could not register a nil Storage")
 	}
 
 	usStoragesLock.Lock()
 	defer usStoragesLock.Unlock()
 
 	if _, alreadyExists := usStorages[name]; alreadyExists {
-		panic(fmt.Sprintf("Storage type '%s' is already registered", name))
+		return fmt.Errorf("Storage type '%s' is already registered", name)
 	}
 	usStorages[name] = f
+	return nil
 }
 
 // NewUpdateServiceStorage creates a storage interface by a url

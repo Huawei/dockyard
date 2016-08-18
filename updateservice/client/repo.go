@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package module
+package client
 
 import (
 	"errors"
@@ -55,21 +55,23 @@ var (
 //
 // If RegisterRepo is called twice with the same name if Repo is nil,
 // or if the name is blank, it panics.
-func RegisterRepo(name string, f UpdateClientRepo) {
+func RegisterRepo(name string, f UpdateClientRepo) error {
 	if name == "" {
-		panic("Could not register a Repo with an empty name")
+		return errors.New("Could not register a Repo with an empty name")
 	}
 	if f == nil {
-		panic("Could not register a nil Repo")
+		return errors.New("Could not register a nil Repo")
 	}
 
 	ucReposLock.Lock()
 	defer ucReposLock.Unlock()
 
 	if _, alreadyExists := ucRepos[name]; alreadyExists {
-		panic(fmt.Sprintf("Repo type '%s' is already registered", name))
+		return fmt.Errorf("Repo type '%s' is already registered", name)
 	}
 	ucRepos[name] = f
+
+	return nil
 }
 
 // NewUCRepo creates a update client repo by a url

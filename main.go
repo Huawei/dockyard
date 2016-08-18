@@ -23,14 +23,6 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/containerops/dockyard/cmd"
-	// Load the client request module
-	_ "github.com/containerops/dockyard/module/client/repo/appv1"
-	// Load the local key manager module
-	_ "github.com/containerops/dockyard/module/km/local"
-	// Load the local storage module
-	_ "github.com/containerops/dockyard/module/storage/local"
-	// Load the local update service module
-	_ "github.com/containerops/dockyard/module/us/appv1"
 	"github.com/containerops/dockyard/setting"
 )
 

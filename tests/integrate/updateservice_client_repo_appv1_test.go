@@ -26,7 +26,7 @@ import (
 	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/containerops/dockyard/module/client/repo/appv1"
+	"github.com/containerops/dockyard/updateservice/client"
 	"github.com/containerops/dockyard/utils"
 )
 
@@ -46,7 +46,7 @@ func getTestURL() string {
 
 // TestOper tests add/get/getmeta/getmetasign/list
 func TestOper(t *testing.T) {
-	var appV1Repo appV1.UpdateClientAppV1Repo
+	var appV1Repo client.UpdateClientAppV1Repo
 
 	validURL := getTestURL()
 
