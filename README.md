@@ -48,8 +48,8 @@ distribution = registry/2.0
 storage = /tmp/data/dockerv2
 
 [updateserver]
-keymanager = "local://tmp/containerops_keymanager_cache"
-storage = "local://tmp/containerops_storage_cache"
+keymanager = /tmp/containerops_keymanager_cache
+storage = /tmp/containerops_storage_cache
 
 ```
 

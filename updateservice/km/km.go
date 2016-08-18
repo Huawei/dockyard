@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package module
+package km
 
 import (
 	"errors"
@@ -29,21 +29,21 @@ import (
 // It is up to each implementation to decide whether provides a way
 //  to generate key pair automatically.
 type KeyManager interface {
-	// `url` is the database address or local directory (local://tmp/cache)
+	// `url` is the database address or local directory (for example: /tmp/cache)
 	New(url string) (KeyManager, error)
 	Supported(url string) bool
-	// protocal: 'app/v1' for example
-	// nr : namespace/repository
-	GetPublicKey(protocal string, nr string) ([]byte, error)
-	// protocal: 'app/v1' for example
-	// nr : namespace/repository
-	Sign(protocal string, nr string, data []byte) ([]byte, error)
-	// protocal: 'app/v1' for example
-	// nr : namespace/repository
-	Decrypt(protocal string, nr string, data []byte) ([]byte, error)
+	// proto: 'app/v1' for example
+	// namespace : namespace
+	GetPublicKey(proto string, namespace string) ([]byte, error)
+	// proto: 'app/v1' for example
+	// namespace : namespace
+	Sign(proto string, namespace string, data []byte) ([]byte, error)
+	// proto: 'app/v1' for example
+	// namespace : namespace
+	Decrypt(proto string, namespace string, data []byte) ([]byte, error)
 	// WARNING! it is dangrous to privide this, so mask it now.
 	// In replace, we provides Sign and Decrypt as a service.
-	// GetPrivateKey(protocal string, nr string) ([]byte, error)
+	// GetPrivateKey(proto string, namespace string) ([]byte, error)
 }
 
 var (
@@ -55,25 +55,27 @@ var (
 )
 
 // RegisterKeyManager provides a way to dynamically register an implementation of a
-// storage type.
+// key manager type.
 //
-// If RegisterKeyManager is called twice with the same name if 'storage type' is nil,
+// If RegisterKeyManager is called twice with the same name if 'key manager type' is nil,
 // or if the name is blank, it panics.
-func RegisterKeyManager(name string, f KeyManager) {
+func RegisterKeyManager(name string, f KeyManager) error {
 	if name == "" {
-		panic("Could not register a KeyManager with an empty name")
+		return errors.New("Could not register a KeyManager with an empty name")
 	}
 	if f == nil {
-		panic("Could not register a nil KeyManager")
+		return errors.New("Could not register a nil KeyManager")
 	}
 
 	kmsLock.Lock()
 	defer kmsLock.Unlock()
 
 	if _, alreadyExists := kms[name]; alreadyExists {
-		panic(fmt.Sprintf("KeyManager type '%s' is already registered", name))
+		return fmt.Errorf("KeyManager type '%s' is already registered", name)
 	}
 	kms[name] = f
+
+	return nil
 }
 
 // NewKeyManager create a key manager by a url

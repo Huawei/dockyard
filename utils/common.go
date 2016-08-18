@@ -42,15 +42,15 @@ import (
 type EncryptMethod string
 
 const (
-	EncryptGPG          = "gpg"
+	EncryptRSA          = "rsa"
 	EncryptNone         = "none"
 	EncryptNotSupported = "not-supported"
 )
 
 func NewEncryptMethod(method string) EncryptMethod {
 	switch method {
-	case string(EncryptGPG):
-		return EncryptGPG
+	case string(EncryptRSA):
+		return EncryptRSA
 	case "":
 		return EncryptNone
 	case string(EncryptNone):

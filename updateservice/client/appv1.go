@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package appV1
+package client
 
 import (
 	"bytes"
@@ -26,7 +26,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/containerops/dockyard/module/client"
 	"github.com/containerops/dockyard/utils"
 )
 
@@ -48,7 +47,7 @@ type UpdateClientAppV1Repo struct {
 }
 
 func init() {
-	module.RegisterRepo(appV1Protocal, &UpdateClientAppV1Repo{})
+	RegisterRepo(appV1Protocal, &UpdateClientAppV1Repo{})
 }
 
 // Supported checks if a protocal is "appv1"
@@ -60,10 +59,10 @@ func (ap *UpdateClientAppV1Repo) Supported(protocal string) bool {
 //	Site:       "containerops/dockyard.me"
 //      Namespace:  "containerops/dockyard"
 //      Repo:       "offical"
-func (ap *UpdateClientAppV1Repo) New(url string) (module.UpdateClientRepo, error) {
+func (ap *UpdateClientAppV1Repo) New(url string) (UpdateClientRepo, error) {
 	parts := appv1Regexp.FindStringSubmatch(url)
 	if len(parts) != 5 {
-		return nil, module.ErrorsUCRepoInvalid
+		return nil, ErrorsUCRepoInvalid
 	}
 	ap.Runmode = parts[1]
 	ap.Site = parts[2]
@@ -144,7 +143,7 @@ func (ap UpdateClientAppV1Repo) GetMeta() ([]byte, error) {
 
 // GetPublicKey gets the public key data of a repository
 func (ap UpdateClientAppV1Repo) GetPublicKey() ([]byte, error) {
-	url := fmt.Sprintf("%s/pubkey", ap.generateURL())
+	url := fmt.Sprintf("%s://%s/%s/%s/pubkey", ap.Runmode, ap.Site, appV1Restful, ap.Namespace)
 	return ap.getFromURL(url)
 }
 

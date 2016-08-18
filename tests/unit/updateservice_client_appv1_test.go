@@ -20,21 +20,20 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/containerops/dockyard/module/client"
-	"github.com/containerops/dockyard/module/client/repo/appv1"
+	"github.com/containerops/dockyard/updateservice/client"
 )
 
 // TestMCRAppV1New
 func TestMCRAppV1New(t *testing.T) {
-	var appV1 appV1.UpdateClientAppV1Repo
+	var appV1 client.UpdateClientAppV1Repo
 
 	invalidURL := "containerops.me/containerops/official"
 	_, err := appV1.New(invalidURL)
-	assert.Equal(t, err, module.ErrorsUCRepoInvalid, "Fail to parse invalid url")
+	assert.Equal(t, err, client.ErrorsUCRepoInvalid, "Fail to parse invalid url")
 
 	invalidURL2 := "http://containerops.me/containerops"
 	_, err = appV1.New(invalidURL2)
-	assert.Equal(t, err, module.ErrorsUCRepoInvalid, "Fail to parse invalid url")
+	assert.Equal(t, err, client.ErrorsUCRepoInvalid, "Fail to parse invalid url")
 
 	validURL := "http://containerops.me/containerops/official"
 	f, err := appV1.New(validURL)
