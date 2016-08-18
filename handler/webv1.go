@@ -25,6 +25,12 @@ import (
 
 //
 func IndexV1Handler(ctx *macaron.Context) (int, []byte) {
+	discovery := ctx.Query("ac-discovery")
+
+	if len(discovery) > 0 {
+
+	}
+
 	result, _ := json.Marshal(map[string]string{"message": "Dockyard Backend REST API Service"})
 	return http.StatusOK, result
 }
