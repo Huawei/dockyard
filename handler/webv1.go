@@ -18,16 +18,38 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
+	"os"
 
+	log "github.com/Sirupsen/logrus"
 	"gopkg.in/macaron.v1"
 )
 
-//
+//IndexV1Handler is
 func IndexV1Handler(ctx *macaron.Context) (int, []byte) {
 	discovery := ctx.Query("ac-discovery")
 
-	if len(discovery) > 0 {
+	if len(discovery) > 0 && discovery == "1" {
+		if _, err := os.Stat("external/signs/pubkeys.gpg"); err != nil {
+			log.Errorf("[%s] get gpg file status: %s", ctx.Req.RequestURI, err.Error())
+
+			result, _ := json.Marshal(map[string]string{"Error": "Get GPG File Status Error"})
+			return http.StatusBadRequest, result
+		}
+
+		if file, err := ioutil.ReadFile("external/signs/pubkeys.gpg"); err != nil {
+			log.Errorf("[%s] get gpg file data: %s", ctx.Req.RequestURI, err.Error())
+
+			result, _ := json.Marshal(map[string]string{"Error": "Get GPG File Data Error"})
+			return http.StatusBadRequest, result
+		} else {
+			ctx.Resp.Header().Set("Content-Type", "application/octet-stream")
+			ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(file)))
+
+			return http.StatusOK, file
+		}
 
 	}
 

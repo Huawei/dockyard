@@ -160,7 +160,6 @@ func GetTagV1Handler(ctx *macaron.Context) (int, []byte) {
 		return http.StatusBadRequest, result
 	} else {
 		result, _ := json.Marshal(tags)
-
 		ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(result)))
 
 		return http.StatusOK, result
