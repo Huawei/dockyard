@@ -88,6 +88,9 @@ func SetRouters(m *macaron.Macaron) {
 			// Global Search
 			m.Get("/search", handler.AppGlobalSearchV1Handler)
 
+			// Get public key
+			m.Get("/:namespace/pubkey", handler.AppGetPublicKeyV1Handler)
+
 			m.Group("/:namespace/:repository", func() {
 				// Discovery
 				m.Get("/?app-discovery=1", handler.AppDiscoveryV1Handler)
@@ -99,7 +102,6 @@ func SetRouters(m *macaron.Macaron) {
 				// Pull
 				m.Get("/meta", handler.AppGetMetaV1Handler)
 				m.Get("/metasign", handler.AppGetMetaSignV1Handler)
-				m.Get("/pubkey", handler.AppGetPublicKeyV1Handler)
 				m.Get("/:os/:arch/:app/?:tag", handler.AppGetFileV1Handler)
 				m.Get("/:os/:arch/:app/manifests/?:tag", handler.AppGetManifestsV1Handler)
 

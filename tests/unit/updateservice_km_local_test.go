@@ -24,16 +24,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/containerops/dockyard/module"
-	kml "github.com/containerops/dockyard/module/km/local"
+	kml "github.com/containerops/dockyard/updateservice/km"
 )
 
-func loadTestKMLData(t *testing.T) (module.KeyManager, string) {
+func loadTestKMLData(t *testing.T) (kml.KeyManager, string) {
 	var local kml.KeyManagerLocal
 	_, path, _, _ := runtime.Caller(0)
 	realPath := filepath.Join(filepath.Dir(path), "testdata")
 
-	l, err := local.New(kml.LocalPrefix + ":/" + realPath)
+	l, err := local.New(realPath)
 	assert.Nil(t, err, "Fail to setup a local test key manager")
 
 	return l, realPath
@@ -42,7 +41,7 @@ func loadTestKMLData(t *testing.T) (module.KeyManager, string) {
 func TestKMLBasic(t *testing.T) {
 	var local kml.KeyManagerLocal
 
-	validURL := "local://tmp/containerops_km_cache"
+	validURL := "/tmp/containerops_km_cache"
 	ok := local.Supported(validURL)
 	assert.Equal(t, ok, true, "Fail to get supported status")
 	ok = local.Supported("localInvalid://tmp/containerops_km_cache")
@@ -58,38 +57,38 @@ func TestKMLGetPublicKey(t *testing.T) {
 	assert.Nil(t, err, "Fail to create temp dir")
 
 	var local kml.KeyManagerLocal
-	l, err := local.New(kml.LocalPrefix + ":/" + tmpPath)
+	l, err := local.New(tmpPath)
 	assert.Nil(t, err, "Fail to setup a local test key manager")
 
-	nr := "containerops/official"
-	_, err = l.GetPublicKey("app/v1", nr)
+	namespace := "containerops"
+	_, err = l.GetPublicKey("app/v1", namespace)
 	assert.Nil(t, err, "Fail to get public key")
 }
 
 func TestKMLSign(t *testing.T) {
-	protocal := "app/v1"
-	nr := "containerops/official"
+	proto := "app/v1"
+	namespace := "containerops"
 	l, realPath := loadTestKMLData(t)
 	testFile := filepath.Join(realPath, "hello.txt")
 	testBytes, _ := ioutil.ReadFile(testFile)
 	signFile := filepath.Join(realPath, "hello.sig")
 	signBytes, _ := ioutil.ReadFile(signFile)
 
-	data, err := l.Sign(protocal, nr, testBytes)
+	data, err := l.Sign(proto, namespace, testBytes)
 	assert.Nil(t, err, "Fail to sign")
 	assert.Equal(t, data, signBytes, "Fail to sign correctly")
 }
 
 func TestKMLDecrypt(t *testing.T) {
-	protocal := "app/v1"
-	nr := "containerops/official"
+	proto := "app/v1"
+	namespace := "containerops"
 	l, realPath := loadTestKMLData(t)
 	testFile := filepath.Join(realPath, "hello.txt")
 	testBytes, _ := ioutil.ReadFile(testFile)
 	testEncryptedFile := filepath.Join(realPath, "hello.encrypt")
 	testEncryptedBytes, _ := ioutil.ReadFile(testEncryptedFile)
 
-	testDecryptedBytes, err := l.Decrypt(protocal, nr, testEncryptedBytes)
+	testDecryptedBytes, err := l.Decrypt(proto, namespace, testEncryptedBytes)
 	assert.Nil(t, err, "Fail to decrypt")
 	assert.Equal(t, testDecryptedBytes, testBytes, "Fail to decrypt correctly")
 }

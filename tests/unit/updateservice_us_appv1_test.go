@@ -20,12 +20,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	usa "github.com/containerops/dockyard/module/us/appv1"
+	"github.com/containerops/dockyard/updateservice/us"
 )
 
 // TestUSABasic tests the basic functions
 func TestUSABasic(t *testing.T) {
-	var appV1 usa.UpdateServiceAppV1
+	var appV1 us.UpdateServiceAppV1
 
 	ok := appV1.Supported("appV1")
 	assert.Equal(t, ok, true, "Fail to get supported status")

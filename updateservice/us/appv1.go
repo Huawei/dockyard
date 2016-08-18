@@ -14,40 +14,40 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package appV1
+package us
 
 import (
-	"github.com/containerops/dockyard/module"
+	"github.com/containerops/dockyard/updateservice/storage"
 	"github.com/containerops/dockyard/utils"
 )
 
 const (
-	appV1Prefix   = "appV1"
-	appV1Protocal = "app/v1"
+	appV1Prefix = "appV1"
+	appV1Proto  = "app/v1"
 )
 
-// UpdateServiceAppV1 is the appV1 implementation of the update service protocal
+// UpdateServiceAppV1 is the appV1 implementation of the update service proto
 type UpdateServiceAppV1 struct {
-	storage module.UpdateServiceStorage
+	s storage.UpdateServiceStorage
 }
 
 func init() {
-	module.Register(appV1Prefix, &UpdateServiceAppV1{})
+	Register(appV1Prefix, &UpdateServiceAppV1{})
 }
 
-// Supported checks if a protocal is 'appV1'
-func (app *UpdateServiceAppV1) Supported(protocal string) bool {
-	return protocal == appV1Prefix
+// Supported checks if a proto is 'appV1'
+func (app *UpdateServiceAppV1) Supported(proto string) bool {
+	return proto == appV1Prefix
 }
 
-// New creates a update service interface by an appV1 protocal
-func (app *UpdateServiceAppV1) New(protocal string, storageURL string, kmURL string) (module.UpdateService, error) {
-	if protocal != appV1Prefix {
-		return nil, module.ErrorsUSPNotSupported
+// New creates a update service interface by an appV1 proto
+func (app *UpdateServiceAppV1) New(proto string, storageURL string, kmURL string) (UpdateService, error) {
+	if proto != appV1Prefix {
+		return nil, ErrorsUSPNotSupported
 	}
 
 	var err error
-	app.storage, err = module.NewUpdateServiceStorage(storageURL, kmURL)
+	app.s, err = storage.NewUpdateServiceStorage(storageURL, kmURL)
 	if err != nil {
 		return nil, err
 	}
@@ -58,37 +58,37 @@ func (app *UpdateServiceAppV1) New(protocal string, storageURL string, kmURL str
 // Put adds a appV1 file to a repository
 func (app *UpdateServiceAppV1) Put(nr, name string, data []byte, method utils.EncryptMethod) (string, error) {
 	key := nr + "/" + name
-	return app.storage.Put(appV1Protocal, key, data, method)
+	return app.s.Put(appV1Proto, key, data, method)
 }
 
 // Delete removes a appV1 file from a repository
 func (app *UpdateServiceAppV1) Delete(nr, name string) error {
 	key := nr + "/" + name
-	return app.storage.Delete(appV1Protocal, key)
+	return app.s.Delete(appV1Proto, key)
 }
 
 // Get gets the appV1 file data of a repository
 func (app *UpdateServiceAppV1) Get(nr, name string) ([]byte, error) {
 	key := nr + "/" + name
-	return app.storage.Get(appV1Protocal, key)
+	return app.s.Get(appV1Proto, key)
 }
 
 // List lists the applications of a repository
 func (app *UpdateServiceAppV1) List(nr string) ([]string, error) {
-	return app.storage.List(appV1Protocal, nr)
+	return app.s.List(appV1Proto, nr)
 }
 
 // GetPublicKey returns the public key data of a repository
-func (app *UpdateServiceAppV1) GetPublicKey(nr string) ([]byte, error) {
-	return app.storage.GetPublicKey(appV1Protocal, nr)
+func (app *UpdateServiceAppV1) GetPublicKey(namespace string) ([]byte, error) {
+	return app.s.GetPublicKey(appV1Proto, namespace)
 }
 
 // GetMeta returns the meta data of a repository
 func (app *UpdateServiceAppV1) GetMeta(nr string) ([]byte, error) {
-	return app.storage.GetMeta(appV1Protocal, nr)
+	return app.s.GetMeta(appV1Proto, nr)
 }
 
 // GetMetaSign returns the meta signature data of a repository
 func (app *UpdateServiceAppV1) GetMetaSign(nr string) ([]byte, error) {
-	return app.storage.GetMetaSign(appV1Protocal, nr)
+	return app.s.GetMetaSign(appV1Proto, nr)
 }

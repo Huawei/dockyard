@@ -17,40 +17,39 @@ package unittest
 
 import (
 	"io/ioutil"
-	//	"os"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/containerops/dockyard/module"
-	_ "github.com/containerops/dockyard/module/km/local"
-	sl "github.com/containerops/dockyard/module/storage/local"
+	"github.com/containerops/dockyard/updateservice/km"
+	"github.com/containerops/dockyard/updateservice/storage"
 	"github.com/containerops/dockyard/utils"
 )
 
 // TestSLRepoBasic
 func TestSLRepoBasic(t *testing.T) {
 	topDir, err := ioutil.TempDir("", "dus-repo-test-")
-	//	defer os.RemoveAll(topDir)
+	defer os.RemoveAll(topDir)
 	assert.Nil(t, err, "Fail to create temp dir")
 
-	protocal := "app/v1"
-	invalidURLs := []string{"a", "a/b/c"}
-	for _, invalidURL := range invalidURLs {
-		_, err := sl.NewRepo(topDir, protocal, invalidURL)
+	proto := "app/v1"
+	invalidNRs := []string{"", "a/b/c"}
+	for _, invalidNR := range invalidNRs {
+		_, err := storage.NewLocalRepo(topDir, proto, invalidNR)
 		assert.NotNil(t, err, "Fail to return error while setup an invalid url")
 	}
 
 	// new
-	validURL := "containerops/official"
-	r, err := sl.NewRepo(topDir, protocal, validURL)
+	validNR := "containerops/official"
+	validNamespace := "containerops"
+	r, err := storage.NewLocalRepo(topDir, proto, validNR)
 	assert.Nil(t, err, "Fail to setup a valid url")
-	assert.Equal(t, r.GetTopDir(), filepath.Join(topDir, protocal, validURL), "Fail to get the correct top dir")
-	assert.Equal(t, r.GetMetaFile(), filepath.Join(topDir, protocal, validURL, "meta.json"), "Fail to get the default meta file")
+	assert.Equal(t, r.GetTopDir(), filepath.Join(topDir, proto, validNR), "Fail to get the correct top dir")
+	assert.Equal(t, r.GetMetaFile(), filepath.Join(topDir, proto, validNR, "meta.json"), "Fail to get the default meta file")
 
-	kmDir := "local:/" + topDir
-	err = r.SetKM(kmDir)
+	err = r.SetKM(topDir)
 	assert.Nil(t, err, "Fail to set key manager")
 
 	// add
@@ -95,7 +94,7 @@ func TestSLRepoBasic(t *testing.T) {
 	assert.Equal(t, string(res), updateContent)
 
 	// update with encrypt gpg method
-	_, err = r.Put(updateFile, []byte(updateContent), utils.EncryptGPG)
+	_, err = r.Put(updateFile, []byte(updateContent), utils.EncryptRSA)
 	assert.Nil(t, err, "Fail to add an exist file")
 
 	encryptdRes, err := r.Get(updateFile)
@@ -103,9 +102,9 @@ func TestSLRepoBasic(t *testing.T) {
 	assert.NotEqual(t, string(encryptdRes), updateContent)
 
 	// decrypt by keymanager
-	km, err := module.NewKeyManager(kmDir)
+	k, err := km.NewKeyManager(topDir)
 	assert.Nil(t, err, "Fail to get key manager")
-	decryptdRes, err := km.Decrypt(protocal, validURL, encryptdRes)
+	decryptdRes, err := k.Decrypt(proto, validNamespace, encryptdRes)
 	assert.Nil(t, err, "Fail to decrypt")
 	assert.Equal(t, string(decryptdRes), updateContent)
 
