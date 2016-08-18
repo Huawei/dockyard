@@ -3,7 +3,7 @@ echo "push file appA"
 ./dockyard client push "appv1#http://localhost:1234/n/r" "tests/integrate/testdata/osA/archA/appA" "osA/archA"
 echo "--------------------------------"
 echo "push file appB"
-./dockyard client push "appv1#http://localhost:1234/n/r" "tests/integrate/testdata/osB/archB/appB" "osB/archB" "gpg"
+./dockyard client push "appv1#http://localhost:1234/n/r" "tests/integrate/testdata/osB/archB/appB" "osB/archB" "rsa"
 echo "--------------------------------"
 echo "list appA and appB"
 ./dockyard client list "appv1#http://localhost:1234/n/r"
@@ -23,6 +23,6 @@ echo "--------------------------------"
 echo "end of the test"
 
 echo "--------------------------------"
-echo "try to decrypt file, but the private key and appB file may not be in the right place"
-./dockyard client decrypt "/tmp/containerops_keymanager_cache/app/v1/n/r/key/priv_key.pem" $HOME/.dockyard/cache/n/r/osB/archB/appB
+echo "try to decrypt file, if not success, please check if the private key and appB file are in the right place"
+./dockyard client decrypt "/tmp/containerops_keymanager_cache/app/v1/n/priv_key.pem" $HOME/.dockyard/cache/n/r/osB/archB/appB
 diff tests/integrate/testdata/osB/archB/appB $HOME/.dockyard/cache/n/r/osB/archB/appB-decrypted

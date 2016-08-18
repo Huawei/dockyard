@@ -25,7 +25,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/containerops/dockyard/module/client"
+	"github.com/containerops/dockyard/updateservice/client"
 	"github.com/containerops/dockyard/utils"
 )
 
@@ -42,7 +42,7 @@ type UpdateClient struct {
 
 // Update the meta data, meta sign, public key
 func (uc *UpdateClient) Update(repoURL string) error {
-	repo, err := module.NewUCRepo(repoURL)
+	repo, err := client.NewUCRepo(repoURL)
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func (uc *UpdateClient) Update(repoURL string) error {
 
 // List always tells the latest apps.
 func (uc *UpdateClient) List(repoURL string) ([]string, error) {
-	repo, err := module.NewUCRepo(repoURL)
+	repo, err := client.NewUCRepo(repoURL)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func (uc *UpdateClient) List(repoURL string) ([]string, error) {
 }
 
 func (uc *UpdateClient) GetFile(repoURL string, name string) (string, error) {
-	repo, err := module.NewUCRepo(repoURL)
+	repo, err := client.NewUCRepo(repoURL)
 	if err != nil {
 		return "", err
 	}
@@ -158,7 +158,7 @@ func (uc *UpdateClient) GetFile(repoURL string, name string) (string, error) {
 }
 
 func (uc *UpdateClient) Delete(repoURL string, name string) error {
-	repo, err := module.NewUCRepo(repoURL)
+	repo, err := client.NewUCRepo(repoURL)
 	if err != nil {
 		return err
 	}
@@ -176,7 +176,7 @@ func (uc *UpdateClient) getCacheDir() string {
 	return uc.cacheDir
 }
 
-func (uc *UpdateClient) save(repo module.UpdateClientRepo, file string, bytes []byte) (string, error) {
+func (uc *UpdateClient) save(repo client.UpdateClientRepo, file string, bytes []byte) (string, error) {
 	localFile := filepath.Join(uc.getCacheDir(), repo.NRString(), file)
 	if !utils.IsDirExist(filepath.Dir(localFile)) {
 		os.MkdirAll(filepath.Dir(localFile), 0755)

@@ -25,7 +25,7 @@ import (
 	"github.com/urfave/cli"
 
 	cutils "github.com/containerops/dockyard/cmd/client"
-	"github.com/containerops/dockyard/module/client"
+	"github.com/containerops/dockyard/updateservice/client"
 	"github.com/containerops/dockyard/utils"
 )
 
@@ -161,7 +161,7 @@ var pushCommand = cli.Command{
 		fileURL := context.Args().Get(1)
 		prefix := context.Args().Get(2)
 
-		repo, err := module.NewUCRepo(repoURL)
+		repo, err := client.NewUCRepo(repoURL)
 		if err != nil {
 			fmt.Println(err)
 			return err

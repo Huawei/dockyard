@@ -33,7 +33,7 @@ func TestEncryptMethod(t *testing.T) {
 		data     string
 		expected utils.EncryptMethod
 	}{
-		{"gpg", utils.EncryptGPG},
+		{"rsa", utils.EncryptRSA},
 		{"", utils.EncryptNone},
 		{"anyother", utils.EncryptNotSupported},
 	}

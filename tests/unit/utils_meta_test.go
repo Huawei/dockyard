@@ -32,8 +32,8 @@ import (
 func TestMetaEncrypt(t *testing.T) {
 	var item utils.MetaItem
 
-	item.SetEncryption(utils.EncryptGPG)
-	assert.Equal(t, true, item.GetEncryption() == utils.EncryptGPG, "Fail to set/get entrypt method")
+	item.SetEncryption(utils.EncryptRSA)
+	assert.Equal(t, true, item.GetEncryption() == utils.EncryptRSA, "Fail to set/get entrypt method")
 }
 
 // TestMetaItemGenerate

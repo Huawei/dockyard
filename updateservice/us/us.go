@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package module
+package us
 
 import (
 	"errors"
@@ -51,21 +51,23 @@ var (
 //
 // If Register is called twice with the same name if 'protocal' is nil,
 // or if the name is blank, it panics.
-func Register(name string, f UpdateService) {
+func Register(name string, f UpdateService) error {
 	if name == "" {
-		panic("Could not register a  with an empty name")
+		errors.New("Could not register a  with an empty name")
 	}
 	if f == nil {
-		panic("Could not register a nil ")
+		errors.New("Could not register a nil ")
 	}
 
 	ussLock.Lock()
 	defer ussLock.Unlock()
 
 	if _, alreadyExists := uss[name]; alreadyExists {
-		panic(fmt.Sprintf(" type '%s' is already registered", name))
+		errors.New(fmt.Sprintf(" type '%s' is already registered", name))
 	}
 	uss[name] = f
+
+	return nil
 }
 
 // NewUpdateService create a update service protocal interface by a protocal type

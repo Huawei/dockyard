@@ -14,31 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package local
+package km
 
 import (
 	"errors"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strings"
 
-	"github.com/containerops/dockyard/module"
 	"github.com/containerops/dockyard/utils"
 )
 
 const (
-	LocalPrefix       = "local"
-	defaultKeyDirName = "key"
+	localPrefix       = "local"
 	defaultPublicKey  = "pub_key.pem"
 	defaultPrivateKey = "priv_key.pem"
 	defaultBitsSize   = 2048
-)
-
-var (
-	// Parse "local://tmp/containerops" and get  "Path" : "/tmp/containerops"
-	localRegexp = regexp.MustCompile(`^local:/(.+)$`)
 )
 
 // KeyManagerLocal is the local implementation of a key manager
@@ -48,60 +40,73 @@ type KeyManagerLocal struct {
 }
 
 func init() {
-	module.RegisterKeyManager(LocalPrefix, &KeyManagerLocal{})
+	RegisterKeyManager(localPrefix, &KeyManagerLocal{})
 }
 
-// Supported checks if a local url begin with "local://"
-func (kml *KeyManagerLocal) Supported(url string) bool {
-	return strings.HasPrefix(url, LocalPrefix+"://")
-}
-
-// New returns a keymanager by a url and a protocal
-func (kml *KeyManagerLocal) New(url string) (module.KeyManager, error) {
-	parts := localRegexp.FindStringSubmatch(url)
-	if len(parts) != 2 {
-		return nil, errors.New("Invalid key manager url, should be 'local://@dir'.")
+// Supported checks if a uri is local path
+func (kml *KeyManagerLocal) Supported(uri string) bool {
+	if uri == "" {
+		return false
 	}
 
-	kml.Path = parts[1]
+	if u, err := url.Parse(uri); err != nil {
+		return false
+	} else if u.Scheme == "" {
+		return true
+	}
+
+	return false
+}
+
+// New returns a keymanager by a uri
+func (kml *KeyManagerLocal) New(uri string) (KeyManager, error) {
+	if !kml.Supported(uri) {
+		return nil, errors.New("Invalid key manager url, should be local dir")
+	}
+
+	kml.Path = uri
 	return kml, nil
 }
 
-// GetPublicKey gets the public key data of a namespace/repository
-func (kml *KeyManagerLocal) GetPublicKey(protocal string, nr string) ([]byte, error) {
-	keyDir := filepath.Join(kml.Path, protocal, nr, defaultKeyDirName)
+// getKeyDir returns key dir
+func (kml *KeyManagerLocal) getKeyDir(proto, namespace string) (string, error) {
+	keyDir := filepath.Join(kml.Path, proto, namespace)
 	if !isKeyExist(keyDir) {
 		err := generateKey(keyDir)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
+	}
+
+	return keyDir, nil
+}
+
+// GetPublicKey gets the public key data of a namespace
+func (kml *KeyManagerLocal) GetPublicKey(proto string, namespace string) ([]byte, error) {
+	keyDir, err := kml.getKeyDir(proto, namespace)
+	if err != nil {
+		return nil, err
 	}
 
 	return ioutil.ReadFile(filepath.Join(keyDir, defaultPublicKey))
 }
 
-// Sign signs a data of a namespace/repository
-func (kml *KeyManagerLocal) Decrypt(protocal string, nr string, data []byte) ([]byte, error) {
-	keyDir := filepath.Join(kml.Path, protocal, nr, defaultKeyDirName)
-	if !isKeyExist(keyDir) {
-		err := generateKey(keyDir)
-		if err != nil {
-			return nil, err
-		}
+// Sign signs a data of a namespace
+func (kml *KeyManagerLocal) Decrypt(proto string, namespace string, data []byte) ([]byte, error) {
+	keyDir, err := kml.getKeyDir(proto, namespace)
+	if err != nil {
+		return nil, err
 	}
 
 	privBytes, _ := ioutil.ReadFile(filepath.Join(keyDir, defaultPrivateKey))
 	return utils.RSADecrypt(privBytes, data)
 }
 
-// Sign signs a data of a namespace/repository
-func (kml *KeyManagerLocal) Sign(protocal string, nr string, data []byte) ([]byte, error) {
-	keyDir := filepath.Join(kml.Path, protocal, nr, defaultKeyDirName)
-	if !isKeyExist(keyDir) {
-		err := generateKey(keyDir)
-		if err != nil {
-			return nil, err
-		}
+// Sign signs a data of a namespace
+func (kml *KeyManagerLocal) Sign(proto string, namespace string, data []byte) ([]byte, error) {
+	keyDir, err := kml.getKeyDir(proto, namespace)
+	if err != nil {
+		return nil, err
 	}
 
 	privBytes, _ := ioutil.ReadFile(filepath.Join(keyDir, defaultPrivateKey))
@@ -127,13 +132,13 @@ func generateKey(keyDir string) error {
 	}
 
 	if !utils.IsDirExist(keyDir) {
-		err := os.MkdirAll(keyDir, 0777)
+		err := os.MkdirAll(keyDir, 0755)
 		if err != nil {
 			return err
 		}
 	}
 
-	if err := ioutil.WriteFile(filepath.Join(keyDir, defaultPrivateKey), privBytes, 0644); err != nil {
+	if err := ioutil.WriteFile(filepath.Join(keyDir, defaultPrivateKey), privBytes, 0600); err != nil {
 		return err
 	}
 
