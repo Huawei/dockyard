@@ -26,6 +26,7 @@ import (
 func SetRouters(m *macaron.Macaron) {
 	// Web API
 	m.Get("/", handler.IndexV1Handler)
+	m.Get("/pubkeys", handler.GPGV1Handler)
 
 	// Docker Registry V1
 	m.Group("/v1", func() {
