@@ -127,14 +127,14 @@ func SetRouters(m *macaron.Macaron) {
 			m.Get("/?ac-discovery=1", handler.AppcDiscoveryV1Handler)
 
 			//Pull
-			m.Get("/fetch/:aci", handler.AppcGetACIV1Handler)
+			m.Get("/fetch/:file", handler.AppcGetACIV1Handler)
 
 			//Push
 			m.Post("/push/:aci", handler.AppcPostACIV1Handler)
-			m.Put("/push/:version/manifest", handler.AppcPutManifestV1Handler)
-			m.Put("/push/:version/asc/:asc", handler.AppcPutASCV1Handler)
+			m.Put("/push/:version/manifest/:aci", handler.AppcPutManifestV1Handler)
+			m.Put("/push/:version/asc/:aci", handler.AppcPutASCV1Handler)
 			m.Put("/push/:version/aci/:aci", handler.AppcPutACIV1Handler)
-			m.Post("/push/:version/complete", handler.AppcPostCompleteV1Handler)
+			m.Post("/push/:version/complete/:aci", handler.AppcPostCompleteV1Handler)
 		})
 	})
 

@@ -20,35 +20,36 @@ import (
 	"time"
 )
 
-//
+//AppcV1 is
 type AppcV1 struct {
 	ID          int64      `json:"id" gorm:"primary_key"`
-	Namespace   string     `json:"namespace" sql:"not null;type:varchar(255)"`
-	Repository  string     `json:"repository" sql:"not null;type:varchar(255)"`
+	Namespace   string     `json:"namespace" sql:"not null;type:varchar(255)"  gorm:"unique_index:appcv1_repository"`
+	Repository  string     `json:"repository" sql:"not null;type:varchar(255)" gorm:"unique_index:appcv1_repository"`
 	Description string     `json:"description" sql:"null;type:text"`
-	Manifests   string     `json:"manifests" sql:"null;type:text"`
 	Keys        string     `json:"keys" sql:"null;type:text"`
 	Size        int64      `json:"size" sql:"default:0"`
-	Locked      bool       `json:"locked" sql:"default:false"`
 	CreatedAt   time.Time  `json:"create_at" sql:""`
 	UpdatedAt   time.Time  `json:"update_at" sql:""`
 	DeletedAt   *time.Time `json:"delete_at" sql:"index"`
 }
 
-//
-func (*AppcV1) TableName() string {
+//TableName is
+func (r *AppcV1) TableName() string {
 	return "appc_v1"
 }
 
-//
+//ACIv1 is
 type ACIv1 struct {
 	ID        int64      `json:"id" gorm:"primary_key"`
-	AppcV1    int64      `json:"appc_v1" sql:"not null;default:0"`
+	AppcV1    int64      `json:"appc_v1" sql:"not null;default:0" gorm:"unique_index:aciv1"`
+	Name      string     `json:"name" sql:"not null;type:text" gorm:"unique_index:aciv1"`
 	OS        string     `json:"os" sql:"null;type:varchar(255)"`
 	Arch      string     `json:"arch" sql:"null;type:varchar(255)"`
-	Name      string     `json:"name" sql:"not null;type:text"`
+	Version   string     `json:"version" sql:"null;type:varchar(255)"`
+	Manifest  string     `json:"manifest" sql:"null;type:text"`
 	OSS       string     `json:"name" sql:"null;type:text"`
-	Path      string     `json:"arch" sql:"null;type:text"`
+	Path      string     `json:"pach" sql:"null;type:text"`
+	Sign      string     `json:"sign" sql:"null;type:text"`
 	Size      int64      `json:"size" sql:"default:0"`
 	Locked    bool       `json:"locked" sql:"default:false"`
 	CreatedAt time.Time  `json:"create_at" sql:""`
@@ -56,6 +57,122 @@ type ACIv1 struct {
 	DeletedAt *time.Time `json:"delete_at" sql:"index"`
 }
 
-func (*ACIv1) TableName() string {
+//TableName is
+func (i *ACIv1) TableName() string {
 	return "aci_v1"
+}
+
+//Put is
+func (r *AppcV1) Put(namespace, repository string) error {
+	r.Namespace, r.Repository = namespace, repository
+
+	tx := db.Begin()
+
+	if err := tx.Debug().Where("namespace = ? AND repository = ? ", namespace, repository).FirstOrCreate(&r).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+//Get is
+func (r *AppcV1) Get(namespace, repository string) error {
+	if err := db.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//PutManifest is
+func (i *ACIv1) PutManifest(appcv1 int64, version, name, manifest string) error {
+	i.AppcV1, i.Version, i.Name = appcv1, version, name
+
+	tx := db.Begin()
+
+	if err := tx.Debug().Where("appc_v1 = ? AND name = ?", appcv1, name).FirstOrCreate(&i).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Debug().Model(&i).Updates(map[string]interface{}{"manifest": manifest, "locked": true}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+//PutSign is
+func (i *ACIv1) PutSign(appcv1 int64, version, name, sign string) error {
+	i.AppcV1, i.Version, i.Name = appcv1, version, name
+
+	tx := db.Begin()
+
+	if err := tx.Debug().Where("appc_v1 = ? AND name = ?", appcv1, name).FirstOrCreate(&i).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Debug().Model(&i).Updates(map[string]interface{}{"sign": sign, "locked": true}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+//PutACI is
+func (i *ACIv1) PutACI(appcv1 int64, version, name, aci string) error {
+	i.AppcV1, i.Version, i.Name = appcv1, version, name
+
+	tx := db.Begin()
+
+	if err := tx.Debug().Where("appc_v1 = ? AND name = ?", appcv1, name).FirstOrCreate(&i).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Debug().Model(&i).Updates(map[string]interface{}{"path": aci, "locked": true}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+//Get is
+func (i *ACIv1) Get(appcv1 int64, version, name string) error {
+	i.AppcV1, i.Version, i.Name = appcv1, version, name
+
+	if err := db.Debug().Where("appc_v1 = ? AND name = ? AND version = ?", appcv1, name, version).First(&i).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//Unlocked is
+func (i *ACIv1) Unlocked(appcv1 int64, version, name string) error {
+	i.AppcV1, i.Version, i.Name = appcv1, version, name
+
+	tx := db.Begin()
+
+	if err := tx.Debug().Where("appc_v1 = ? AND name = ?", appcv1, name).FirstOrCreate(&i).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Debug().Model(&i).Updates(map[string]interface{}{"locked": false}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
 }
