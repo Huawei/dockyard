@@ -40,8 +40,8 @@ var (
 
 	RunMode        string
 	ListenMode     string
-	HttpsCertFile  string
-	HttpsKeyFile   string
+	HTTPSCertFile  string
+	HTTPSKeyFile   string
 	LogPath        string
 	LogLevel       string
 	DatabaseDriver string
@@ -59,12 +59,18 @@ var (
 	DockerDistributionVersion string
 	DockerV2Storage           string
 
+	//@Appc Config
+
+	AppcStorage string
+
 	//@UpdateService
+
 	KeyManager string
 	Storage    string
 
 	//@ScanContent
-	// 32-bit URL-safe base64 key used to encrypt id in database
+	//32-bit URL-safe base64 key used to encrypt id in database
+
 	ScanKey string
 )
 
@@ -156,13 +162,13 @@ func setServerConfig(conf config.Configer) error {
 	}
 
 	if httpscertfile := conf.String("httpscertfile"); httpscertfile != "" {
-		HttpsCertFile = httpscertfile
+		HTTPSCertFile = httpscertfile
 	} else if httpscertfile == "" {
 		return fmt.Errorf("HttpsCertFile config value is null")
 	}
 
 	if httpskeyfile := conf.String("httpskeyfile"); httpskeyfile != "" {
-		HttpsKeyFile = httpskeyfile
+		HTTPSKeyFile = httpskeyfile
 	} else if httpskeyfile == "" {
 		return fmt.Errorf("HttpsKeyFile config value is null")
 	}
@@ -228,6 +234,12 @@ func setServerConfig(conf config.Configer) error {
 		DockerV2Storage = storage
 	} else if storage == "" {
 		return fmt.Errorf("DockerV2 Storage value is null")
+	}
+
+	if storage := conf.String("appc::storage"); storage != "" {
+		AppcStorage = storage
+	} else if storage == "" {
+		return fmt.Errorf("Appc Storage value is null")
 	}
 
 	//config update service

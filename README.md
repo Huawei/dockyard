@@ -47,6 +47,9 @@ storage = /tmp/data/dockerv1
 distribution = registry/2.0
 storage = /tmp/data/dockerv2
 
+[appc]
+storage = /tmp/data/appc
+
 [updateserver]
 keymanager = /tmp/containerops_keymanager_cache
 storage = /tmp/containerops_storage_cache
