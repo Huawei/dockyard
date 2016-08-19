@@ -53,17 +53,17 @@ var (
 // or if the name is blank, it panics.
 func Register(name string, f UpdateService) error {
 	if name == "" {
-		errors.New("Could not register a  with an empty name")
+		return errors.New("Could not register a  with an empty name")
 	}
 	if f == nil {
-		errors.New("Could not register a nil ")
+		return errors.New("Could not register a nil ")
 	}
 
 	ussLock.Lock()
 	defer ussLock.Unlock()
 
 	if _, alreadyExists := uss[name]; alreadyExists {
-		errors.New(fmt.Sprintf(" type '%s' is already registered", name))
+		return errors.New(fmt.Sprintf(" type '%s' is already registered", name))
 	}
 	uss[name] = f
 
