@@ -19,12 +19,15 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"net/http"
 	"os"
 
 	log "github.com/Sirupsen/logrus"
 	"gopkg.in/macaron.v1"
+
+	"github.com/containerops/dockyard/setting"
 )
 
 //IndexV1Handler is
@@ -32,27 +35,37 @@ func IndexV1Handler(ctx *macaron.Context) (int, []byte) {
 	discovery := ctx.Query("ac-discovery")
 
 	if len(discovery) > 0 && discovery == "1" {
-		if _, err := os.Stat("external/signs/pubkeys.gpg"); err != nil {
-			log.Errorf("[%s] get gpg file status: %s", ctx.Req.RequestURI, err.Error())
+		if t, err := template.ParseGlob("views/aci/gpg.html"); err != nil {
+			log.Errorf("[%s] get gpg file template status: %s", ctx.Req.RequestURI, err.Error())
 
-			result, _ := json.Marshal(map[string]string{"Error": "Get GPG File Status Error"})
-			return http.StatusBadRequest, result
-		}
-
-		if file, err := ioutil.ReadFile("external/signs/pubkeys.gpg"); err != nil {
-			log.Errorf("[%s] get gpg file data: %s", ctx.Req.RequestURI, err.Error())
-
-			result, _ := json.Marshal(map[string]string{"Error": "Get GPG File Data Error"})
+			result, _ := json.Marshal(map[string]string{"Error": "Get GPG File Template Status Error"})
 			return http.StatusBadRequest, result
 		} else {
-			ctx.Resp.Header().Set("Content-Type", "application/octet-stream")
-			ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(file)))
-
-			return http.StatusOK, file
+			t.Execute(ctx.Resp, map[string]string{"Domains": setting.Domains})
 		}
-
 	}
 
-	result, _ := json.Marshal(map[string]string{"message": "Dockyard Backend REST API Service"})
-	return http.StatusOK, result
+	return http.StatusOK, []byte("")
+}
+
+//GPGV1Handler is
+func GPGV1Handler(ctx *macaron.Context) (int, []byte) {
+	if _, err := os.Stat("external/signs/pubkeys.gpg"); err != nil {
+		log.Errorf("[%s] get gpg file status: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"Error": "Get GPG File Status Error"})
+		return http.StatusBadRequest, result
+	}
+
+	if file, err := ioutil.ReadFile("external/signs/pubkeys.gpg"); err != nil {
+		log.Errorf("[%s] get gpg file data: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"Error": "Get GPG File Data Error"})
+		return http.StatusBadRequest, result
+	} else {
+		ctx.Resp.Header().Set("Content-Type", "application/octet-stream")
+		ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(file)))
+
+		return http.StatusOK, file
+	}
 }
