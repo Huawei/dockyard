@@ -22,13 +22,13 @@ import (
 	"github.com/containerops/dockyard/handler"
 )
 
-// Dockyard Router Definition
+//Dockyard Router Definition
 func SetRouters(m *macaron.Macaron) {
-	// Web API
+	//Web API
 	m.Get("/", handler.IndexV1Handler)
 	m.Get("/pubkeys", handler.GPGV1Handler)
 
-	// Docker Registry V1
+	//Docker Registry V1
 	m.Group("/v1", func() {
 		m.Get("/_ping", handler.GetPingV1Handler)
 
@@ -53,12 +53,12 @@ func SetRouters(m *macaron.Macaron) {
 		})
 	})
 
-	// Docker Registry V2
+	//Docker Registry V2
 	m.Group("/v2", func() {
 		m.Get("/", handler.GetPingV2Handler)
 		m.Get("/_catalog", handler.GetCatalogV2Handler)
 
-		// user mode: /namespace/repository:tag
+		//user mode: /namespace/repository:tag
 		m.Head("/:namespace/:repository/blobs/:digest", handler.HeadBlobsV2Handler)
 		m.Post("/:namespace/:repository/blobs/uploads", handler.PostBlobsV2Handler)
 		m.Patch("/:namespace/:repository/blobs/uploads/:uuid", handler.PatchBlobsV2Handler)
@@ -70,7 +70,7 @@ func SetRouters(m *macaron.Macaron) {
 		m.Delete("/:namespace/:repository/blobs/:digest", handler.DeleteBlobsV2Handler)
 		m.Delete("/:namespace/:repository/manifests/:reference", handler.DeleteManifestsV2Handler)
 
-		// library mode: /repository:tag
+		//library mode: /repository:tag
 		m.Head("/:repository/blobs/:digest", handler.HeadBlobsV2LibraryHandler)
 		m.Post("/:repository/blobs/uploads", handler.PostBlobsV2LibraryHandler)
 		m.Patch("/:repository/blobs/uploads/:uuid", handler.PatchBlobsV2LibraryHandler)
@@ -83,77 +83,80 @@ func SetRouters(m *macaron.Macaron) {
 		m.Delete("/:repository/manifests/:reference", handler.DeleteManifestsV2LibraryHandler)
 	})
 
-	// App Discovery
+	//App Discovery
 	m.Group("/app", func() {
 		m.Group("/v1", func() {
-			// Global Search
+			//Global Search
 			m.Get("/search", handler.AppGlobalSearchV1Handler)
 
-			// Get public key
+			//Get public key
 			m.Get("/:namespace/pubkey", handler.AppGetPublicKeyV1Handler)
 
 			m.Group("/:namespace/:repository", func() {
-				// Discovery
+				//Discovery
 				m.Get("/?app-discovery=1", handler.AppDiscoveryV1Handler)
 
-				// Scoped Search
+				//Scoped Search
 				m.Get("/search", handler.AppScopedSearchV1Handler)
 				m.Get("/list", handler.AppGetListAppV1Handler)
 
-				// Pull
+				//Pull
 				m.Get("/meta", handler.AppGetMetaV1Handler)
 				m.Get("/metasign", handler.AppGetMetaSignV1Handler)
 				m.Get("/:os/:arch/:app/?:tag", handler.AppGetFileV1Handler)
 				m.Get("/:os/:arch/:app/manifests/?:tag", handler.AppGetManifestsV1Handler)
 
-				// Push
+				//Push
 				m.Post("/", handler.AppPostFileV1Handler)
 				m.Put("/:os/:arch/:app/?:tag", handler.AppPutFileV1Handler)
 				m.Put("/:os/:arch/:app/manifests/?:tag", handler.AppPutManifestV1Handler)
 				m.Patch("/:os/:arch/:app/:status/?:tag", handler.AppPatchFileV1Handler)
 				m.Delete("/:os/:arch/:app/?:tag", handler.AppDeleteFileV1Handler)
 
-				// Content Scan
+				//Content Scan
 				m.Post("/shook", handler.AppRegistScanHooksHandler)
 				m.Post("/shook/:callbackID", handler.AppCallbackScanHooksHandler)
 			})
 		})
 	})
 
-	// Appc Discovery
+	//Appc Discovery
 	m.Group("/appc", func() {
-		m.Group("/v1", func() {
-			m.Group("/:namespace/:repository", func() {
-				// Discovery
-				m.Get("/?ac-discovery=1", handler.AppcDiscoveryV1Handler)
+		m.Group("/:namespace/:repository", func() {
+			//Discovery
+			m.Get("/?ac-discovery=1", handler.AppcDiscoveryV1Handler)
 
-				// Pull
-				m.Get("/pubkeys", handler.AppcGetPubkeysV1Handler)
-				m.Get("/:os/:arch/:aci", handler.AppcGetACIV1Handler)
-			})
+			//Pull
+			m.Get("/fetch/:aci", handler.AppcGetACIV1Handler)
 
+			//Push
+			m.Post("/push/:aci", handler.AppcPostACIV1Handler)
+			m.Put("/push/:version/manifest", handler.AppcPutManifestV1Handler)
+			m.Put("/push/:version/asc/:asc", handler.AppcPutASCV1Handler)
+			m.Put("/push/:version/aci/:aci", handler.AppcPutACIV1Handler)
+			m.Post("/push/:version/complete", handler.AppcPostCompleteV1Handler)
 		})
 	})
 
-	// VM Image Discovery
+	//VM Image Discovery
 	m.Group("/image", func() {
 		m.Group("/v1", func() {
-			// Global Search
+			//Global Search
 			m.Get("/search", handler.ImageGlobalSearchV1Handler)
 
 			m.Group("/:namespace/:repository", func() {
-				// Discovery
+				//Discovery
 				m.Get("/?image-discovery=1", handler.ImageDiscoveryV1Handler)
 
-				// Scoped Search
+				//Scoped Search
 				m.Get("/search", handler.ImageScopedSearchV1Handler)
 				m.Get("/list", handler.ImageGetListV1Handler)
 
-				// Pull
+				//Pull
 				m.Get("/:os/:arch/:image/?:tag", handler.ImageGetFileV1Handler)
 				m.Get("/:os/:arch/:image/manifests/?:tag", handler.ImageGetManifestsV1Handler)
 
-				// Push
+				//Push
 				m.Post("/", handler.ImagePostV1Handler)
 				m.Put("/:os/:arch/:image/?:tag", handler.ImagePutFileV1Handler)
 				m.Put("/:os/:arch/:image/manifests/?:tag", handler.ImagePutManifestV1Handler)
@@ -163,14 +166,14 @@ func SetRouters(m *macaron.Macaron) {
 		})
 	})
 
-	// Sync APIS
+	//Sync APIS
 	m.Group("/sync", func() {
 		m.Group("/v1", func() {
-			// Server Ping
+			//Server Ping
 			m.Get("/ping", handler.SyncGetPingV1Handler)
 
 			m.Group("/master", func() {
-				// Server Sync Of Master
+				//Server Sync Of Master
 				m.Post("/registry", handler.SyncMasterPostRegistryV1Handler)
 				m.Delete("/registry", handler.SyncMasterDeleteRegistryV1Handler)
 
@@ -178,17 +181,17 @@ func SetRouters(m *macaron.Macaron) {
 			})
 
 			m.Group("/slave", func() {
-				// Server Sync Of Slaver
+				//Server Sync Of Slaver
 				m.Post("/registry", handler.SyncSlavePostRegistryV1Handler)
 				m.Put("/registry", handler.SyncSlavePutRegistryV1Handler)
 				m.Delete("/registry", handler.SyncSlaveDeleteRegistryV1Handler)
 
 				m.Put("/mode", handler.SyncSlavePutModeRegistryV1Handler)
 
-				// Data Sync
+				//Data Sync
 				m.Get("/list", handler.SyncSlaveListDataV1Handler)
 
-				// File Sync
+				//File Sync
 				m.Put("/:namespace/:repository/manifests", handler.SyncSlavePutManifestsV1Handler)
 				m.Put("/:namespace/:repository/file", handler.SyncSlavePutFileV1Handler)
 				m.Put("/:namespace/:repository/:status", handler.SyncSlavePutStatusV1Handler)
@@ -196,17 +199,17 @@ func SetRouters(m *macaron.Macaron) {
 		})
 	})
 
-	// Admin APIs
+	//Admin APIs
 	m.Group("/admin", func() {
 		m.Group("/v1", func() {
-			// Server Status
+			//Server Status
 			m.Get("/stats/:type", handler.AdminGetStatusV1Handler)
 
-			// Server Config
+			//Server Config
 			m.Get("/config", handler.AdminGetConfigV1Handler)
 			m.Put("/config", handler.AdminSetConfigV1Handler)
 
-			// Maintenance
+			//Maintenance
 			m.Post("/maintenance", handler.AdminPostMaintenance)
 		})
 	})
