@@ -75,7 +75,7 @@ func runWeb(c *cli.Context) error {
 	case "https":
 		listenaddr := fmt.Sprintf("%s:443", c.String("address"))
 		server := &http.Server{Addr: listenaddr, TLSConfig: &tls.Config{MinVersion: tls.VersionTLS10}, Handler: m}
-		if err := server.ListenAndServeTLS(setting.HttpsCertFile, setting.HttpsKeyFile); err != nil {
+		if err := server.ListenAndServeTLS(setting.HTTPSCertFile, setting.HTTPSKeyFile); err != nil {
 			fmt.Printf("Start Dockyard https service error: %v\n", err.Error())
 			return err
 		}
