@@ -25,7 +25,7 @@ acbuild --debug begin
 trap acbuildEnd EXIT
 
 # Name the ACI
-acbuild --debug set-name dockyard.sh/genedna/dockyard 
+acbuild --debug set-name dockyard.sh/appc/genedna/dockyard 
 
 # Copy the binary and its templates into the ACI
 acbuild --debug copy dockyard /dockyard
