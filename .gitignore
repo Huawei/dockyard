@@ -29,3 +29,4 @@ dockyard
 conf/runtime.conf
 log/*
 data/*
+tools/aci/dockyard-latest-linux-amd64.*
