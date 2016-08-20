@@ -22,6 +22,7 @@ import (
 	"html/template"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
@@ -30,6 +31,7 @@ import (
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/dockyard/module/signature"
 	"github.com/containerops/dockyard/setting"
+	"github.com/containerops/dockyard/utils"
 )
 
 //AppcDiscoveryV1Handler is
@@ -189,9 +191,20 @@ func AppcPutASCV1Handler(ctx *macaron.Context) (int, []byte) {
 		return http.StatusBadRequest, result
 	}
 
-	path := fmt.Sprintf("%s/%s/%s/%s/%s.asc", setting.AppcStorage, namespace, repository, version, aci)
+	basePath := setting.AppcStorage
+	imagePath := fmt.Sprintf("%s/%s/%s/%s", basePath, namespace, repository, version)
+	filePath := fmt.Sprintf("%s/%s.asc", imagePath, aci)
+
+	if !utils.IsDirExist(imagePath) {
+		os.MkdirAll(imagePath, os.ModePerm)
+	}
+
+	if _, err := os.Stat(filePath); err == nil {
+		os.Remove(filePath)
+	}
+
 	data, _ := ctx.Req.Body().Bytes()
-	if err := ioutil.WriteFile(path, data, 0777); err != nil {
+	if err := ioutil.WriteFile(filePath, data, os.ModePerm); err != nil {
 		log.Errorf("[%s] write sign{.asc} file error: %s", ctx.Req.RequestURI, err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Write .asc file Error."})
@@ -199,7 +212,7 @@ func AppcPutASCV1Handler(ctx *macaron.Context) (int, []byte) {
 	}
 
 	i := new(models.ACIv1)
-	if err := i.PutSign(r.ID, version, aci, path); err != nil {
+	if err := i.PutSign(r.ID, version, aci, filePath); err != nil {
 		log.Errorf("[%s] write sign{.asc} data error: %s", ctx.Req.RequestURI, err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Write .asc data Error."})
@@ -225,9 +238,20 @@ func AppcPutACIV1Handler(ctx *macaron.Context) (int, []byte) {
 		return http.StatusBadRequest, result
 	}
 
-	path := fmt.Sprintf("%s/%s/%s/%s/%s", setting.AppcStorage, namespace, repository, version, aci)
+	basePath := setting.AppcStorage
+	imagePath := fmt.Sprintf("%s/%s/%s/%s", basePath, namespace, repository, version)
+	filePath := fmt.Sprintf("%s/%s", imagePath, aci)
+
+	if !utils.IsDirExist(imagePath) {
+		os.MkdirAll(imagePath, os.ModePerm)
+	}
+
+	if _, err := os.Stat(filePath); err == nil {
+		os.Remove(filePath)
+	}
+
 	data, _ := ctx.Req.Body().Bytes()
-	if err := ioutil.WriteFile(path, data, 0777); err != nil {
+	if err := ioutil.WriteFile(filePath, data, os.ModePerm); err != nil {
 		log.Errorf("[%s] write aci file error: %s", ctx.Req.RequestURI, err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Write .aci file Error."})
@@ -235,7 +259,7 @@ func AppcPutACIV1Handler(ctx *macaron.Context) (int, []byte) {
 	}
 
 	i := new(models.ACIv1)
-	if err := i.PutACI(r.ID, version, aci, path); err != nil {
+	if err := i.PutACI(r.ID, version, aci, filePath); err != nil {
 		log.Errorf("[%s] write aci data error: %s", ctx.Req.RequestURI, err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Write .aci data Error."})
@@ -299,7 +323,12 @@ func AppcPostCompleteV1Handler(ctx *macaron.Context) (int, []byte) {
 	}
 
 	if complete.Success == true {
-		if err := signature.VerifyACISignature(i.Path, i.Sign, "external/signs/pubkeys.gpg"); err != nil {
+		root, _ := os.Getwd()
+		sign := fmt.Sprintf("%s/%s", root, "external/signs")
+
+		log.Info(sign)
+
+		if err := signature.VerifyACISignature(i.Path, i.Sign, sign); err != nil {
 			log.Errorf("[%s] Verify ACI signature error: %s", ctx.Req.RequestURI, err.Error())
 
 			result, _ := json.Marshal(CompleteMsg{
