@@ -23,8 +23,8 @@ import (
 //DockerV2
 type DockerV2 struct {
 	ID            int64      `json:"id" gorm:"primary_key"`
-	Namespace     string     `json:"namespace" sql:"not null;type:varchar(255)"  gorm:"unique_index:v2_repository"`
-	Repository    string     `json:"repository" sql:"not null;type:varchar(255)"  gorm:"unique_index:v2_repository"`
+	Namespace     string     `json:"namespace" sql:"not null;type:varchar(255)"  gorm:"unique_index:dockerv2_repository"`
+	Repository    string     `json:"repository" sql:"not null;type:varchar(255)"  gorm:"unique_index:dockerv2_repository"`
 	SchemaVersion string     `json:"schema_version" sql:"not null;type:varchar(255)"`
 	Manifests     string     `json:"manifests" sql:"null;type:text"`
 	Agent         string     `json:"agent" sql:"null;type:text"`
@@ -99,63 +99,12 @@ func (r *DockerV2) GetTags(namespace, repository string) ([]string, error) {
 	}
 }
 
-//Get is get DockerTagV2 data
-func (t *DockerTagV2) Get(namespace, repository, tag string) (*DockerTagV2, error) {
-	r := new(DockerV2)
-
-	if err := db.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
-		return t, err
-	}
-
-	if err := db.Debug().Where("docker_v2 = ? AND tag = ?", r.ID, tag).First(&t).Error; err != nil {
-		return t, err
-	}
-
-	return t, nil
-}
-
 //Get is
 func (r *DockerV2) Get(namespace, repository string) error {
 	if err := db.Debug().Where("namespace = ? AND repository =? ", namespace, repository).First(&r).Error; err != nil {
 		return err
 	}
 
-	return nil
-}
-
-//Get is
-func (i *DockerImageV2) Get(blobsum string) error {
-	i.BlobSum = blobsum
-
-	if err := db.Debug().Where("blob_sum = ?", blobsum).First(&i).Error; err != nil {
-		return err
-	}
-
-	return nil
-}
-
-//Put is
-func (t *DockerTagV2) Put(namespace, repository, tag, imageID, manifest, schema string) error {
-	r := new(DockerV2)
-
-	if err := db.Debug().Where("namespace = ? AND repository = ? ", namespace, repository).First(&r).Error; err != nil {
-		return err
-	}
-
-	tx := db.Begin()
-	t.DockerV2, t.Tag, t.ImageID, t.Manifest, t.SchemaVersion = r.ID, tag, imageID, manifest, schema
-
-	if err := tx.Debug().Where("docker_v2 = ? AND tag = ?", r.ID, tag).FirstOrCreate(&t).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if err := tx.Debug().Model(&t).Updates(map[string]interface{}{"image_id": imageID, "manifest": manifest, "schema_version": string(schema)}).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	tx.Commit()
 	return nil
 }
 
@@ -194,6 +143,17 @@ func (r *DockerV2) PutAgent(namespace, repository, agent, version string) error 
 	return nil
 }
 
+//Get is
+func (i *DockerImageV2) Get(blobsum string) error {
+	i.BlobSum = blobsum
+
+	if err := db.Debug().Where("blob_sum = ?", blobsum).First(&i).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
 //Put is
 func (i *DockerImageV2) Put(tarsum, path string, size int64) error {
 	i.BlobSum, i.Path, i.Size = tarsum, path, size
@@ -201,6 +161,46 @@ func (i *DockerImageV2) Put(tarsum, path string, size int64) error {
 	tx := db.Begin()
 
 	if err := tx.Debug().Where("blob_sum = ? ", tarsum).FirstOrCreate(&i).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+//Get is get DockerTagV2 data
+func (t *DockerTagV2) Get(namespace, repository, tag string) (*DockerTagV2, error) {
+	r := new(DockerV2)
+
+	if err := db.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
+		return t, err
+	}
+
+	if err := db.Debug().Where("docker_v2 = ? AND tag = ?", r.ID, tag).First(&t).Error; err != nil {
+		return t, err
+	}
+
+	return t, nil
+}
+
+//Put is
+func (t *DockerTagV2) Put(namespace, repository, tag, imageID, manifest, schema string) error {
+	r := new(DockerV2)
+
+	if err := db.Debug().Where("namespace = ? AND repository = ? ", namespace, repository).First(&r).Error; err != nil {
+		return err
+	}
+
+	tx := db.Begin()
+	t.DockerV2, t.Tag, t.ImageID, t.Manifest, t.SchemaVersion = r.ID, tag, imageID, manifest, schema
+
+	if err := tx.Debug().Where("docker_v2 = ? AND tag = ?", r.ID, tag).FirstOrCreate(&t).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Debug().Model(&t).Updates(map[string]interface{}{"image_id": imageID, "manifest": manifest, "schema_version": string(schema)}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}

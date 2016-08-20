@@ -24,8 +24,8 @@ import (
 //DockerV1 is Docker Repository V1 repository.
 type DockerV1 struct {
 	ID          int64      `json:"id" gorm:"primary_key"`
-	Namespace   string     `json:"namespace" sql:"not null;type:varchar(255)" gorm:"unique_index:v1_repository"`
-	Repository  string     `json:"repository" sql:"not null;type:varchar(255)" gorm:"unique_index:v1_repository"`
+	Namespace   string     `json:"namespace" sql:"not null;type:varchar(255)" gorm:"unique_index:dockerv1_repository"`
+	Repository  string     `json:"repository" sql:"not null;type:varchar(255)" gorm:"unique_index:dockerv1_repository"`
 	JSON        string     `json:"json" sql:"null;type:text"`
 	Manifests   string     `json:"manifests" sql:"null;type:text"`
 	Agent       string     `json:"agent" sql:"null;type:text"`
@@ -42,7 +42,7 @@ func (r *DockerV1) TableName() string {
 	return "docker_v1"
 }
 
-//
+//DockerImageV1 is
 type DockerImageV1 struct {
 	ID         int64      `json:"id" gorm:"primary_key"`
 	ImageID    string     `json:"image_id" sql:"not null;unique;varchar(255)"`
@@ -66,7 +66,7 @@ func (i *DockerImageV1) TableName() string {
 	return "docker_image_v1"
 }
 
-//
+//DockerTagV1 is
 type DockerTagV1 struct {
 	ID        int64      `json:"id" gorm:"primary_key"`
 	DockerV1  int64      `json:"docker_v1" sql:"not null;default:0"`
@@ -103,6 +103,53 @@ func (r *DockerV1) Put(namespace, repository, json, agent string) error {
 
 	tx.Commit()
 	return nil
+}
+
+//Unlocked is Unlocked repository data so could pull.
+func (r *DockerV1) Unlocked(namespace, repository string) error {
+	tx := db.Begin()
+
+	if err := tx.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := tx.Debug().Model(&r).Updates(map[string]interface{}{"locked": false}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+
+//Get return Docker V1 repository data.
+func (r *DockerV1) Get(namespace, repository string) (DockerV1, error) {
+	if err := db.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
+		return *new(DockerV1), err
+	} else {
+		return *r, nil
+	}
+}
+
+//GetTags return tas data of repository.
+func (r *DockerV1) GetTags(namespace, repository string) (map[string]string, error) {
+	if err := db.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
+		return map[string]string{}, err
+	} else {
+		var tags []DockerTagV1
+		result := map[string]string{}
+
+		if err := db.Debug().Where("docker_v1 = ?", r.ID).Find(&tags).Error; err != nil {
+			return map[string]string{}, err
+		}
+
+		for _, tag := range tags {
+			result[tag.Tag] = tag.ImageID
+		}
+
+		return result, nil
+	}
 }
 
 //Get is search image by ImageID.
@@ -222,51 +269,4 @@ func (t *DockerTagV1) Put(imageID, tag, namespace, repository string) error {
 
 	tx.Commit()
 	return nil
-}
-
-//Unlocked is Unlocked repository data so could pull.
-func (r *DockerV1) Unlocked(namespace, repository string) error {
-	tx := db.Begin()
-
-	if err := tx.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if err := tx.Debug().Model(&r).Updates(map[string]interface{}{"locked": false}).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	tx.Commit()
-	return nil
-}
-
-//Get return Docker V1 repository data.
-func (r *DockerV1) Get(namespace, repository string) (DockerV1, error) {
-	if err := db.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
-		return *new(DockerV1), err
-	} else {
-		return *r, nil
-	}
-}
-
-//GetTags return tas data of repository.
-func (r *DockerV1) GetTags(namespace, repository string) (map[string]string, error) {
-	if err := db.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
-		return map[string]string{}, err
-	} else {
-		var tags []DockerTagV1
-		result := map[string]string{}
-
-		if err := db.Debug().Where("docker_v1 = ?", r.ID).Find(&tags).Error; err != nil {
-			return map[string]string{}, err
-		}
-
-		for _, tag := range tags {
-			result[tag.Tag] = tag.ImageID
-		}
-
-		return result, nil
-	}
 }
