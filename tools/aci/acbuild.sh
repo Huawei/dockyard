@@ -40,7 +40,7 @@ acbuild --debug copy $GOPATH/src/github.com/containerops/dockyard/views /views
 acbuild --debug mount add acis /acis
 
 # Run acserver
-acbuild --debug set-exec -- /dockyard -port 443 localhost 
+acbuild --debug set-exec -- /dockyard web --address 0.0.0.0
 
 # Save the resulting ACI
 acbuild --debug write --overwrite dockyard-latest-linux-amd64.aci
