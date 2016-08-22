@@ -40,18 +40,21 @@ import (
 
 //GetPingV2Handler is https://github.com/docker/distribution/blob/master/docs/spec/api.md#api-version-check
 func GetPingV2Handler(ctx *macaron.Context) (int, []byte) {
-	if len(ctx.Req.Header.Get("Authorization")) == 0 {
-		ctx.Resp.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		ctx.Resp.Header().Set("WWW-Authenticate", fmt.Sprintf("Basic realm=\"%v\"", setting.Domains))
+	//if len(ctx.Req.Header.Get("Authorization")) == 0 {
+	//	ctx.Resp.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
-		//TODO Bearer Token
+	//TODO Bearer Token
+	//realm -> describe the authorization endpoint
+	//service -> describe the name of the service that hold the resources.
+	//scope -> which describe the resources that needed to be accessed,and the operation requested by the client (pulled/pushed).
+	//account -> an optional attribute which describes the account used for authentication.
+	//	ctx.Resp.Header().Set("WWW-Authenticate",
+	//		fmt.Sprintf("Bearer realm=\"https://dockayrd.sh/authorizate\" service=\"Dockyard Service\" scope=\"repository:genedna/dockyard\" account=\"genedna\""))
 
-		result, _ := json.Marshal(map[string]string{})
-		return http.StatusUnauthorized, result
-	}
+	//	result, _ := json.Marshal(map[string]string{})
+	//	return http.StatusUnauthorized, result
+	//}
 
-	//TODO Decode baic authorizate data in HEADER ["Authorization"]
-	//TODO Authenticate with crew project.
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
