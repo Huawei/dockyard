@@ -22,11 +22,36 @@ import (
 	"github.com/containerops/dockyard/handler"
 )
 
-//Dockyard Router Definition
+//SetRouters is setting REST API interface with handler function.
 func SetRouters(m *macaron.Macaron) {
 	//Web API
-	m.Get("/", handler.IndexV1Handler)
-	m.Get("/pubkeys", handler.GPGV1Handler)
+	m.Get("/", handler.GetIndexPageV1Handler)
+	m.Get("/pubkeys", handler.GetGPGFileV1Handler)
+
+	//REST API For Web Operations
+	m.Group("/web", func() {
+		m.Group("/v1", func() {
+			m.Get("/:namespace", handler.GetNamespacePageV1Handler)
+
+			m.Get("/:type/:namespace/:repository", handler.GetRepositoryPageV1Handler)
+			m.Post("/:type/:namespace/:repository", handler.PostRepositoryRESTV1Handler)
+			m.Get("/:type/:namespace/:repository", handler.GetRepositoryRESTV1Handler)
+			m.Put("/:type/:namespace/:repository", handler.PutRepositoryRESTV1Handler)
+			m.Delete("/:type/namespace/:repository", handler.DeleteRepositoryRESTV1Handler)
+
+			m.Get("/:type/:namespace/:repository/:package", handler.GetPackagePageV1Handler)
+			m.Post("/:type/:namesapce/:repository/:package", handler.PostPackageRESTV1Handler)
+			m.Get("/:type/:namespace/:repository/:package", handler.GetPackageRESTV1Hanfdler)
+			m.Put("/:type/:namespace/:repository/:package", handler.PutPackageRESTV1Handler)
+			m.Delete("/:type/:namespace/:repository/:pacakge", handler.DeletePacakgeRESTV1Handler)
+
+			m.Get("/:type/:namespace/:repository/:package/manifest", handler.GetManifestPageV1Handler)
+			m.Post("/:type/:namespace/:repository/:package/manifest", handler.PostManifestRESTV1Handler)
+			m.Get("/:type/:namespace/:repository/:package/manifest", handler.GetManifestRESTV1Handler)
+			m.Put("/:type/:namespace/:repository/:pacakge/manifest", handler.PutManifestRESTV1Handler)
+			m.Delete("/:type/:namespace/:repository/:pacakge/manifest", handler.DeleteManifestRESTV1Handler)
+		})
+	})
 
 	//Docker Registry V1
 	m.Group("/v1", func() {
