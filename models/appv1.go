@@ -48,6 +48,7 @@ type ArtifactV1 struct {
 	AppV1ID       int64  `json:"app_v1_id" sql:"not null;default:0"`
 	OS            string `json:"os" sql:"null;type:varchar(255)"`
 	Arch          string `json:"arch" sql:"null;type:varchar(255)"`
+	Type          string `json:"type" sql:"null;type:varchar(255)"`
 	App           string `json:"app" sql:"not null;varchar(255)" gorm:"unique_index:app_tag"`
 	Tag           string `json:"tag" sql:"null;varchar(255)" gorm:"unique_index:app_tag"`
 	Manifests     string `json:"manifests" sql:"null;type:text"`
