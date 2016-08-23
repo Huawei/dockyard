@@ -103,15 +103,15 @@ func SetRouters(m *macaron.Macaron) {
 				//Pull
 				m.Get("/meta", handler.AppGetMetaV1Handler)
 				m.Get("/metasign", handler.AppGetMetaSignV1Handler)
-				m.Get("/:os/:arch/:app/?:tag", handler.AppGetFileV1Handler)
-				m.Get("/:os/:arch/:app/manifests/?:tag", handler.AppGetManifestsV1Handler)
+				m.Get("/:os/:arch/:type/:app/?:tag", handler.AppGetFileV1Handler)
+				m.Get("/:os/:arch/:type/:app/manifests/?:tag", handler.AppGetManifestsV1Handler)
 
 				//Push
 				m.Post("/", handler.AppPostFileV1Handler)
-				m.Put("/:os/:arch/:app/?:tag", handler.AppPutFileV1Handler)
-				m.Put("/:os/:arch/:app/manifests/?:tag", handler.AppPutManifestV1Handler)
-				m.Patch("/:os/:arch/:app/:status/?:tag", handler.AppPatchFileV1Handler)
-				m.Delete("/:os/:arch/:app/?:tag", handler.AppDeleteFileV1Handler)
+				m.Put("/:os/:arch/:type/:app/?:tag", handler.AppPutFileV1Handler)
+				m.Put("/:os/:arch/:type/:app/manifests/?:tag", handler.AppPutManifestV1Handler)
+				m.Patch("/:os/:arch/:type/:app/:status/?:tag", handler.AppPatchFileV1Handler)
+				m.Delete("/:os/:arch/:type/:app/?:tag", handler.AppDeleteFileV1Handler)
 
 				//Content Scan
 				m.Post("/shook", handler.AppRegistScanHooksHandler)
