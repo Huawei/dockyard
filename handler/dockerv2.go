@@ -19,6 +19,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -153,15 +154,14 @@ func PatchBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 			os.Remove(uuidFile)
 		}
 
-		data, _ := ctx.Req.Body().Bytes()
-		if err := ioutil.WriteFile(uuidFile, data, 0777); err != nil {
-			log.Errorf("Save the temp file %s error: %s", uuidFile, err.Error())
+		if file, err := os.Create(uuidFile); err != nil {
+			log.Errorf("[%s] Create UUID file error: %s", ctx.Req.RequestURI, err.Error())
 
 			result, _ := module.EncodingError(module.BLOB_UPLOAD_UNKNOWN, map[string]string{"namespace": namespace, "repository": repository})
 			return http.StatusBadRequest, result
+		} else {
+			io.Copy(file, ctx.Req.Request.Body)
 		}
-
-		ctx.Resp.Header().Set("Range", fmt.Sprintf("0-%v", len(data)-1))
 	}
 
 	state := utils.MD5(fmt.Sprintf("%s/%v", fmt.Sprintf("%s/%s", namespace, repository), time.Now().UnixNano()/int64(time.Millisecond)))
