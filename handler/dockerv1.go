@@ -19,6 +19,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -349,16 +350,17 @@ func PutImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
 		os.Remove(layerfile)
 	}
 
-	data, _ := ctx.Req.Body().Bytes()
-	if err := ioutil.WriteFile(layerfile, data, 0777); err != nil {
-		log.Errorf("[%s] Failed to save image layer error: %s", ctx.Req.RequestURI, err.Error())
+	if file, err := os.Create(layerfile); err != nil {
+		log.Errorf("[%s] Create image file error: %s", ctx.Req.RequestURI, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Put Image Layer File Error"})
+		result, _ := json.Marshal(map[string]string{"message": "Write Image File Error."})
 		return http.StatusBadRequest, result
+	} else {
+		io.Copy(file, ctx.Req.Request.Body)
 	}
 
 	image := new(models.DockerImageV1)
-	if err := image.PutLayer(imageID, layerfile, int64(len(data))); err != nil {
+	if err := image.PutLayer(imageID, layerfile, 0); err != nil {
 		log.Errorf("[%s] Failed to save image layer data error: %s", ctx.Req.RequestURI, err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Put Image Layer Data Error"})

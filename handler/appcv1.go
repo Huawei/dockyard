@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -163,7 +164,6 @@ func AppcPutManifestV1Handler(ctx *macaron.Context) (int, []byte) {
 	}
 
 	data, _ := ctx.Req.Body().Bytes()
-
 	i := new(models.ACIv1)
 	if err := i.PutManifest(r.ID, version, aci, string(data)); err != nil {
 		log.Errorf("[%s] put ACIV1 manifest error: %s", ctx.Req.RequestURI, err.Error())
@@ -203,12 +203,13 @@ func AppcPutASCV1Handler(ctx *macaron.Context) (int, []byte) {
 		os.Remove(filePath)
 	}
 
-	data, _ := ctx.Req.Body().Bytes()
-	if err := ioutil.WriteFile(filePath, data, os.ModePerm); err != nil {
-		log.Errorf("[%s] write sign{.asc} file error: %s", ctx.Req.RequestURI, err.Error())
+	if file, err := os.Create(filePath); err != nil {
+		log.Errorf("[%s] Create asc file error:%s", ctx.Req.RequestURI, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Write .asc file Error."})
+		result, _ := json.Marshal(map[string]string{"message": "Create .asc File Error."})
 		return http.StatusBadRequest, result
+	} else {
+		io.Copy(file, ctx.Req.Request.Body)
 	}
 
 	i := new(models.ACIv1)
@@ -250,19 +251,20 @@ func AppcPutACIV1Handler(ctx *macaron.Context) (int, []byte) {
 		os.Remove(filePath)
 	}
 
-	data, _ := ctx.Req.Body().Bytes()
-	if err := ioutil.WriteFile(filePath, data, os.ModePerm); err != nil {
-		log.Errorf("[%s] write aci file error: %s", ctx.Req.RequestURI, err.Error())
+	if file, err := os.Create(filePath); err != nil {
+		log.Errorf("[%s] Create aci file error: %s", ctx.Req.RequestURI, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Write .aci file Error."})
+		result, _ := json.Marshal(map[string]string{"message": "Create .aci File Error."})
 		return http.StatusBadRequest, result
+	} else {
+		io.Copy(file, ctx.Req.Request.Body)
 	}
 
 	i := new(models.ACIv1)
 	if err := i.PutACI(r.ID, version, aci, filePath); err != nil {
 		log.Errorf("[%s] write aci data error: %s", ctx.Req.RequestURI, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Write .aci data Error."})
+		result, _ := json.Marshal(map[string]string{"message": "Write .aci Data Error."})
 		return http.StatusBadRequest, result
 	}
 
@@ -325,8 +327,6 @@ func AppcPostCompleteV1Handler(ctx *macaron.Context) (int, []byte) {
 	if complete.Success == true {
 		root, _ := os.Getwd()
 		sign := fmt.Sprintf("%s/%s", root, "external/signs")
-
-		log.Info(sign)
 
 		if err := signature.VerifyACISignature(i.Path, i.Sign, sign); err != nil {
 			log.Errorf("[%s] Verify ACI signature error: %s", ctx.Req.RequestURI, err.Error())
