@@ -1,0 +1,125 @@
+/*
+Copyright 2016 The ContainerOps Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+package unittest
+
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/containerops/dockyard/updateservice/snapshot"
+)
+
+type UpdateServiceSnapshotMock struct {
+}
+
+func (m *UpdateServiceSnapshotMock) New(id, url string, callback snapshot.Callback) (snapshot.UpdateServiceSnapshot, error) {
+	return m, nil
+}
+
+func (m *UpdateServiceSnapshotMock) Supported(proto string) bool {
+	return proto == "mock"
+}
+
+func (m *UpdateServiceSnapshotMock) Process() error {
+	return nil
+}
+
+func (m *UpdateServiceSnapshotMock) Description() string {
+	return "mock description"
+}
+
+// expunge all the registed implementaions
+func preTest() {
+	cases := []struct {
+		name string
+		f    snapshot.UpdateServiceSnapshot
+	}{
+		{"mname0", &UpdateServiceSnapshotMock{}},
+		{"mname1", &UpdateServiceSnapshotMock{}},
+		{"aname0", &snapshot.UpdateServiceSnapshotAppv1{}},
+		{"aname1", &snapshot.UpdateServiceSnapshotAppv1{}},
+	}
+
+	snapshot.UnregisterAllSnapshot()
+
+	for _, c := range cases {
+		snapshot.RegisterSnapshot(c.name, c.f)
+	}
+}
+
+func TestRegisterSnapshot(t *testing.T) {
+	preTest()
+
+	cases := []struct {
+		name     string
+		f        snapshot.UpdateServiceSnapshot
+		expected bool
+	}{
+		{"", &UpdateServiceSnapshotMock{}, false},
+		{"testsname", nil, false},
+		{"testsname", &UpdateServiceSnapshotMock{}, true},
+		{"testsname", &UpdateServiceSnapshotMock{}, false},
+	}
+
+	for _, c := range cases {
+		err := snapshot.RegisterSnapshot(c.name, c.f)
+		assert.Equal(t, c.expected, err == nil, "Fail to register snapshot")
+	}
+}
+
+func TestListSnapshot(t *testing.T) {
+	preTest()
+
+	strs := snapshot.ListSnapshotByProto("mock")
+	assert.Equal(t, 2, len(strs), "Fail to get correct snapshot list")
+}
+
+func TestNewUpdateServiceSnapshot(t *testing.T) {
+	preTest()
+
+	cases := []struct {
+		name     string
+		expected bool
+	}{
+		{"mname0", true},
+		{"invalidname", false},
+	}
+
+	for _, c := range cases {
+		_, err := snapshot.NewUpdateServiceSnapshot(c.name, "id", "url", nil)
+		assert.Equal(t, c.expected, err == nil, "Fail to create new snapshot")
+	}
+}
+
+func TestIsSnapshotSupported(t *testing.T) {
+	preTest()
+
+	cases := []struct {
+		p        string
+		n        string
+		expected bool
+	}{
+		{"mock", "mname0", true},
+		{"mock", "invalid", false},
+		{"invalid", "mname0", false},
+	}
+
+	for _, c := range cases {
+		ok, _ := snapshot.IsSnapshotSupported(c.p, c.n)
+		assert.Equal(t, c.expected, ok, "Fail to get supported result")
+	}
+}

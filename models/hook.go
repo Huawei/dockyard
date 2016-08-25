@@ -18,46 +18,64 @@ package models
 
 import (
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/containerops/dockyard/setting"
+	"github.com/containerops/dockyard/updateservice/snapshot"
 	"github.com/containerops/dockyard/utils"
 )
 
 // ScanHookRegist:
 //   Namespace/Repository contains images/apps/vms to be scaned
-//   ImageName is used to scan the images/apps/vms within a repository
-//   NOTE: no need to record the type of a repository ("docker/v1", "app/v1"),
-//         a user should regist his/her repository with the right ImageName
+//   ScanPluginName is a plugin name of 'snapshot'
 type ScanHookRegist struct {
-	ID         int64  `json:"id" gorm:"primary_key"`
-	Namespace  string `json:"namespace" sql:"not null;type:varchar(255)"`
-	Repository string `json:"repository" sql:"not null;type:varchar(255)"`
-	ImageName  string `json:"ImageName" sql:"not null;type:varchar(255)"`
+	ID             int64  `json:"id" gorm:"primary_key"`
+	Proto          string `json:"proto" sql:"not null;type:varchar(255)"`
+	Namespace      string `json:"namespace" sql:"not null;type:varchar(255)"`
+	Repository     string `json:"repository" sql:"not null;type:varchar(255)"`
+	ScanPluginName string `json:"scanPluginName" sql:"not null;type:varchar(255)"`
 }
 
 // Regist regists a repository with a scan image
-//   A namespace/repository could have multiple ImageNames,
-//   but should not have multiple records with same Namespace&Repository&ImageName.
-func (s *ScanHookRegist) Regist(n, r, image string) error {
-	if n == "" || r == "" || image == "" {
-		return errors.New("'Namespace', 'Repository' and 'ImageName' should not be empty")
+//   A namespace/repository could have multiple ScanPluginName,
+//   but now we only support one.
+func (s *ScanHookRegist) Regist(p, n, r, name string) error {
+	if p == "" || n == "" || r == "" || name == "" {
+		return errors.New("'Proto', 'Namespace', 'Repository' and 'ScanPluginName' should not be empty")
 	}
-	s.Namespace, s.Repository, s.ImageName = n, r, image
+
+	if ok, err := snapshot.IsSnapshotSupported(p, name); !ok {
+		return err
+	}
+
+	s.Proto, s.Namespace, s.Repository, s.ScanPluginName = p, n, r, name
 	//TODO: add to db
 	return nil
 }
 
 // UnRegist unregists a repository with a scan image
 //   if ImageName is nil, unregist all the scan images.
-func (s *ScanHookRegist) UnRegist(n, r string) error {
-	if n == "" || r == "" {
-		return errors.New("'Namespace', 'Repository' should not be empty")
+func (s *ScanHookRegist) UnRegist(p, n, r string) error {
+	if p == "" || n == "" || r == "" {
+		return errors.New("'Proto', 'Namespace', 'Repository' should not be empty")
 	}
-	s.Namespace, s.Repository = n, r
+	s.Proto, s.Namespace, s.Repository = p, n, r
 
 	//TODO: remove from db
 	return nil
+}
+
+// FindByID finds content by id
+func (s *ScanHookRegist) FindByID(id int64) (ScanHookRegist, error) {
+	//TODO: query db
+	return *s, nil
+}
+
+// FindID finds id by Proto, Namespace and Repository
+func (s *ScanHookRegist) FindID(p, n, r string) (int64, error) {
+	//TODO: query db
+	return 0, nil
 }
 
 // ListScanHooks returns a list of registed scan hooks of a repository
@@ -70,7 +88,8 @@ func (s *ScanHookRegist) List(n, r string) ([]ScanHookRegist, error) {
 
 // ScanHookTask is the scan task
 type ScanHookTask struct {
-	ID       int64  `json:"id" gorm:"primary_key"`
+	ID int64 `json:"id" gorm:"primary_key"`
+	//Path is image url now
 	Path     string `json:"path" sql:"not null;type:varchar(255)"`
 	Callback string `json:"callback" sql:"not null;type:varchar(255)"`
 	// ID of ScanHookRegist
@@ -82,12 +101,31 @@ type ScanHookTask struct {
 	UpdatedAt time.Time `json:"update_at" sql:""`
 }
 
-func (t *ScanHookTask) Put(p, c string, rID int64) error {
-	if p == "" || c == "" || rID == 0 {
-		return errors.New("'Namespace', 'Repository' and RegistID should not be empty")
+// Put returns task id
+func (t *ScanHookTask) Put(rID int64, url string) (int64, error) {
+	if url == "" || rID == 0 {
+		return 0, errors.New("'URL' and 'RegistID' should not be empty")
+	}
+	//TODO: add to db and get task ID
+
+	var reg ScanHookRegist
+	reg, err := reg.FindByID(rID)
+	if err != nil {
+		return 0, err
 	}
 
-	return nil
+	// Do the real scan work
+	s, err := snapshot.NewUpdateServiceSnapshot(reg.ScanPluginName, strconv.FormatInt(rID, 10), url, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	err = s.Process()
+	if err != nil {
+		return 0, err
+	}
+
+	return 0, nil
 }
 
 func (t *ScanHookTask) Update(status string) error {
@@ -97,14 +135,14 @@ func (t *ScanHookTask) Update(status string) error {
 
 func (t *ScanHookTask) Find(encodedCallbackID string) error {
 	//TODO: update status and updatedAt
-	var id int
+	var id int64
 	err := utils.TokenUnmarshal(encodedCallbackID, setting.ScanKey, &id)
 
 	return err
 }
 
 func (t *ScanHookTask) UpdateResult(encodedCallbackID string, data []byte) error {
-	var id int
+	var id int64
 	err := utils.TokenUnmarshal(encodedCallbackID, setting.ScanKey, &id)
 	if err != nil {
 		return err
