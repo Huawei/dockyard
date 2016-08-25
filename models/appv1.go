@@ -98,6 +98,12 @@ func (app *AppV1) Delete(artifact ArtifactV1) error {
 	return nil
 }
 
+// Get gets full info by os/arch/app/tag
+func (a *ArtifactV1) Get() (ArtifactV1, error) {
+	// TODO
+	return *a, nil
+}
+
 func (a *ArtifactV1) GetName() string {
 	if ok, _ := a.isValid(); !ok {
 		return ""
