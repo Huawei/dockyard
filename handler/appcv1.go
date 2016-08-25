@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"html/template"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
@@ -94,16 +94,28 @@ func AppcGetACIV1Handler(ctx *macaron.Context) (int, []byte) {
 		path = i.Path
 	}
 
-	if data, err := ioutil.ReadFile(path); err != nil {
+	if open, err := os.Open(path); err != nil {
 		log.Errorf("[%s] get File(%s) error: %s", ctx.Req.RequestURI, file, err.Error())
 
-		result, _ := json.Marshal(map[string]string{"message": "Get ACI file Error."})
+		result, _ := json.Marshal(map[string]string{"message": "Get ACI or ASC file Error."})
 		return http.StatusBadRequest, result
 	} else {
-		ctx.Resp.Header().Set("Content-Type", "application/octet-stream")
-		ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(data)))
+		open.Read(header)
 
-		return http.StatusOK, data
+		header := make([]byte, 512)
+		contentType := http.DetectContentType(header)
+
+		stat, _ := open.Stat()
+		size := strconv.FormatInt(stat.Size(), 10)
+
+		ctx.Resp.Header().Set("Content-Disposition", "attachment; filename="+file)
+		ctx.Resp.Header().Set("Content-Type", contentType)
+		ctx.Resp.Header().Set("Content-Length", string(size))
+
+		open.Seek(0, 0)
+		io.Copy(ctx.Resp, open)
+
+		return http.StatusOK, []byte("")
 	}
 
 }
