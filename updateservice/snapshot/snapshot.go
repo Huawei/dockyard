@@ -19,6 +19,7 @@ package snapshot
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 )
 
@@ -36,10 +37,11 @@ type Callback func(id string, output UpdateServiceSnapshotOutput) error
 type UpdateServiceSnapshot interface {
 	// `id` : callback id
 	// `url`: local file or local dir
+	// `itemname`: used for group snapshot
 	// `callback`: if callback is nil, the caller could handle it by itself
 	//		or the caller must implement calling this in `Process`
 	//		TODO: we need to certify plugins..
-	New(id, url string, callback Callback) (UpdateServiceSnapshot, error)
+	New(id, url, itemname string, callback Callback) (UpdateServiceSnapshot, error)
 	// `proto`: `appv1/dockerv1` for example
 	Supported(proto string) bool
 	Description() string
@@ -53,6 +55,12 @@ var (
 
 // RegisterSnapshot provides a way to dynamically register an implementation of a
 // snapshot type.
+//
+// There are two types of Snapshot
+//   one is simple snapshot, just like 'appv1',calling 'Process' directly.
+//   one is group snapshot, just like 'container', using certain image to 'Process'.
+// For simple snapshot, the name is just `name`;
+// For group snapshot, the name should be `group`.
 func RegisterSnapshot(name string, f UpdateServiceSnapshot) error {
 	if name == "" {
 		return errors.New("Could not register a Snapshot with an empty name")
@@ -104,11 +112,25 @@ func ListSnapshotByProto(proto string) (snapshots []string) {
 	return
 }
 
-// NewUpdateServiceSnapshot creates a snapshot interface by a name and a url
+// NewUpdateServiceSnapshot creates a snapshot interface by a Name and a url
+// There are two types of Snapshot
+//   one is simple snapshot, just like 'appv1',calling 'Process' directly.
+//   one is group snapshot, just like 'container', using certain image to 'Process'.
+// For simple snapshot, the name is just `name`;
+// For group snapshot, the name should be `groupname/itemname`,
+//   snapshot group plugin developer provides `groupname`,
+//   a snapshot plugin 'caller' should know the correct `itemname`.
 func NewUpdateServiceSnapshot(name, id, url string, cb Callback) (UpdateServiceSnapshot, error) {
-	f, ok := usSnapshots[name]
+	var itemname string
+
+	n := strings.SplitN(name, "/", 2)
+	f, ok := usSnapshots[n[0]]
 	if !ok {
 		return nil, fmt.Errorf("Snapshot '%s' not found", name)
 	}
-	return f.New(id, url, cb)
+
+	if len(n) == 2 {
+		itemname = n[1]
+	}
+	return f.New(id, url, itemname, cb)
 }

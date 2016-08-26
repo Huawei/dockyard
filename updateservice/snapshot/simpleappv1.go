@@ -21,8 +21,9 @@ import (
 	"io/ioutil"
 )
 
-const (
-	appv1Proto = "appv1"
+var (
+	snapshotName   = "simpleAppV1"
+	snapshotProtos = []string{"appv1"}
 )
 
 type UpdateServiceSnapshotAppv1 struct {
@@ -32,7 +33,11 @@ type UpdateServiceSnapshotAppv1 struct {
 	callback Callback
 }
 
-func (m *UpdateServiceSnapshotAppv1) New(id, url string, callback Callback) (UpdateServiceSnapshot, error) {
+func init() {
+	RegisterSnapshot(snapshotName, &UpdateServiceSnapshotAppv1{})
+}
+
+func (m *UpdateServiceSnapshotAppv1) New(id, url, itemname string, callback Callback) (UpdateServiceSnapshot, error) {
 	if id == "" || url == "" {
 		return nil, errors.New("id|url should not be empty")
 	}
@@ -42,7 +47,13 @@ func (m *UpdateServiceSnapshotAppv1) New(id, url string, callback Callback) (Upd
 }
 
 func (m *UpdateServiceSnapshotAppv1) Supported(proto string) bool {
-	return proto == appv1Proto
+	for _, p := range snapshotProtos {
+		if p == proto {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (m *UpdateServiceSnapshotAppv1) Process() error {
@@ -63,5 +74,5 @@ func (m *UpdateServiceSnapshotAppv1) Process() error {
 }
 
 func (m *UpdateServiceSnapshotAppv1) Description() string {
-	return "Scan the appv1 package, return its md5"
+	return "This is a simple snapshot. Scan the appv1 package, return its md5."
 }

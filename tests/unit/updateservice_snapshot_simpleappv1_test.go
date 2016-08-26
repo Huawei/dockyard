@@ -40,7 +40,7 @@ func TestAppv1New(t *testing.T) {
 
 	var appv1 snapshot.UpdateServiceSnapshotAppv1
 	for _, c := range cases {
-		_, err := appv1.New(c.id, c.url, nil)
+		_, err := appv1.New(c.id, c.url, "", nil)
 		assert.Equal(t, c.expected, err == nil, "Fail to create new snapshot appv1")
 	}
 }
@@ -97,7 +97,7 @@ func TestAppv1Process(t *testing.T) {
 	dir := filepath.Join(filepath.Dir(path), "testdata")
 
 	for _, c := range cases {
-		a, _ := appv1.New(c.id, filepath.Join(dir, c.url), c.cb)
+		a, _ := appv1.New(c.id, filepath.Join(dir, c.url), "", c.cb)
 		err := a.Process()
 		assert.Equal(t, c.pExpected, err == nil, "Fail to get correct process output")
 

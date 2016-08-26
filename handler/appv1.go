@@ -295,6 +295,7 @@ func AppRegistScanHooksV1Handler(ctx *macaron.Context) (int, []byte) {
 	}
 
 	type scanPlugin struct {
+		//Name should be simple name or group name
 		Name string
 	}
 	var n scanPlugin
