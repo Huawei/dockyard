@@ -127,8 +127,8 @@ func (i *ACIv1) PutSign(appcv1 int64, version, name, sign string) error {
 }
 
 //PutACI is
-func (i *ACIv1) PutACI(appcv1 int64, version, name, aci string) error {
-	i.AppcV1, i.Version, i.Name = appcv1, version, name
+func (i *ACIv1) PutACI(appcv1, size int64, version, name, aci string) error {
+	i.AppcV1, i.Size, i.Version, i.Name = appcv1, size, version, name
 
 	tx := db.Begin()
 
@@ -137,7 +137,7 @@ func (i *ACIv1) PutACI(appcv1 int64, version, name, aci string) error {
 		return err
 	}
 
-	if err := tx.Debug().Model(&i).Updates(map[string]interface{}{"path": aci, "locked": true}).Error; err != nil {
+	if err := tx.Debug().Model(&i).Updates(map[string]interface{}{"path": aci, "size": size, "locked": true}).Error; err != nil {
 		tx.Rollback()
 		return err
 	}

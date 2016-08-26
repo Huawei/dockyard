@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -161,6 +160,10 @@ func PatchBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 			return http.StatusBadRequest, result
 		} else {
 			io.Copy(file, ctx.Req.Request.Body)
+
+			size, _ := utils.GetFileSize(uuidFile)
+
+			ctx.Resp.Header().Set("Range", fmt.Sprintf("0-%v", size-1))
 		}
 	}
 
@@ -213,32 +216,30 @@ func PutBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 		uuidPath := fmt.Sprintf("%s/uuid/%s", basePath, uuid)
 		uuidFile := fmt.Sprintf("%s/uuid/%s/%s", basePath, uuid, uuid)
 
-		var data []byte
 		if _, err := os.Stat(uuidFile); err == nil {
-			data, _ = ioutil.ReadFile(uuidFile)
-			if err := ioutil.WriteFile(imageFile, data, 0777); err != nil {
+			if err := os.Rename(uuidFile, imageFile); err != nil {
 				log.Errorf("Move the temp file to image folder %s error: %s", imageFile, err.Error())
 
 				result, _ := module.EncodingError(module.BLOB_UPLOAD_INVALID, map[string]string{"namespace": namespace, "repository": repository})
 				return http.StatusBadRequest, result
 			}
 
-			size = int64(len(data))
+			size, _ = utils.GetFileSize(imagePath)
 
 			os.RemoveAll(uuidFile)
 			os.RemoveAll(uuidPath)
 		}
 	} else if upload == false {
 		//Docker 1.9.x below version saves layer in PUT methord, save data to file directly.
-		data, _ := ctx.Req.Body().Bytes()
-		if err := ioutil.WriteFile(imageFile, data, 0777); err != nil {
+		if file, err := os.Create(imageFile); err != nil {
 			log.Errorf("Save the file %s error: %s", imageFile, err.Error())
 
 			result, _ := module.EncodingError(module.BLOB_UPLOAD_INVALID, map[string]string{"namespace": namespace, "repository": repository})
 			return http.StatusBadRequest, result
+		} else {
+			io.Copy(file, ctx.Req.Request.Body)
+			size, _ = utils.GetFileSize(imagePath)
 		}
-
-		size = int64(len(data))
 	}
 
 	i := new(models.DockerImageV2)
@@ -263,7 +264,6 @@ func PutBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 
 //GetBlobsV2Handler is
 func GetBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
-	var file []byte
 	digest := ctx.Params(":digest")
 	tarsum := strings.Split(digest, ":")[1]
 
@@ -280,20 +280,30 @@ func GetBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 		return http.StatusBadRequest, result
 	}
 
-	if data, err := ioutil.ReadFile(i.Path); err != nil {
+	if file, err := os.Open(i.Path); err != nil {
 		log.Info("Failed to get blob %s: %s", tarsum, err.Error())
 
 		result, _ := module.EncodingError(module.UNKNOWN, err.Error())
 		return http.StatusBadRequest, result
 	} else {
-		file = data
+		header := make([]byte, 512)
+		file.Read(header)
+		contentType := http.DetectContentType(header)
+
+		stat, _ := file.Stat()
+		size := strconv.FormatInt(stat.Size(), 10)
+
+		ctx.Resp.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", i.ImageID))
+		ctx.Resp.Header().Set("Content-Type", contentType)
+		ctx.Resp.Header().Set("Content-Length", size)
+
+		file.Seek(0, 0)
+		io.Copy(ctx.Resp, file)
 	}
 
-	ctx.Resp.Header().Set("Content-Type", "application/octet-stream")
 	ctx.Resp.Header().Set("Docker-Content-Digest", digest)
-	ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(file)))
 
-	return http.StatusOK, file
+	return http.StatusOK, []byte("")
 }
 
 //PutManifestsV2Handler is
