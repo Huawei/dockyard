@@ -26,7 +26,7 @@ import (
 type UpdateServiceSnapshotMock struct {
 }
 
-func (m *UpdateServiceSnapshotMock) New(id, url string, callback snapshot.Callback) (snapshot.UpdateServiceSnapshot, error) {
+func (m *UpdateServiceSnapshotMock) New(id, url, itemname string, callback snapshot.Callback) (snapshot.UpdateServiceSnapshot, error) {
 	return m, nil
 }
 
