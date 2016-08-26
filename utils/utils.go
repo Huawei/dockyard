@@ -15,3 +15,21 @@ limitations under the License.
 */
 
 package utils
+
+import (
+	"os"
+)
+
+func GetFileSize(path string) (int64, error) {
+	if file, err := os.Open(path); err != nil {
+		return 0, err
+	} else {
+		header := make([]byte, 512)
+		file.Read(header)
+		stat, _ := file.Stat()
+
+		defer file.Close()
+
+		return stat.Size(), nil
+	}
+}
