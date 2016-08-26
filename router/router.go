@@ -140,8 +140,9 @@ func SetRouters(m *macaron.Macaron) {
 				m.Delete("/:os/:arch/:type/:app/?:tag", handler.AppDeleteFileV1Handler)
 
 				//Content Scan
-				m.Post("/shook", handler.AppRegistScanHooksHandler)
-				m.Post("/shook/:callbackID", handler.AppCallbackScanHooksHandler)
+				m.Post("/shook", handler.AppRegistScanHooksV1Handler)
+				m.Post("/shook/:callbackID", handler.AppCallbackScanHooksV1Handler)
+				m.Post("/:os/:arch/:app/shook/?:tag", handler.AppActiveScanHooksTaskV1Handler)
 			})
 		})
 	})
