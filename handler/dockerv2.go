@@ -263,7 +263,7 @@ func PutBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 }
 
 //GetBlobsV2Handler is
-func GetBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
+func GetBlobsV2Handler(ctx *macaron.Context) {
 	digest := ctx.Params(":digest")
 	tarsum := strings.Split(digest, ":")[1]
 
@@ -272,19 +272,25 @@ func GetBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 		log.Info("Not found blob: %s", tarsum)
 
 		result, _ := module.EncodingError(module.BLOB_UNKNOWN, digest)
-		return http.StatusNotFound, result
+		ctx.Resp.Write(result)
+		ctx.Resp.WriteHeader(http.StatusBadRequest)
+		return
 	} else if err != nil && err != gorm.ErrRecordNotFound {
 		log.Info("Failed to get blob %s: %s", tarsum, err.Error())
 
 		result, _ := module.EncodingError(module.UNKNOWN, err.Error())
-		return http.StatusBadRequest, result
+		ctx.Resp.Write(result)
+		ctx.Resp.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	if file, err := os.Open(i.Path); err != nil {
 		log.Info("Failed to get blob %s: %s", tarsum, err.Error())
 
 		result, _ := module.EncodingError(module.UNKNOWN, err.Error())
-		return http.StatusBadRequest, result
+		ctx.Resp.Write(result)
+		ctx.Resp.WriteHeader(http.StatusBadRequest)
+		return
 	} else {
 		header := make([]byte, 512)
 		file.Read(header)
@@ -296,14 +302,14 @@ func GetBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 		ctx.Resp.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", i.ImageID))
 		ctx.Resp.Header().Set("Content-Type", contentType)
 		ctx.Resp.Header().Set("Content-Length", size)
+		ctx.Resp.Header().Set("Docker-Content-Digest", digest)
 
 		file.Seek(0, 0)
-		io.Copy(ctx.Resp, file)
+		defer file.Close()
+
+		ctx.ServeFileContent(i.Path)
+		return
 	}
-
-	ctx.Resp.Header().Set("Docker-Content-Digest", digest)
-
-	return http.StatusOK, []byte("")
 }
 
 //PutManifestsV2Handler is
