@@ -20,10 +20,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/jinzhu/gorm"
@@ -287,23 +287,28 @@ func GetImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
 		result, _ := json.Marshal(map[string]string{"Error": "Get Image Layer Error"})
 		return http.StatusBadRequest, result
 	} else {
-		if _, err := os.Stat(i.Path); err != nil {
+		if file, err := os.Open(i.Path); err != nil {
 			log.Errorf("[%s] get image layer file status: %s", ctx.Req.RequestURI, err.Error())
 
 			result, _ := json.Marshal(map[string]string{"Error": "Get Image Layer File Status Error"})
 			return http.StatusBadRequest, result
-		}
-
-		if file, err := ioutil.ReadFile(i.Path); err != nil {
-			log.Errorf("[%s] get image layer file data: %s", ctx.Req.RequestURI, err.Error())
-
-			result, _ := json.Marshal(map[string]string{"Error": "Get Image Layer File Data Error"})
-			return http.StatusBadRequest, result
 		} else {
-			ctx.Resp.Header().Set("Content-Type", "application/octet-stream")
-			ctx.Resp.Header().Set("Content-Length", fmt.Sprint(len(file)))
+			defer file.Close()
 
-			return http.StatusOK, file
+			header := make([]byte, 512)
+			file.Read(header)
+			contentType := http.DetectContentType(header)
+
+			size := strconv.FormatInt(i.Size, 10)
+
+			ctx.Resp.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", i.ImageID))
+			ctx.Resp.Header().Set("Content-Type", contentType)
+			ctx.Resp.Header().Set("Content-Length", size)
+
+			file.Seek(0, 0)
+			io.Copy(ctx.Resp, file)
+
+			return http.StatusOK, []byte("")
 		}
 	}
 }
@@ -359,8 +364,10 @@ func PutImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
 		io.Copy(file, ctx.Req.Request.Body)
 	}
 
+	size, _ := utils.GetFileSize(layerfile)
+
 	image := new(models.DockerImageV1)
-	if err := image.PutLayer(imageID, layerfile, 0); err != nil {
+	if err := image.PutLayer(imageID, layerfile, size); err != nil {
 		log.Errorf("[%s] Failed to save image layer data error: %s", ctx.Req.RequestURI, err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Put Image Layer Data Error"})
