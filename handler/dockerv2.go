@@ -307,7 +307,8 @@ func GetBlobsV2Handler(ctx *macaron.Context) {
 		file.Seek(0, 0)
 		defer file.Close()
 
-		ctx.ServeFileContent(i.Path)
+		io.Copy(ctx.Resp, file)
+		ctx.Resp.WriteHeader(http.StatusOK)
 		return
 	}
 }
