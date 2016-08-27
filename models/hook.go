@@ -18,7 +18,6 @@ package models
 
 import (
 	"errors"
-	"strconv"
 	"time"
 
 	"github.com/containerops/dockyard/setting"
@@ -45,7 +44,8 @@ func (s *ScanHookRegist) Regist(p, n, r, name string) error {
 		return errors.New("'Proto', 'Namespace', 'Repository' and 'ScanPluginName' should not be empty")
 	}
 
-	if ok, err := snapshot.IsSnapshotSupported(p, name); !ok {
+	info := snapshot.SnapshotInputInfo{DataProto: p, Name: name}
+	if ok, err := snapshot.IsSnapshotSupported(info); !ok {
 		return err
 	}
 
@@ -101,12 +101,11 @@ type ScanHookTask struct {
 	UpdatedAt time.Time `json:"update_at" sql:""`
 }
 
-// Put returns task id
+// Put returns encoded id
 func (t *ScanHookTask) Put(rID int64, url string) (int64, error) {
 	if url == "" || rID == 0 {
 		return 0, errors.New("'URL' and 'RegistID' should not be empty")
 	}
-	//TODO: add to db and get task ID
 
 	var reg ScanHookRegist
 	reg, err := reg.FindByID(rID)
@@ -114,8 +113,15 @@ func (t *ScanHookTask) Put(rID int64, url string) (int64, error) {
 		return 0, err
 	}
 
+	//TODO: add to db and get task ID
+	var encodedCallbackID string
+	var info snapshot.SnapshotInputInfo
+	info.Name = reg.ScanPluginName
+	info.CallbackID = encodedCallbackID
+	info.DataProto = reg.Proto
+	info.DataURL = url
 	// Do the real scan work
-	s, err := snapshot.NewUpdateServiceSnapshot(reg.ScanPluginName, strconv.FormatInt(rID, 10), url, nil)
+	s, err := snapshot.NewUpdateServiceSnapshot(info)
 	if err != nil {
 		return 0, err
 	}

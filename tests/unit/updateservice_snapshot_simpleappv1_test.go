@@ -40,7 +40,8 @@ func TestAppv1New(t *testing.T) {
 
 	var appv1 snapshot.UpdateServiceSnapshotAppv1
 	for _, c := range cases {
-		_, err := appv1.New(c.id, c.url, "", nil)
+		info := snapshot.SnapshotInputInfo{CallbackID: c.id, DataURL: c.url}
+		_, err := appv1.New(info)
 		assert.Equal(t, c.expected, err == nil, "Fail to create new snapshot appv1")
 	}
 }
@@ -61,10 +62,10 @@ func TestAppv1Supported(t *testing.T) {
 }
 
 var (
-	cbMap = make(map[string]snapshot.UpdateServiceSnapshotOutput)
+	cbMap = make(map[string]snapshot.SnapshotOutputInfo)
 )
 
-func testCB(id string, data snapshot.UpdateServiceSnapshotOutput) error {
+func testCB(id string, data snapshot.SnapshotOutputInfo) error {
 	if id != "1" && id != "2" {
 		return errors.New("invalid id")
 	}
@@ -86,10 +87,10 @@ func TestAppv1Process(t *testing.T) {
 		idExpected bool
 		md5        string
 	}{
-		{"1", "testmd5", testCB, true, true, "ffe7c736f2aa54531ac6430e3cbf2545"},
-		{"2", "invalid", testCB, true, true, ""},
-		{"3", "testmd5", testCB, false, false, ""},
-		{"4", "testmd5", nil, true, false, ""},
+		{"1", "snapshot/testmd5", testCB, true, true, "ffe7c736f2aa54531ac6430e3cbf2545"},
+		{"2", "snapshot/invalid", testCB, true, true, ""},
+		{"3", "snapshot/testmd5", testCB, false, false, ""},
+		{"4", "snapshot/testmd5", nil, true, false, ""},
 	}
 
 	var appv1 snapshot.UpdateServiceSnapshotAppv1
@@ -97,7 +98,8 @@ func TestAppv1Process(t *testing.T) {
 	dir := filepath.Join(filepath.Dir(path), "testdata")
 
 	for _, c := range cases {
-		a, _ := appv1.New(c.id, filepath.Join(dir, c.url), "", c.cb)
+		info := snapshot.SnapshotInputInfo{CallbackID: c.id, DataURL: filepath.Join(dir, c.url), CallbackFunc: c.cb}
+		a, _ := appv1.New(info)
 		err := a.Process()
 		assert.Equal(t, c.pExpected, err == nil, "Fail to get correct process output")
 

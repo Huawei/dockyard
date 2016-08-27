@@ -23,25 +23,46 @@ import (
 	"sync"
 )
 
-// TODO:
-type UpdateServiceSnapshotOutput struct {
+// Callback is a function that a snapshot plugin use after finish the `Process`
+// configuration.
+type Callback func(id string, output SnapshotOutputInfo) error
+
+type SnapshotInputInfo struct {
+	// Snapshot Plugin name.
+	// There are two types of Snapshot:
+	//   one is simple snapshot, just like 'appv1',calling 'Process' directly.
+	//   one is group snapshot, just like 'bycontainer/scanimage', using `scanimage` to 'Process'.
+	Name string
+	// Dockyard server host address,
+	Host string
+	// CallbackID, encrytped
+	// TODO with timestamp?
+	CallbackID string
+	// CallbackFunc: if callback is nil, the caller could handle it by itself
+	// or the caller must implement calling this in `Process`
+	CallbackFunc Callback
+	DataProto    string
+	// dir/file url of the data
+	DataURL string
+}
+
+func (info *SnapshotInputInfo) GetName() (string, string) {
+	n := strings.SplitN(info.Name, "/", 2)
+	if len(n) == 2 {
+		return n[0], n[1]
+	}
+	return n[0], ""
+}
+
+// TODO: Better structed
+type SnapshotOutputInfo struct {
 	Data  []byte
 	Error error
 }
 
-// Callback is a function that a snapshot plugin use after finish the `Process`
-// configuration.
-type Callback func(id string, output UpdateServiceSnapshotOutput) error
-
 // UpdateServiceSnapshot represents the snapshot interface
 type UpdateServiceSnapshot interface {
-	// `id` : callback id
-	// `url`: local file or local dir
-	// `itemname`: used for group snapshot
-	// `callback`: if callback is nil, the caller could handle it by itself
-	//		or the caller must implement calling this in `Process`
-	//		TODO: we need to certify plugins..
-	New(id, url, itemname string, callback Callback) (UpdateServiceSnapshot, error)
+	New(info SnapshotInputInfo) (UpdateServiceSnapshot, error)
 	// `proto`: `appv1/dockerv1` for example
 	Supported(proto string) bool
 	Description() string
@@ -55,12 +76,6 @@ var (
 
 // RegisterSnapshot provides a way to dynamically register an implementation of a
 // snapshot type.
-//
-// There are two types of Snapshot
-//   one is simple snapshot, just like 'appv1',calling 'Process' directly.
-//   one is group snapshot, just like 'container', using certain image to 'Process'.
-// For simple snapshot, the name is just `name`;
-// For group snapshot, the name should be `group`.
 func RegisterSnapshot(name string, f UpdateServiceSnapshot) error {
 	if name == "" {
 		return errors.New("Could not register a Snapshot with an empty name")
@@ -88,15 +103,16 @@ func UnregisterAllSnapshot() {
 	}
 }
 
-func IsSnapshotSupported(proto, name string) (bool, error) {
+func IsSnapshotSupported(info SnapshotInputInfo) (bool, error) {
+	name, _ := info.GetName()
 	f, ok := usSnapshots[name]
 	if !ok {
 		return false, fmt.Errorf("Cannot find plugin :%s", name)
 	}
 
-	ok = f.Supported(proto)
+	ok = f.Supported(info.DataProto)
 	if !ok {
-		return false, fmt.Errorf("Proto %s is not supported by plugin %s", proto, name)
+		return false, fmt.Errorf("Proto %s is not supported by plugin %s", info.DataProto, name)
 	}
 
 	return true, nil
@@ -112,25 +128,13 @@ func ListSnapshotByProto(proto string) (snapshots []string) {
 	return
 }
 
-// NewUpdateServiceSnapshot creates a snapshot interface by a Name and a url
-// There are two types of Snapshot
-//   one is simple snapshot, just like 'appv1',calling 'Process' directly.
-//   one is group snapshot, just like 'container', using certain image to 'Process'.
-// For simple snapshot, the name is just `name`;
-// For group snapshot, the name should be `groupname/itemname`,
-//   snapshot group plugin developer provides `groupname`,
-//   a snapshot plugin 'caller' should know the correct `itemname`.
-func NewUpdateServiceSnapshot(name, id, url string, cb Callback) (UpdateServiceSnapshot, error) {
-	var itemname string
-
-	n := strings.SplitN(name, "/", 2)
-	f, ok := usSnapshots[n[0]]
+// NewUpdateServiceSnapshot creates a snapshot interface by an info and a url
+func NewUpdateServiceSnapshot(info SnapshotInputInfo) (UpdateServiceSnapshot, error) {
+	name, _ := info.GetName()
+	f, ok := usSnapshots[name]
 	if !ok {
 		return nil, fmt.Errorf("Snapshot '%s' not found", name)
 	}
 
-	if len(n) == 2 {
-		itemname = n[1]
-	}
-	return f.New(id, url, itemname, cb)
+	return f.New(info)
 }
