@@ -26,7 +26,7 @@ import (
 type UpdateServiceSnapshotMock struct {
 }
 
-func (m *UpdateServiceSnapshotMock) New(id, url string, callback snapshot.Callback) (snapshot.UpdateServiceSnapshot, error) {
+func (m *UpdateServiceSnapshotMock) New(info snapshot.SnapshotInputInfo) (snapshot.UpdateServiceSnapshot, error) {
 	return m, nil
 }
 
@@ -100,7 +100,8 @@ func TestNewUpdateServiceSnapshot(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		_, err := snapshot.NewUpdateServiceSnapshot(c.name, "id", "url", nil)
+		info := snapshot.SnapshotInputInfo{Name: c.name}
+		_, err := snapshot.NewUpdateServiceSnapshot(info)
 		assert.Equal(t, c.expected, err == nil, "Fail to create new snapshot")
 	}
 }
@@ -119,7 +120,26 @@ func TestIsSnapshotSupported(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		ok, _ := snapshot.IsSnapshotSupported(c.p, c.n)
+		info := snapshot.SnapshotInputInfo{DataProto: c.p, Name: c.n}
+		ok, _ := snapshot.IsSnapshotSupported(info)
 		assert.Equal(t, c.expected, ok, "Fail to get supported result")
+	}
+}
+
+func TestInfoGetName(t *testing.T) {
+	cases := []struct {
+		name           string
+		expectedPlugin string
+		expectedImage  string
+	}{
+		{"appv1", "appv1", ""},
+		{"bycontainer/ospaf/scan", "bycontainer", "ospaf/scan"},
+	}
+
+	for _, c := range cases {
+		info := snapshot.SnapshotInputInfo{Name: c.name}
+		p, i := info.GetName()
+		assert.Equal(t, c.expectedPlugin, p, "Fail to get plugin name")
+		assert.Equal(t, c.expectedImage, i, "Fail to get image name")
 	}
 }
