@@ -276,7 +276,7 @@ func GetImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 }
 
 //GetImageLayerV1Handler
-func GetImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
+func GetImageLayerV1Handler(ctx *macaron.Context) {
 	//TODO: If standalone == true, Dockyard will check HEADER Authorization; if standalone == false, Dockyard will check HEADER TOEKN.
 	imageID := ctx.Params(":image")
 
@@ -285,13 +285,17 @@ func GetImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
 		log.Errorf("[%s] get image ancestry error: %s", ctx.Req.RequestURI, err.Error())
 
 		result, _ := json.Marshal(map[string]string{"Error": "Get Image Layer Error"})
-		return http.StatusBadRequest, result
+		ctx.Resp.WriteHeader(http.StatusBadRequest)
+		ctx.Resp.Write(result)
+		return
 	} else {
 		if file, err := os.Open(i.Path); err != nil {
 			log.Errorf("[%s] get image layer file status: %s", ctx.Req.RequestURI, err.Error())
 
 			result, _ := json.Marshal(map[string]string{"Error": "Get Image Layer File Status Error"})
-			return http.StatusBadRequest, result
+			ctx.Resp.WriteHeader(http.StatusBadRequest)
+			ctx.Resp.Write(result)
+			return
 		} else {
 			defer file.Close()
 
@@ -308,12 +312,13 @@ func GetImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
 			file.Seek(0, 0)
 			io.Copy(ctx.Resp, file)
 
-			return http.StatusOK, []byte("")
+			ctx.Resp.WriteHeader(http.StatusBadRequest)
+			return
 		}
 	}
 }
 
-//PutImageJSONV1Handler
+//PutImageJSONV1Handler is
 func PutImageJSONV1Handler(ctx *macaron.Context) (int, []byte) {
 	//TODO: If standalone == true, Dockyard will check HEADER Authorization; if standalone == false, Dockyard will check HEADER TOEKN.
 

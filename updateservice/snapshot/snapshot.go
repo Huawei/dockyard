@@ -19,27 +19,50 @@ package snapshot
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 )
 
-// TODO:
-type UpdateServiceSnapshotOutput struct {
+// Callback is a function that a snapshot plugin use after finish the `Process`
+// configuration.
+type Callback func(id string, output SnapshotOutputInfo) error
+
+type SnapshotInputInfo struct {
+	// Snapshot Plugin name.
+	// There are two types of Snapshot:
+	//   one is simple snapshot, just like 'appv1',calling 'Process' directly.
+	//   one is group snapshot, just like 'bycontainer/scanimage', using `scanimage` to 'Process'.
+	Name string
+	// Dockyard server host address,
+	Host string
+	// CallbackID, encrytped
+	// TODO with timestamp?
+	CallbackID string
+	// CallbackFunc: if callback is nil, the caller could handle it by itself
+	// or the caller must implement calling this in `Process`
+	CallbackFunc Callback
+	DataProto    string
+	// dir/file url of the data
+	DataURL string
+}
+
+func (info *SnapshotInputInfo) GetName() (string, string) {
+	n := strings.SplitN(info.Name, "/", 2)
+	if len(n) == 2 {
+		return n[0], n[1]
+	}
+	return n[0], ""
+}
+
+// TODO: Better structed
+type SnapshotOutputInfo struct {
 	Data  []byte
 	Error error
 }
 
-// Callback is a function that a snapshot plugin use after finish the `Process`
-// configuration.
-type Callback func(id string, output UpdateServiceSnapshotOutput) error
-
 // UpdateServiceSnapshot represents the snapshot interface
 type UpdateServiceSnapshot interface {
-	// `id` : callback id
-	// `url`: local file or local dir
-	// `callback`: if callback is nil, the caller could handle it by itself
-	//		or the caller must implement calling this in `Process`
-	//		TODO: we need to certify plugins..
-	New(id, url string, callback Callback) (UpdateServiceSnapshot, error)
+	New(info SnapshotInputInfo) (UpdateServiceSnapshot, error)
 	// `proto`: `appv1/dockerv1` for example
 	Supported(proto string) bool
 	Description() string
@@ -80,15 +103,16 @@ func UnregisterAllSnapshot() {
 	}
 }
 
-func IsSnapshotSupported(proto, name string) (bool, error) {
+func IsSnapshotSupported(info SnapshotInputInfo) (bool, error) {
+	name, _ := info.GetName()
 	f, ok := usSnapshots[name]
 	if !ok {
 		return false, fmt.Errorf("Cannot find plugin :%s", name)
 	}
 
-	ok = f.Supported(proto)
+	ok = f.Supported(info.DataProto)
 	if !ok {
-		return false, fmt.Errorf("Proto %s is not supported by plugin %s", proto, name)
+		return false, fmt.Errorf("Proto %s is not supported by plugin %s", info.DataProto, name)
 	}
 
 	return true, nil
@@ -104,11 +128,13 @@ func ListSnapshotByProto(proto string) (snapshots []string) {
 	return
 }
 
-// NewUpdateServiceSnapshot creates a snapshot interface by a name and a url
-func NewUpdateServiceSnapshot(name, id, url string, cb Callback) (UpdateServiceSnapshot, error) {
+// NewUpdateServiceSnapshot creates a snapshot interface by an info and a url
+func NewUpdateServiceSnapshot(info SnapshotInputInfo) (UpdateServiceSnapshot, error) {
+	name, _ := info.GetName()
 	f, ok := usSnapshots[name]
 	if !ok {
 		return nil, fmt.Errorf("Snapshot '%s' not found", name)
 	}
-	return f.New(id, url, cb)
+
+	return f.New(info)
 }
