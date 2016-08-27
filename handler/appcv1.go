@@ -101,7 +101,7 @@ func AppcGetACIV1Handler(ctx *macaron.Context) {
 	}
 
 	if file, err := os.Open(path); err != nil {
-		log.Errorf("[%s] get File(%s) error: %s", ctx.Req.RequestURI, file, err.Error())
+		log.Errorf("[%s] get File(%v) error: %s", ctx.Req.RequestURI, file, err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Get ACI or ASC file Error."})
 
