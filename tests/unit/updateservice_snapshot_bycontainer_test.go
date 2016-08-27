@@ -16,6 +16,7 @@ limitations under the License.
 package unittest
 
 import (
+	"fmt"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -23,6 +24,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/containerops/dockyard/updateservice/snapshot"
+	"github.com/containerops/dockyard/utils"
 )
 
 func TestByContainerNew(t *testing.T) {
@@ -85,6 +87,10 @@ func TestByContainerProcess(t *testing.T) {
 		info := snapshot.SnapshotInputInfo{CallbackID: c.id, DataURL: filepath.Join(dir, c.url), Name: c.name}
 		a, _ := bycontainer.New(info)
 		err := a.Process()
+		if err == utils.ErrorsNoDockerClient {
+			fmt.Println("No Docker client detected")
+			return
+		}
 		assert.Nil(t, err, "Fail to process")
 	}
 }
