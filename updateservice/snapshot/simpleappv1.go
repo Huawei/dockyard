@@ -27,22 +27,19 @@ var (
 )
 
 type UpdateServiceSnapshotAppv1 struct {
-	ID  string
-	URL string
-
-	callback Callback
+	info SnapshotInputInfo
 }
 
 func init() {
 	RegisterSnapshot(snapshotName, &UpdateServiceSnapshotAppv1{})
 }
 
-func (m *UpdateServiceSnapshotAppv1) New(id, url, itemname string, callback Callback) (UpdateServiceSnapshot, error) {
-	if id == "" || url == "" {
-		return nil, errors.New("id|url should not be empty")
+func (m *UpdateServiceSnapshotAppv1) New(info SnapshotInputInfo) (UpdateServiceSnapshot, error) {
+	if info.CallbackID == "" || info.DataURL == "" {
+		return nil, errors.New("'CallbackID', 'DataURL' should not be empty")
 	}
 
-	m.ID, m.URL, m.callback = id, url, callback
+	m.info = info
 	return m, nil
 }
 
@@ -57,10 +54,10 @@ func (m *UpdateServiceSnapshotAppv1) Supported(proto string) bool {
 }
 
 func (m *UpdateServiceSnapshotAppv1) Process() error {
-	var data UpdateServiceSnapshotOutput
+	var data SnapshotOutputInfo
 
-	content, err := ioutil.ReadFile(m.URL)
-	if m.callback == nil {
+	content, err := ioutil.ReadFile(m.info.DataURL)
+	if m.info.CallbackFunc == nil {
 		return err
 	}
 
@@ -70,7 +67,7 @@ func (m *UpdateServiceSnapshotAppv1) Process() error {
 	}
 	data.Error = err
 
-	return m.callback(m.ID, data)
+	return m.info.CallbackFunc(m.info.CallbackID, data)
 }
 
 func (m *UpdateServiceSnapshotAppv1) Description() string {
