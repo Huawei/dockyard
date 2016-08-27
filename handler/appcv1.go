@@ -61,7 +61,7 @@ func AppcDiscoveryV1Handler(ctx *macaron.Context) (int, []byte) {
 }
 
 //AppcGetACIV1Handler is
-func AppcGetACIV1Handler(ctx *macaron.Context) (int, []byte) {
+func AppcGetACIV1Handler(ctx *macaron.Context) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 	filename := ctx.Params(":file")
@@ -77,14 +77,20 @@ func AppcGetACIV1Handler(ctx *macaron.Context) (int, []byte) {
 		log.Errorf("[%s] get AppcV1 repository error: %s", ctx.Req.RequestURI, err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Get Appc Repository Error."})
-		return http.StatusBadRequest, result
+
+		ctx.Resp.WriteHeader(http.StatusBadRequest)
+		ctx.Resp.Write(result)
+		return
 	}
 
 	if err := i.Get(r.ID, version, aci); err != nil {
 		log.Errorf("[%s] get ACIV1 data error: %s", ctx.Req.RequestURI, err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Get ACI Data Error."})
-		return http.StatusBadRequest, result
+
+		ctx.Resp.WriteHeader(http.StatusBadRequest)
+		ctx.Resp.Write(result)
+		return
 	}
 
 	var path string
@@ -98,7 +104,10 @@ func AppcGetACIV1Handler(ctx *macaron.Context) (int, []byte) {
 		log.Errorf("[%s] get File(%s) error: %s", ctx.Req.RequestURI, file, err.Error())
 
 		result, _ := json.Marshal(map[string]string{"message": "Get ACI or ASC file Error."})
-		return http.StatusBadRequest, result
+
+		ctx.Resp.WriteHeader(http.StatusBadRequest)
+		ctx.Resp.Write(result)
+		return
 	} else {
 		header := make([]byte, 512)
 		file.Read(header)
@@ -113,8 +122,8 @@ func AppcGetACIV1Handler(ctx *macaron.Context) (int, []byte) {
 
 		file.Seek(0, 0)
 		io.Copy(ctx.Resp, file)
-
-		return http.StatusOK, []byte("")
+		ctx.Resp.WriteHeader(http.StatusOK)
+		return
 	}
 
 }
