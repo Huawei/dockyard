@@ -214,7 +214,7 @@ By making a contribution to this project, I certify that:
 
 You just add a line to every git commit message, like this:
 
-    Signed-off-by: Meaglith Ma <maquanyi@huawei.com>
+    Signed-off-by: Meaglith Ma <genedna@gmail.com>
 
 Use your real name (sorry, no pseudonyms or anonymous contributions.)
 
