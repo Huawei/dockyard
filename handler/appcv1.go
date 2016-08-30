@@ -119,6 +119,10 @@ func AppcGetACIV1Handler(ctx *macaron.Context) {
 		ctx.Resp.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
 		ctx.Resp.Header().Set("Content-Type", contentType)
 		ctx.Resp.Header().Set("Content-Length", size)
+		ctx.Resp.Header().Set("Expires", "0")
+		ctx.Resp.Header().Set("Cache-Control", "must-revalidate")
+		ctx.Resp.Header().Set("Content-Transfer-Encoding", "binary")
+		ctx.Resp.Header().Set("Pragma", "public")
 
 		file.Seek(0, 0)
 		io.Copy(ctx.Resp, file)
