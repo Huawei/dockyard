@@ -94,6 +94,7 @@ func SetRouters(m *macaron.Macaron) {
 		m.Get("/:namespace/:repository/tags/list", handler.GetTagsListV2Handler)
 		m.Get("/:namespace/:repository/manifests/:tag", handler.GetManifestsV2Handler)
 		m.Delete("/:namespace/:repository/blobs/:digest", handler.DeleteBlobsV2Handler)
+		m.Delete("/:namespace/:repository/:blobs/:uuid", handler.DeleteBlobsUUUIDV2Handler)
 		m.Delete("/:namespace/:repository/manifests/:reference", handler.DeleteManifestsV2Handler)
 
 		//library mode: /repository:tag
