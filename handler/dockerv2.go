@@ -424,6 +424,12 @@ func DeleteBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 	return http.StatusOK, result
 }
 
+//DeleteBlobsUUUIDV2Handler is
+func DeleteBlobsUUUIDV2Handler(ctx *macaron.Context) (int, []byte) {
+	result, _ := json.Marshal(map[string]string{})
+	return http.StatusOK, result
+}
+
 //DeleteManifestsV2Handler is
 func DeleteManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
