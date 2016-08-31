@@ -109,15 +109,12 @@ func AppcGetACIV1Handler(ctx *macaron.Context) {
 		ctx.Resp.Write(result)
 		return
 	} else {
-		header := make([]byte, 512)
-		file.Read(header)
-		contentType := http.DetectContentType(header)
-
 		stat, _ := file.Stat()
 		size := strconv.FormatInt(stat.Size(), 10)
 
+		ctx.Resp.Header().Set("Content-Description", "File Transfer")
+		ctx.Resp.Header().Set("Content-Type", "application/octet-stream")
 		ctx.Resp.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
-		ctx.Resp.Header().Set("Content-Type", contentType)
 		ctx.Resp.Header().Set("Content-Length", size)
 		ctx.Resp.Header().Set("Expires", "0")
 		ctx.Resp.Header().Set("Cache-Control", "must-revalidate")
@@ -125,6 +122,8 @@ func AppcGetACIV1Handler(ctx *macaron.Context) {
 		ctx.Resp.Header().Set("Pragma", "public")
 
 		file.Seek(0, 0)
+		defer file.Close()
+
 		io.Copy(ctx.Resp, file)
 		ctx.Resp.WriteHeader(http.StatusOK)
 		return
