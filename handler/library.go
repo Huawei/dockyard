@@ -23,52 +23,20 @@ import (
 	"gopkg.in/macaron.v1"
 )
 
-func HeadBlobsV2LibraryHandler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
-}
-
-func PostBlobsV2LibraryHandler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
-}
-
-func PatchBlobsV2LibraryHandler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
-}
-
-func PutBlobsV2LibraryHandler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
-}
-
+//GetBlobsV2LibraryHandler is
 func GetBlobsV2LibraryHandler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
 
-func PutManifestsV2LibraryHandler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
-}
-
+//GetTagsListV2LibraryHandler is
 func GetTagsListV2LibraryHandler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }
 
+//GetManifestsV2LibraryHandler is
 func GetManifestsV2LibraryHandler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
-}
-
-func DeleteBlobsV2LibraryHandler(ctx *macaron.Context) (int, []byte) {
-	result, _ := json.Marshal(map[string]string{})
-	return http.StatusOK, result
-}
-
-func DeleteManifestsV2LibraryHandler(ctx *macaron.Context) (int, []byte) {
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
 }

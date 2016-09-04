@@ -98,16 +98,9 @@ func SetRouters(m *macaron.Macaron) {
 		m.Delete("/:namespace/:repository/manifests/:reference", handler.DeleteManifestsV2Handler)
 
 		//library mode: /repository:tag
-		m.Head("/:repository/blobs/:digest", handler.HeadBlobsV2LibraryHandler)
-		m.Post("/:repository/blobs/uploads", handler.PostBlobsV2LibraryHandler)
-		m.Patch("/:repository/blobs/uploads/:uuid", handler.PatchBlobsV2LibraryHandler)
-		m.Put("/:repository/blobs/uploads/:uuid", handler.PutBlobsV2LibraryHandler)
 		m.Get("/:repository/blobs/:digest", handler.GetBlobsV2LibraryHandler)
-		m.Put("/:repository/manifests/:tag", handler.PutManifestsV2LibraryHandler)
 		m.Get("/:repository/tags/list", handler.GetTagsListV2LibraryHandler)
 		m.Get("/:repository/manifests/:tag", handler.GetManifestsV2LibraryHandler)
-		m.Delete("/:repository/blobs/:digest", handler.DeleteBlobsV2LibraryHandler)
-		m.Delete("/:repository/manifests/:reference", handler.DeleteManifestsV2LibraryHandler)
 	})
 
 	//App Discovery
