@@ -29,6 +29,6 @@ var CmdOSS = cli.Command{
 }
 
 func runOSS(c *cli.Context) error {
-	startServerService()
+	initlization()
 	return nil
 }
