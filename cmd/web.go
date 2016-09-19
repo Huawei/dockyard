@@ -31,6 +31,7 @@ import (
 	"github.com/containerops/dockyard/web"
 )
 
+//CmdWeb is
 var CmdWeb = cli.Command{
 	Name:        "web",
 	Usage:       "start dockyard web service",

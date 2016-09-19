@@ -20,6 +20,7 @@ import (
 	"github.com/urfave/cli"
 )
 
+//CmdOSS is
 var CmdOSS = cli.Command{
 	Name:        "oss",
 	Usage:       "start object storage service",
