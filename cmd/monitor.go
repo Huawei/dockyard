@@ -20,6 +20,7 @@ import (
 	"github.com/urfave/cli"
 )
 
+//CmdMonitor is
 var CmdMonitor = cli.Command{
 	Name:        "monitor",
 	Usage:       "monitor utils for all service",
