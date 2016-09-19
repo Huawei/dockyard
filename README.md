@@ -161,6 +161,9 @@ If any issues are encountered while using the dockyard project, several avenues 
 </tr>
 </table>
 
+### Pull Requests
+
+If you want to contribute to the template, you can create pull requests. All pull requests must be done to the `develop` branch. We are working on build an automated tests with ourself means *containerops*, now we just add *Travis CI* instead.
 
 ## Who should join
 - Ones who want to choose a container image hub instead of docker hub.
