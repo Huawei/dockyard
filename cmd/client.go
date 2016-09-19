@@ -29,6 +29,7 @@ import (
 	"github.com/containerops/dockyard/utils"
 )
 
+//CmdClient is
 var CmdClient = cli.Command{
 	Name:        "client",
 	Usage:       "dockyard update service client",

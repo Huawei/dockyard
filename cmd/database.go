@@ -24,6 +24,7 @@ import (
 	"github.com/containerops/dockyard/models"
 )
 
+//CmdDatabase is
 var CmdDatabase = cli.Command{
 	Name:        "database",
 	Usage:       "database utils for backend database",
