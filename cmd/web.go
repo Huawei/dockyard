@@ -26,7 +26,7 @@ import (
 	"github.com/urfave/cli"
 	"gopkg.in/macaron.v1"
 
-	"github.com/containerops/dockyard/setting"
+	"github.com/containerops/configure"
 	"github.com/containerops/dockyard/utils"
 	"github.com/containerops/dockyard/web"
 )
@@ -52,14 +52,13 @@ var CmdWeb = cli.Command{
 }
 
 func runWeb(c *cli.Context) error {
-	initlization()
-
 	m := macaron.New()
 
 	//Set Macaron Web Middleware And Routers
 	web.SetDockyardMacaron(m)
 
-	switch setting.ListenMode {
+	listenMode := configure.GetString("listenmode")
+	switch listenMode {
 	case "http":
 		listenaddr := fmt.Sprintf("%s:%d", c.String("address"), c.Int("port"))
 		if err := http.ListenAndServe(listenaddr, m); err != nil {
@@ -70,7 +69,7 @@ func runWeb(c *cli.Context) error {
 	case "https":
 		listenaddr := fmt.Sprintf("%s:443", c.String("address"))
 		server := &http.Server{Addr: listenaddr, TLSConfig: &tls.Config{MinVersion: tls.VersionTLS10}, Handler: m}
-		if err := server.ListenAndServeTLS(setting.HTTPSCertFile, setting.HTTPSKeyFile); err != nil {
+		if err := server.ListenAndServeTLS(configure.GetString("httpscertfile"), configure.GetString("httpskeyfile")); err != nil {
 			fmt.Printf("Start Dockyard https service error: %v\n", err.Error())
 			return err
 		}

@@ -29,8 +29,8 @@ import (
 	"github.com/jinzhu/gorm"
 	"gopkg.in/macaron.v1"
 
+	"github.com/containerops/configure"
 	"github.com/containerops/dockyard/models"
-	"github.com/containerops/dockyard/setting"
 	"github.com/containerops/dockyard/utils"
 )
 
@@ -222,7 +222,7 @@ func PutRepositoryV1Handler(ctx *macaron.Context) (int, []byte) {
 	}
 
 	//TODO: When deploy multi instances of dockyard, the endpoints will schedule comply all instances stauts and arithmetic.
-	ctx.Resp.Header().Set("X-Docker-Endpoints", setting.Domains)
+	ctx.Resp.Header().Set("X-Docker-Endpoints", configure.GetString("deployment.domains"))
 
 	result, _ := json.Marshal(map[string]string{})
 	return http.StatusOK, result
@@ -349,7 +349,7 @@ func PutImageLayerV1Handler(ctx *macaron.Context) (int, []byte) {
 	//TODO: If standalone == true, Dockyard will check HEADER Authorization; if standalone == false, Dockyard will check HEADER TOEKN.
 	imageID := ctx.Params(":image")
 
-	basePath := setting.DockerV1Storage
+	basePath := configure.GetString("dockerv1.storage")
 	imagePath := fmt.Sprintf("%s/images/%s", basePath, imageID)
 	layerfile := fmt.Sprintf("%s/images/%s/%s", basePath, imageID, imageID)
 
