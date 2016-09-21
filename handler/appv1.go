@@ -23,8 +23,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"gopkg.in/macaron.v1"
 
+	"github.com/containerops/configure"
 	"github.com/containerops/dockyard/models"
-	"github.com/containerops/dockyard/setting"
 	"github.com/containerops/dockyard/updateservice/us"
 	"github.com/containerops/dockyard/utils"
 )
@@ -75,7 +75,7 @@ func AppGetListAppV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
-	appV1, _ := us.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
+	appV1, _ := us.NewUpdateService("appV1", configure.GetString("updateserver.storage"), configure.GetString("updateserver.keymanager"))
 	apps, err := appV1.List(namespace + "/" + repository)
 
 	return httpRet("AppV1 List files", apps, err)
@@ -85,7 +85,7 @@ func AppGetListAppV1Handler(ctx *macaron.Context) (int, []byte) {
 func AppGetPublicKeyV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 
-	appV1, _ := us.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
+	appV1, _ := us.NewUpdateService("appV1", configure.GetString("updateserver.storage"), configure.GetString("updateserver.keymanager"))
 	data, err := appV1.GetPublicKey(namespace)
 	if err == nil {
 		return http.StatusOK, data
@@ -99,7 +99,7 @@ func AppGetMetaV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
-	appV1, _ := us.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
+	appV1, _ := us.NewUpdateService("appV1", configure.GetString("updateserver.storage"), configure.GetString("updateserver.keymanager"))
 	data, err := appV1.GetMeta(namespace + "/" + repository)
 	if err == nil {
 		return http.StatusOK, data
@@ -113,7 +113,7 @@ func AppGetMetaSignV1Handler(ctx *macaron.Context) (int, []byte) {
 	namespace := ctx.Params(":namespace")
 	repository := ctx.Params(":repository")
 
-	appV1, _ := us.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
+	appV1, _ := us.NewUpdateService("appV1", configure.GetString("updateserver.storage"), configure.GetString("updateserver.keymanager"))
 	data, err := appV1.GetMetaSign(namespace + "/" + repository)
 	if err == nil {
 		return http.StatusOK, data
@@ -133,7 +133,7 @@ func AppGetFileV1Handler(ctx *macaron.Context) (int, []byte) {
 		Tag:  ctx.Params(":tag"),
 	}
 
-	appV1, _ := us.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
+	appV1, _ := us.NewUpdateService("appV1", configure.GetString("updateserver.storage"), configure.GetString("updateserver.keymanager"))
 	data, err := appV1.Get(namespace+"/"+repository, a.GetName())
 	if err == nil {
 		return http.StatusOK, data
@@ -194,7 +194,7 @@ func AppPutFileV1Handler(ctx *macaron.Context) (int, []byte) {
 	}
 
 	// Add to update service
-	appV1, err := us.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
+	appV1, err := us.NewUpdateService("appV1", configure.GetString("updateserver.storage"), configure.GetString("updateserver.keymanager"))
 	if err != nil {
 		log.Errorf("[%s] create update service: %s", ctx.Req.RequestURI, err.Error())
 
@@ -256,7 +256,7 @@ func AppDeleteFileV1Handler(ctx *macaron.Context) (int, []byte) {
 	}
 
 	// Remove from update service
-	appV1, err := us.NewUpdateService("appV1", setting.Storage, setting.KeyManager)
+	appV1, err := us.NewUpdateService("appV1", configure.GetString("updateserver.storage"), configure.GetString("updateserver.keymanager"))
 	if err != nil {
 		log.Errorf("[%s] create update service: %s", ctx.Req.RequestURI, err.Error())
 
@@ -286,107 +286,15 @@ func AppDeleteFileV1Handler(ctx *macaron.Context) (int, []byte) {
 // AppRegistScanHooksV1Handler adds a scan plugin to a user repo
 // TODO: to make it easier as a start, we assume each repo could only have one scan plugin
 func AppRegistScanHooksV1Handler(ctx *macaron.Context) (int, []byte) {
-	data, err := ctx.Req.Body().Bytes()
-	if err != nil {
-		log.Errorf("[%s] Req.Body.Bytes error: %s", ctx.Req.RequestURI, err.Error())
-
-		result, _ := json.Marshal(map[string]string{"Error": "Req.Body.Bytes Error"})
-		return http.StatusBadRequest, result
-	}
-
-	type scanPlugin struct {
-		//Name should be simple name or group name
-		Name string
-	}
-	var n scanPlugin
-	err = json.Unmarshal(data, &n)
-	if err != nil {
-		log.Errorf("[%s] Invalid body data: %s", ctx.Req.RequestURI, err.Error())
-
-		result, _ := json.Marshal(map[string]string{"Error": "Parse Req.Body.Bytes Error"})
-		return http.StatusBadRequest, result
-	}
-
-	var reg models.ScanHookRegist
-	namespace := ctx.Params(":namespace")
-	repository := ctx.Params(":repository")
-	err = reg.Regist("appv1", namespace, repository, n.Name)
-	if err != nil {
-		log.Errorf("[%s] scan hook regist error: %s", ctx.Req.RequestURI, err.Error())
-
-		result, _ := json.Marshal(map[string]string{"Error": "Scan Hook Regist Error"})
-		return http.StatusBadRequest, result
-	}
-
-	return httpRet("AppV1 Scan Hook Regist", nil, err)
+	return http.StatusOK, []byte("")
 }
 
 // AppCallbackScanHooksV1Handler gets callback from container and save the scan result.
 func AppCallbackScanHooksV1Handler(ctx *macaron.Context) (int, []byte) {
-	data, err := ctx.Req.Body().Bytes()
-	if err != nil {
-		log.Errorf("[%s] Req.Body.Bytes error: %s", ctx.Req.RequestURI, err.Error())
-
-		result, _ := json.Marshal(map[string]string{"Error": "Req.Body.Bytes Error"})
-		return http.StatusBadRequest, result
-	}
-
-	var t models.ScanHookTask
-	callbackID := ctx.Params(":callbackID")
-	err = t.UpdateResult(callbackID, data)
-	if err != nil {
-		log.Errorf("[%s] scan hook callback error: %s", ctx.Req.RequestURI, err.Error())
-
-		result, _ := json.Marshal(map[string]string{"Error": "Scan Hook Callback Error"})
-		return http.StatusBadRequest, result
-	}
-
-	return httpRet("AppV1 Scan Hook Callback", nil, err)
+	return http.StatusOK, []byte("")
 }
 
 // AppActiveScanHooksTaskV1Handler actives a scan task
 func AppActiveScanHooksTaskV1Handler(ctx *macaron.Context) (int, []byte) {
-	namespace := ctx.Params(":namespace")
-	repository := ctx.Params(":repository")
-
-	var r models.ScanHookRegist
-	rID, err := r.FindID("appv1", namespace, repository)
-	if err != nil {
-		log.Errorf("[%s] scan hook callback error: %s", ctx.Req.RequestURI, err.Error())
-
-		result, _ := json.Marshal(map[string]string{"Error": "Donnot have registed scan plugin"})
-		return http.StatusBadRequest, result
-	}
-
-	a := models.ArtifactV1{
-		OS:   ctx.Params(":os"),
-		Arch: ctx.Params(":arch"),
-		App:  ctx.Params(":app"),
-		Tag:  ctx.Params(":tag"),
-	}
-	a, err = a.Get()
-	if err != nil {
-		log.Errorf("[%s] scan hook callback error: %s", ctx.Req.RequestURI, err.Error())
-
-		result, _ := json.Marshal(map[string]string{"Error": "Cannot find artifactv1"})
-		return http.StatusBadRequest, result
-	}
-
-	// create a task
-	var t models.ScanHookTask
-	tID, err := t.Put(rID, a.Path)
-	if err != nil {
-		log.Errorf("[%s] scan hook callback error: %s", ctx.Req.RequestURI, err.Error())
-
-		result, _ := json.Marshal(map[string]string{"Error": "Fail to create a scan task"})
-		return http.StatusBadRequest, result
-	}
-
-	idBytes, err := utils.TokenMarshal(tID, setting.ScanKey)
-
-	val := struct {
-		TaskID string
-	}{TaskID: string(idBytes)}
-
-	return httpRet("AppV1 Active Scan Hook Task", val, nil)
+	return http.StatusOK, []byte("")
 }

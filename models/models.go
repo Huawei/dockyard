@@ -21,9 +21,8 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
 
-	"github.com/containerops/dockyard/setting"
+	"github.com/containerops/configure"
 )
 
 var (
@@ -34,10 +33,10 @@ var (
 func init() {
 }
 
-//
+//OpenDatabase is
 func OpenDatabase() {
 	var err error
-	if db, err = gorm.Open(setting.DatabaseDriver, setting.DatabaseURI); err != nil {
+	if db, err = gorm.Open(configure.GetString("database.driver"), configure.GetString("database.url")); err != nil {
 		log.Fatal("Initlization database connection error.")
 		os.Exit(1)
 	} else {
@@ -49,6 +48,7 @@ func OpenDatabase() {
 	}
 }
 
+//Sync is
 func Sync() error {
 	log.Info("Sync database structs")
 

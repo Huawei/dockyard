@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/containerops/dockyard/setting"
+	"github.com/containerops/configure"
 	"github.com/containerops/dockyard/updateservice/km"
 	"github.com/containerops/dockyard/utils"
 )
@@ -111,9 +111,8 @@ func NewLocalRepo(path string, proto string, nr string) (LocalRepo, error) {
 // nr : "namespace/repository"
 // kmURL: nil means using the km repository defined in configuration
 func NewLocalRepoWithKM(path string, proto, nr string, kmURL string) (LocalRepo, error) {
-	// if kmURL == "", try the one in setting
 	if kmURL == "" {
-		kmURL = setting.KeyManager
+		kmURL = configure.GetString("updateserver.keymanager")
 	}
 
 	repo, err := NewLocalRepo(path, proto, nr)

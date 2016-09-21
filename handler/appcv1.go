@@ -29,9 +29,9 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"gopkg.in/macaron.v1"
 
+	"github.com/containerops/configure"
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/dockyard/module/signature"
-	"github.com/containerops/dockyard/setting"
 	"github.com/containerops/dockyard/utils"
 )
 
@@ -50,7 +50,7 @@ func AppcDiscoveryV1Handler(ctx *macaron.Context) (int, []byte) {
 			return http.StatusBadRequest, result
 		} else {
 			t.Execute(ctx.Resp, map[string]string{
-				"Domains":    setting.Domains,
+				"Domains":    configure.GetString("deployment.domains"),
 				"Namespace":  namespace,
 				"Repository": repository,
 			})
@@ -157,7 +157,7 @@ func AppcPostACIV1Handler(ctx *macaron.Context) (int, []byte) {
 		return http.StatusBadRequest, result
 	}
 
-	prefix := fmt.Sprintf("https://%s/appc/%s/%s/push", setting.Domains, namespace, repository)
+	prefix := fmt.Sprintf("https://%s/appc/%s/%s/push", configure.GetString("deployment.domains"), namespace, repository)
 	appc := AppcPUTDetails{
 		ACIPushVersion: "0.0.1",
 		Multipart:      false,
@@ -214,7 +214,7 @@ func AppcPutASCV1Handler(ctx *macaron.Context) (int, []byte) {
 		return http.StatusBadRequest, result
 	}
 
-	basePath := setting.AppcStorage
+	basePath := configure.GetString("appc.storage")
 	imagePath := fmt.Sprintf("%s/%s/%s/%s", basePath, namespace, repository, version)
 	filePath := fmt.Sprintf("%s/%s.asc", imagePath, aci)
 
@@ -262,7 +262,7 @@ func AppcPutACIV1Handler(ctx *macaron.Context) (int, []byte) {
 		return http.StatusBadRequest, result
 	}
 
-	basePath := setting.AppcStorage
+	basePath := configure.GetString("appc.storage")
 	imagePath := fmt.Sprintf("%s/%s/%s/%s", basePath, namespace, repository, version)
 	filePath := fmt.Sprintf("%s/%s", imagePath, aci)
 

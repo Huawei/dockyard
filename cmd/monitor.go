@@ -30,6 +30,5 @@ var CmdMonitor = cli.Command{
 }
 
 func runMonitor(c *cli.Context) error {
-	initlization()
 	return nil
 }

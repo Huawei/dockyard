@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/containerops/dockyard/setting"
+	"github.com/containerops/configure"
 )
 
 // KeyManager should be seperate from dockyard
@@ -81,7 +81,7 @@ func RegisterKeyManager(name string, f KeyManager) error {
 // NewKeyManager create a key manager by a url
 func NewKeyManager(url string) (KeyManager, error) {
 	if url == "" {
-		url = setting.KeyManager
+		url = configure.GetString("updateserver.keymanager")
 	}
 	for _, f := range kms {
 		if f.Supported(url) {
