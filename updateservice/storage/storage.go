@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/containerops/dockyard/setting"
+	"github.com/containerops/configure"
 	"github.com/containerops/dockyard/utils"
 )
 
@@ -85,10 +85,10 @@ func RegisterStorage(name string, f UpdateServiceStorage) error {
 // NewUpdateServiceStorage creates a storage interface by a url
 func NewUpdateServiceStorage(url string, km string) (UpdateServiceStorage, error) {
 	if url == "" {
-		url = setting.Storage
+		url = configure.GetString("updateserver.storage")
 	}
 	if km == "" {
-		km = setting.KeyManager
+		km = configure.GetString("updateserver.keymanager")
 	}
 
 	for _, f := range usStorages {

@@ -17,18 +17,15 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/urfave/cli"
+	"github.com/spf13/cobra"
 )
 
-//CmdOSS is
-var CmdOSS = cli.Command{
-	Name:        "oss",
-	Usage:       "start object storage service",
-	Description: "Provide a build-in object storage service.",
-	Action:      runOSS,
-	Flags:       []cli.Flag{},
-}
-
-func runOSS(c *cli.Context) error {
-	return nil
+//RootCmd is root cmd of dockyard.
+var RootCmd = &cobra.Command{
+	Use:   "dockyard",
+	Short: "dockyard is a container and artifact repository",
+	Long: `Dockyard is a container and artifact repository storing and distributing container image, 
+  software artifact and virtual images of KVM or XEN. We hosting a public service in https://dockyard.sh.`,
+	Run: func(cmd *cobra.Command, args []string) {
+	},
 }
