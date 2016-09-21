@@ -21,7 +21,7 @@ import (
 
 	"gopkg.in/macaron.v1"
 
-	"github.com/containerops/dockyard/setting"
+	"github.com/containerops/configure"
 )
 
 //setRespHeaders is set Resp header value.
@@ -31,12 +31,12 @@ func setRespHeaders() macaron.Handler {
 		if flag := strings.Contains(ctx.Req.RequestURI, "/v1"); flag == true {
 			//Docker Registry V1
 			ctx.Resp.Header().Set("Content-Type", "application/json")
-			ctx.Resp.Header().Set("X-Docker-Registry-Standalone", setting.DockerStandalone)
-			ctx.Resp.Header().Set("X-Docker-Registry-Version", setting.DockerRegistryVersion)
-			ctx.Resp.Header().Set("X-Docker-Registry-Config", setting.RunMode)
+			ctx.Resp.Header().Set("X-Docker-Registry-Standalone", configure.GetString("dockerv1.standalone"))
+			ctx.Resp.Header().Set("X-Docker-Registry-Version", configure.GetString("dockerv1.version"))
+			ctx.Resp.Header().Set("X-Docker-Registry-Config", configure.GetString("runmode"))
 		} else if flag := strings.Contains(ctx.Req.RequestURI, "/v2"); flag == true {
 			//Docker Registry V2
-			ctx.Resp.Header().Set("Docker-Distribution-Api-Version", setting.DockerDistributionVersion)
+			ctx.Resp.Header().Set("Docker-Distribution-Api-Version", configure.GetString("dockerv2.distribution"))
 		} else {
 		}
 	}

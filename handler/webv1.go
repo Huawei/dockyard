@@ -27,7 +27,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"gopkg.in/macaron.v1"
 
-	"github.com/containerops/dockyard/setting"
+	"github.com/containerops/configure"
 )
 
 //GetIndexPageV1Handler is the index page of Dockyard web.
@@ -50,7 +50,7 @@ func GetIndexPageV1Handler(ctx *macaron.Context) (int, []byte) {
 			return http.StatusBadRequest, result
 		}
 
-		t.Execute(ctx.Resp, map[string]string{"Domains": setting.Domains})
+		t.Execute(ctx.Resp, map[string]string{"Domains": configure.GetString("deployment.domains")})
 
 		//TODO: Complete the http response.
 	}

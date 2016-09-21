@@ -17,13 +17,12 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
 	"os"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/urfave/cli"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
 
 	"github.com/containerops/dockyard/cmd"
-	"github.com/containerops/dockyard/setting"
 )
 
 func init() {
@@ -31,27 +30,8 @@ func init() {
 }
 
 func main() {
-	if setting.RunMode == "prod" {
-		log.SetFormatter(&log.JSONFormatter{})
-		log.SetOutput(os.Stderr)
+	if err := cmd.RootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
 	}
-
-	app := cli.NewApp()
-
-	app.Name = setting.AppName
-	app.Usage = setting.Usage
-	app.Version = setting.Version
-	app.Author = setting.Author
-	app.Email = setting.Email
-
-	app.Commands = []cli.Command{
-		cmd.CmdWeb,
-		cmd.CmdDatabase,
-		cmd.CmdOSS,
-		cmd.CmdMonitor,
-		cmd.CmdClient,
-	}
-
-	app.Flags = append(app.Flags, []cli.Flag{}...)
-	app.Run(os.Args)
 }

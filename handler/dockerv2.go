@@ -31,10 +31,10 @@ import (
 	"github.com/satori/go.uuid"
 	"gopkg.in/macaron.v1"
 
+	"github.com/containerops/configure"
 	"github.com/containerops/dockyard/models"
 	"github.com/containerops/dockyard/module"
 	"github.com/containerops/dockyard/module/signature"
-	"github.com/containerops/dockyard/setting"
 	"github.com/containerops/dockyard/utils"
 )
 
@@ -112,7 +112,7 @@ func PostBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 	uuid := utils.MD5(uuid.NewV4().String())
 	state := utils.MD5(fmt.Sprintf("%s/%s/%d", namespace, repository, time.Now().UnixNano()/int64(time.Millisecond)))
 	random := fmt.Sprintf("https://%s/v2/%s/%s/blobs/uploads/%s?_state=%s",
-		setting.Domains, namespace, repository, uuid, state)
+		configure.GetString("deployment.domains"), namespace, repository, uuid, state)
 
 	ctx.Resp.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	ctx.Resp.Header().Set("Docker-Upload-Uuid", uuid)
@@ -141,7 +141,7 @@ func PatchBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 		return http.StatusBadRequest, result
 	} else if upload == true {
 		//It's run above docker 1.9.0
-		basePath := setting.DockerV2Storage
+		basePath := configure.GetString("dockerv2.storage")
 		uuidPath := fmt.Sprintf("%s/uuid/%s", basePath, uuid)
 		uuidFile := fmt.Sprintf("%s/uuid/%s/%s", basePath, uuid, uuid)
 
@@ -169,7 +169,7 @@ func PatchBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 
 	state := utils.MD5(fmt.Sprintf("%s/%v", fmt.Sprintf("%s/%s", namespace, repository), time.Now().UnixNano()/int64(time.Millisecond)))
 	random := fmt.Sprintf("https://%s/v2/%s/%s/blobs/uploads/%s?_state=%s",
-		setting.Domains, namespace, repository, uuid, state)
+		configure.GetString("deployment.domains"), namespace, repository, uuid, state)
 
 	ctx.Resp.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	ctx.Resp.Header().Set("Docker-Upload-Uuid", uuid)
@@ -193,7 +193,7 @@ func PutBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 	digest := ctx.Query("digest")
 	tarsum := strings.Split(digest, ":")[1]
 
-	basePath := setting.DockerV2Storage
+	basePath := configure.GetString("dockerv2.storage")
 	imagePath := fmt.Sprintf("%s/image/%s", basePath, tarsum)
 	imageFile := fmt.Sprintf("%s/image/%s/%s", basePath, tarsum, tarsum)
 
@@ -252,7 +252,7 @@ func PutBlobsV2Handler(ctx *macaron.Context) (int, []byte) {
 
 	state := utils.MD5(fmt.Sprintf("%s/%v", fmt.Sprintf("%s/%s", namespace, repository), time.Now().UnixNano()/int64(time.Millisecond)))
 	random := fmt.Sprintf("https://%s/v2/%s/%s/blobs/uploads/%s?_state=%s",
-		setting.Domains, namespace, repository, uuid, state)
+		configure.GetString("deployment.domains"), namespace, repository, uuid, state)
 
 	ctx.Resp.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	ctx.Resp.Header().Set("Docker-Content-Digest", digest)
@@ -347,7 +347,7 @@ func PutManifestsV2Handler(ctx *macaron.Context) (int, []byte) {
 		}
 
 		random := fmt.Sprintf("https://%s/v2/%s/%s/manifests/%s",
-			setting.Domains, namespace, repository, digest)
+			configure.GetString("deployment.domains"), namespace, repository, digest)
 
 		ctx.Resp.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		ctx.Resp.Header().Set("Docker-Content-Digest", digest)
