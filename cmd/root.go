@@ -17,15 +17,30 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
 )
 
-//RootCmd is root cmd of dockyard.
+// RootCmd is root cmd of dockyard.
 var RootCmd = &cobra.Command{
 	Use:   "dockyard",
 	Short: "dockyard is a container and artifact repository",
-	Long: `Dockyard is a container and artifact repository storing and distributing container image, 
-  software artifact and virtual images of KVM or XEN. We hosting a public service in https://dockyard.sh.`,
-	Run: func(cmd *cobra.Command, args []string) {
-	},
+	Long: `Dockyard is a container and artifact repository storing and distributing container image, software artifact and virtual images of KVM or XEN. 
+We hosting a public service in https://dockyard.sh.`,
+}
+
+// Execute adds all child commands to the root command sets flags appropriately.
+// This is called by main.main(). It only needs to happen once to the rootCmd.
+func Execute() {
+	if err := RootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(-1)
+	}
+}
+
+// init()
+func init() {
+
 }
