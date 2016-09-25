@@ -18,6 +18,8 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+
+	"github.com/containerops/dockyard/models"
 )
 
 // databasecmd is subcommand which migrate/backup/restore Dockyard's database.
@@ -27,19 +29,50 @@ var databaseCmd = &cobra.Command{
 	Long:  ``,
 }
 
+// migrateDatabaseCmd is subcommand migrate Dockyard's database.
 var migrateDatabaseCmd = &cobra.Command{
 	Use:   "migrate",
 	Short: "migrate subcommand migrate Dockyard's database.",
 	Long:  ``,
-	Run:   migrateDeamon,
+	Run:   migrateDatabase,
 }
 
+// backupDatabaseCmd is subcommand backup Dockyard's database.
+var backupDatabaseCmd = &cobra.Command{
+	Use:   "backup",
+	Short: "backup subcommand backup Dockyard's database.",
+	Long:  ``,
+	Run:   backupDatabase,
+}
+
+// restoreDatabaseCmd is subcommand restore Dockyard's database.
+var restoreDatabaseCmd = &cobra.Command{
+	Use:   "restore",
+	Short: "restore subcommand restore Dockyard's database.",
+	Long:  ``,
+	Run:   restoreDatabase,
+}
+
+// init()
 func init() {
 	RootCmd.AddCommand(databaseCmd)
 
 	databaseCmd.AddCommand(migrateDatabaseCmd)
+	databaseCmd.AddCommand(backupDatabaseCmd)
+	databaseCmd.AddCommand(restoreDatabaseCmd)
 }
 
-func migrateDeamon(cmd *cobra.Command, args []string) {
+// migrateDatabase is auto-migrate database of Dockyard.
+func migrateDatabase(cmd *cobra.Command, args []string) {
+	models.Migrate()
+}
+
+// backupDatabase is
+func backupDatabase(cmd *cobra.Command, args []string) {
+
+}
+
+// restoreDatabase is
+func restoreDatabase(cmd *cobra.Command, args []string) {
 
 }

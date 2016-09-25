@@ -29,11 +29,12 @@ var (
 	db *gorm.DB
 )
 
-//
+// init()
 func init() {
+
 }
 
-//OpenDatabase is
+// OpenDatabase is
 func OpenDatabase() {
 	var err error
 	if db, err = gorm.Open(configure.GetString("database.driver"), configure.GetString("database.url")); err != nil {
@@ -48,9 +49,20 @@ func OpenDatabase() {
 	}
 }
 
-//Sync is
-func Sync() error {
-	log.Info("Sync database structs")
+// Migrate is
+func Migrate() {
+	var err error
+
+	if db, err = gorm.Open(configure.GetString("database.driver"), configure.GetString("database.url")); err != nil {
+		log.Fatal("Initlization database connection error.")
+		os.Exit(1)
+	} else {
+		db.DB()
+		db.DB().Ping()
+		db.DB().SetMaxIdleConns(10)
+		db.DB().SetMaxOpenConns(100)
+		db.SingularTable(true)
+	}
 
 	db.AutoMigrate(&AppcV1{}, &ACIv1{})
 	db.AutoMigrate(&AppV1{}, &ArtifactV1{})
@@ -58,5 +70,5 @@ func Sync() error {
 	db.AutoMigrate(&DockerV2{}, &DockerImageV2{}, &DockerTagV2{})
 	db.AutoMigrate(&ImageV1{}, &VirtualV1{})
 
-	return nil
+	log.Info("AutMigrate database structs.")
 }
