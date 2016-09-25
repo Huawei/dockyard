@@ -17,42 +17,29 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-
-	"github.com/urfave/cli"
-
-	"github.com/containerops/dockyard/models"
+	"github.com/spf13/cobra"
 )
 
-//CmdDatabase is
-var CmdDatabase = cli.Command{
-	Name:        "database",
-	Usage:       "database utils for backend database",
-	Description: "Dockyard run base SQL database like MySQL, database command provide some utils of migrate, backup, config and so on.",
-	Action:      runDatabase,
-	Flags: []cli.Flag{
-		cli.StringFlag{
-			Name:  "action",
-			Usage: "Action，[sync/backup/restore]",
-		},
-	},
+// databasecmd is subcommand which migrate/backup/restore Dockyard's database.
+var databaseCmd = &cobra.Command{
+	Use:   "database",
+	Short: "Database subcommand migrate/backup/restore Dockyard's database.",
+	Long:  ``,
 }
 
-func runDatabase(c *cli.Context) error {
-	if len(c.String("action")) > 0 {
-		action := c.String("action")
+var migrateDatabaseCmd = &cobra.Command{
+	Use:   "migrate",
+	Short: "migrate subcommand migrate Dockyard's database.",
+	Long:  ``,
+	Run:   migrateDeamon,
+}
 
-		switch action {
-		case "sync":
-			if err := models.Sync(); err != nil {
-				fmt.Println("Init database struct error, ", err.Error())
-				return err
-			}
-			break
-		default:
-			break
-		}
-	}
+func init() {
+	RootCmd.AddCommand(databaseCmd)
 
-	return nil
+	databaseCmd.AddCommand(migrateDatabaseCmd)
+}
+
+func migrateDeamon(cmd *cobra.Command, args []string) {
+
 }
