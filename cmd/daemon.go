@@ -34,26 +34,55 @@ import (
 var address string
 var port int64
 
-// webCmd is sub command which start/stop dockyard's REST API.
-var webCmd = &cobra.Command{
-	Use:   "web",
-	Short: "Web sub command start/stop dockyard's REST API Service.",
+// webCmd is subcommand which start/stop/monitor Dockyard's REST API daemon.
+var daemonCmd = &cobra.Command{
+	Use:   "daemon",
+	Short: "Web subcommand start/stop/monitor Dockyard's REST API daemon.",
 	Long:  ``,
-	Run:   runWeb,
+}
+
+// start Dockyard deamon subcommand
+var startDaemonCmd = &cobra.Command{
+	Use:   "start",
+	Short: "Start Dockyard's REST API daemon.",
+	Long:  ``,
+	Run:   startDeamon,
+}
+
+// stop Dockyard deamon subcommand
+var stopDaemonCmd = &cobra.Command{
+	Use:   "stop",
+	Short: "stop Dockyard's REST API daemon.",
+	Long:  ``,
+	Run:   stopDaemon,
+}
+
+// monitor Dockyard deamon subcommand
+var monitorDeamonCmd = &cobra.Command{
+	Use:   "monitor",
+	Short: "monitor Dockyard's REST API daemon.",
+	Long:  ``,
+	Run:   monitorDaemon,
 }
 
 // init()
 func init() {
-	RootCmd.AddCommand(webCmd)
+	RootCmd.AddCommand(daemonCmd)
 
-	webCmd.Flags().StringVarP(&address, "address", "a", "0.0.0.0", "http or https listen address.")
-	webCmd.Flags().Int64VarP(&port, "port", "p", 80, "the port of http.")
+	// Add start subcommand
+	daemonCmd.AddCommand(startDaemonCmd)
+	startDaemonCmd.Flags().StringVarP(&address, "address", "a", "0.0.0.0", "http or https listen address.")
+	startDaemonCmd.Flags().Int64VarP(&port, "port", "p", 80, "the port of http.")
+
+	// Add stop subcommand
+	daemonCmd.AddCommand(stopDaemonCmd)
 }
 
-func runWeb(cmd *cobra.Command, args []string) {
+// startDeamon() start Dockyard's REST API daemon.
+func startDeamon(cmd *cobra.Command, args []string) {
 	m := macaron.New()
 
-	//Set Macaron Web Middleware And Routers
+	// Set Macaron Web Middleware And Routers
 	web.SetDockyardMacaron(m)
 
 	listenMode := configure.GetString("listenmode")
@@ -62,7 +91,6 @@ func runWeb(cmd *cobra.Command, args []string) {
 		listenaddr := fmt.Sprintf("%s:%d", address, port)
 		if err := http.ListenAndServe(listenaddr, m); err != nil {
 			fmt.Printf("Start Dockyard http service error: %v\n", err.Error())
-
 		}
 		break
 	case "https":
@@ -70,7 +98,6 @@ func runWeb(cmd *cobra.Command, args []string) {
 		server := &http.Server{Addr: listenaddr, TLSConfig: &tls.Config{MinVersion: tls.VersionTLS10}, Handler: m}
 		if err := server.ListenAndServeTLS(configure.GetString("httpscertfile"), configure.GetString("httpskeyfile")); err != nil {
 			fmt.Printf("Start Dockyard https service error: %v\n", err.Error())
-
 		}
 		break
 	case "unix":
@@ -86,11 +113,20 @@ func runWeb(cmd *cobra.Command, args []string) {
 			server := &http.Server{Handler: m}
 			if err := server.Serve(listener); err != nil {
 				fmt.Printf("Start Dockyard unix socket error: %v\n", err.Error())
-
 			}
 		}
 		break
 	default:
 		break
 	}
+}
+
+// stopDaemon() stop Dockyard's REST API daemon.
+func stopDaemon(cmd *cobra.Command, args []string) {
+
+}
+
+// monitordAemon() monitor Dockyard's REST API deamon.
+func monitorDaemon(cmd *cobra.Command, args []string) {
+
 }
