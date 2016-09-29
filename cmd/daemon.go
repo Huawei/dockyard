@@ -76,6 +76,8 @@ func init() {
 
 	// Add stop subcommand
 	daemonCmd.AddCommand(stopDaemonCmd)
+	// Add daemon subcommand
+	daemonCmd.AddCommand(monitorDeamonCmd)
 }
 
 // startDeamon() start Dockyard's REST API daemon.
