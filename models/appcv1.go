@@ -25,6 +25,7 @@ type AppcV1 struct {
 	ID          int64      `json:"id" gorm:"primary_key"`
 	Namespace   string     `json:"namespace" sql:"not null;type:varchar(255)"  gorm:"unique_index:appcv1_repository"`
 	Repository  string     `json:"repository" sql:"not null;type:varchar(255)" gorm:"unique_index:appcv1_repository"`
+	Short       string     `json:"short" sql:"null;type:text"`
 	Description string     `json:"description" sql:"null;type:text"`
 	Keys        string     `json:"keys" sql:"null;type:text"`
 	Size        int64      `json:"size" sql:"default:0"`

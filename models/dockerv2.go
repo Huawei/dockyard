@@ -28,6 +28,7 @@ type DockerV2 struct {
 	SchemaVersion string     `json:"schema_version" sql:"not null;type:varchar(255)"`
 	Manifests     string     `json:"manifests" sql:"null;type:text"`
 	Agent         string     `json:"agent" sql:"null;type:text"`
+	Short         string     `json:"short" sql:"null;type:text"`
 	Description   string     `json:"description" sql:"null;type:text"`
 	Size          int64      `json:"size" sql:"default:0"`
 	Locked        bool       `json:"locked" sql:"default:false"`
