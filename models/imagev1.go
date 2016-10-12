@@ -25,6 +25,7 @@ type ImageV1 struct {
 	ID          int64      `json:"id" gorm:"primary_key"`
 	Namespace   string     `json:"namespace" sql:"not null;type:varchar(255)"`
 	Repository  string     `json:"repository" sql:"not null;type:varchar(255)"`
+	Short       string     `json:"short" sql:"null;type:text"`
 	Description string     `json:"description" sql:"null;type:text"`
 	Manifests   string     `json:"manifests" sql:"null;type:text"`
 	Type        string     `json:"type" sql:"not null;type:varchar(255)"`
