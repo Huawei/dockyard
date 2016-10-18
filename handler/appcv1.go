@@ -30,9 +30,9 @@ import (
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/configure"
-	"github.com/containerops/dockyard/models"
-	"github.com/containerops/dockyard/module/signature"
-	"github.com/containerops/dockyard/utils"
+	"github.com/huawei/dockyard/models"
+	"github.com/huawei/dockyard/module/signature"
+	"github.com/huawei/dockyard/utils"
 )
 
 //AppcDiscoveryV1Handler is

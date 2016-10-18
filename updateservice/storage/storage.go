@@ -22,7 +22,7 @@ import (
 	"sync"
 
 	"github.com/containerops/configure"
-	"github.com/containerops/dockyard/utils"
+	"github.com/huawei/dockyard/utils"
 )
 
 // UpdateServiceStorage represents the storage interface

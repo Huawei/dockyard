@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/containerops/dockyard/utils"
+	"github.com/huawei/dockyard/utils"
 )
 
 // UpdateService represents the update service interface
