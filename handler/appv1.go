@@ -24,9 +24,9 @@ import (
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/configure"
-	"github.com/containerops/dockyard/models"
-	"github.com/containerops/dockyard/updateservice/us"
-	"github.com/containerops/dockyard/utils"
+	"github.com/huawei/dockyard/models"
+	"github.com/huawei/dockyard/updateservice/us"
+	"github.com/huawei/dockyard/utils"
 )
 
 type httpListRet struct {

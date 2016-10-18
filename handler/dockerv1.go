@@ -30,8 +30,8 @@ import (
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/configure"
-	"github.com/containerops/dockyard/models"
-	"github.com/containerops/dockyard/utils"
+	"github.com/huawei/dockyard/models"
+	"github.com/huawei/dockyard/utils"
 )
 
 //GetPingV1Handler returns http.StatusOK(200) when Dockyard provide the Docker Registry V1 support.

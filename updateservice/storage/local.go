@@ -23,7 +23,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/containerops/dockyard/utils"
+	"github.com/huawei/dockyard/utils"
 )
 
 const (

@@ -32,10 +32,10 @@ import (
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/configure"
-	"github.com/containerops/dockyard/models"
-	"github.com/containerops/dockyard/module"
-	"github.com/containerops/dockyard/module/signature"
-	"github.com/containerops/dockyard/utils"
+	"github.com/huawei/dockyard/models"
+	"github.com/huawei/dockyard/module"
+	"github.com/huawei/dockyard/module/signature"
+	"github.com/huawei/dockyard/utils"
 )
 
 //GetPingV2Handler is https://github.com/docker/distribution/blob/master/docs/spec/api.md#api-version-check

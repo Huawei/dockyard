@@ -22,7 +22,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/containerops/dockyard/utils"
+	"github.com/huawei/dockyard/utils"
 )
 
 // UpdateClientRepo reprensents the local repo interface
