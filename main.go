@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The ContainerOps Authors All rights reserved.
+Copyright 2014 Huawei Technologies Co., Ltd. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import (
 
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 
-	"github.com/containerops/dockyard/cmd"
+	"github.com/huawei/dockyard/cmd"
 )
 
 func init() {

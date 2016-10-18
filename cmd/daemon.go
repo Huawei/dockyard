@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The ContainerOps Authors All rights reserved.
+Copyright 2014 Huawei Technologies Co., Ltd. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -27,8 +27,8 @@ import (
 	"gopkg.in/macaron.v1"
 
 	"github.com/containerops/configure"
-	"github.com/containerops/dockyard/utils"
-	"github.com/containerops/dockyard/web"
+	"github.com/huawei/dockyard/utils"
+	"github.com/huawei/dockyard/web"
 )
 
 var address string
