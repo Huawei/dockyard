@@ -37,7 +37,7 @@ func init() {
 // OpenDatabase is
 func OpenDatabase() {
 	var err error
-	if db, err = gorm.Open(configure.GetString("database.driver"), configure.GetString("database.url")); err != nil {
+	if db, err = gorm.Open(configure.GetString("database.driver"), configure.GetString("database.uri")); err != nil {
 		log.Fatal("Initlization database connection error.")
 		os.Exit(1)
 	} else {
@@ -52,7 +52,6 @@ func OpenDatabase() {
 // Migrate is
 func Migrate() {
 	OpenDatabase()
-
 
 	db.AutoMigrate(&AppcV1{}, &ACIv1{})
 	db.AutoMigrate(&AppV1{}, &ArtifactV1{})
