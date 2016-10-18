@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The ContainerOps Authors All rights reserved.
+Copyright 2014 Huawei Technologies Co., Ltd. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ type DockerV1 struct {
 	JSON        string     `json:"json" sql:"null;type:text"`
 	Manifests   string     `json:"manifests" sql:"null;type:text"`
 	Agent       string     `json:"agent" sql:"null;type:text"`
-  Short       string     `json:"short" sql:"null;type:text"`
+	Short       string     `json:"short" sql:"null;type:text"`
 	Description string     `json:"description" sql:"null;type:text"`
 	Size        int64      `json:"size" sql:"default:0"`
 	Locked      bool       `json:"locked" sql:"default:false"` //When create/update the repository, the locked will be true.
