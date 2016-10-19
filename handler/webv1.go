@@ -33,7 +33,7 @@ import (
 //GetIndexPageV1Handler is the index page of Dockyard web.
 //When with params `/?ac-discovery=1` means access from `rkt trust --prefix={domain}` possibility.
 //Other access maybe come from web browser, and will generate HTML page then return.
-func GetIndexPageV1Handler(ctx *macaron.Context) (int, []byte) {
+func GetIndexPageV1Handler(ctx *macaron.Context) {
 	var t *template.Template
 	var err error
 
@@ -47,16 +47,21 @@ func GetIndexPageV1Handler(ctx *macaron.Context) (int, []byte) {
 			log.Errorf("[%s] get gpg file template status: %s", ctx.Req.RequestURI, err.Error())
 
 			result, _ := json.Marshal(map[string]string{"Error": "Get GPG File Template Status Error"})
-			return http.StatusBadRequest, result
+
+			ctx.Resp.Write(result)
+			ctx.Resp.WriteHeader(http.StatusBadRequest)
+			return
 		}
 
+		ctx.Resp.WriteHeader(http.StatusOK)
 		t.Execute(ctx.Resp, map[string]string{"Domains": configure.GetString("deployment.domains")})
 
-		//TODO: Complete the http response.
+		return
 	}
 
 	//TODO: Generate index html page.
-	return http.StatusOK, []byte("")
+
+	return
 }
 
 //GetGPGFileV1Handler is downloading `dockyard.sh`'s GPG file.
