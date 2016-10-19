@@ -23,10 +23,10 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"gopkg.in/macaron.v1"
 
+	"github.com/Huawei/dockyard/models"
+	"github.com/Huawei/dockyard/updateservice/us"
+	"github.com/Huawei/dockyard/utils"
 	"github.com/containerops/configure"
-	"github.com/huawei/dockyard/models"
-	"github.com/huawei/dockyard/updateservice/us"
-	"github.com/huawei/dockyard/utils"
 )
 
 type httpListRet struct {

@@ -27,8 +27,9 @@ import (
 	"time"
 
 	"github.com/containerops/configure"
-	"github.com/huawei/dockyard/updateservice/km"
-	"github.com/huawei/dockyard/utils"
+
+	"github.com/Huawei/dockyard/updateservice/km"
+	"github.com/Huawei/dockyard/utils"
 )
 
 var (

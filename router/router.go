@@ -19,7 +19,7 @@ package router
 import (
 	"gopkg.in/macaron.v1"
 
-	"github.com/huawei/dockyard/handler"
+	"github.com/Huawei/dockyard/handler"
 )
 
 //SetRouters is setting REST API interface with handler function.

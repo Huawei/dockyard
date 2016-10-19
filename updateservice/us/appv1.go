@@ -17,8 +17,8 @@ limitations under the License.
 package us
 
 import (
-	"github.com/huawei/dockyard/updateservice/storage"
-	"github.com/huawei/dockyard/utils"
+	"github.com/Huawei/dockyard/updateservice/storage"
+	"github.com/Huawei/dockyard/utils"
 )
 
 const (

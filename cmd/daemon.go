@@ -26,9 +26,9 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/macaron.v1"
 
+	"github.com/Huawei/dockyard/utils"
+	"github.com/Huawei/dockyard/web"
 	"github.com/containerops/configure"
-	"github.com/huawei/dockyard/utils"
-	"github.com/huawei/dockyard/web"
 )
 
 var address string
