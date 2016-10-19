@@ -59,5 +59,5 @@ func Migrate() {
 	db.AutoMigrate(&DockerV2{}, &DockerImageV2{}, &DockerTagV2{})
 	db.AutoMigrate(&ImageV1{}, &VirtualV1{})
 
-	log.Info("AutMigrate database structs.")
+	log.Info("Auto Migrate Dockyard Database Structs Done.")
 }
