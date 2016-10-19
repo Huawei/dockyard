@@ -29,10 +29,10 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"gopkg.in/macaron.v1"
 
+	"github.com/Huawei/dockyard/models"
+	"github.com/Huawei/dockyard/module/signature"
+	"github.com/Huawei/dockyard/utils"
 	"github.com/containerops/configure"
-	"github.com/huawei/dockyard/models"
-	"github.com/huawei/dockyard/module/signature"
-	"github.com/huawei/dockyard/utils"
 )
 
 //AppcDiscoveryV1Handler is

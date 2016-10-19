@@ -23,7 +23,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/huawei/dockyard/utils"
+	"github.com/Huawei/dockyard/utils"
 )
 
 const (

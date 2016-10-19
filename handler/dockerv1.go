@@ -26,12 +26,12 @@ import (
 	"strconv"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/containerops/configure"
 	"github.com/jinzhu/gorm"
 	"gopkg.in/macaron.v1"
 
-	"github.com/containerops/configure"
-	"github.com/huawei/dockyard/models"
-	"github.com/huawei/dockyard/utils"
+	"github.com/Huawei/dockyard/models"
+	"github.com/Huawei/dockyard/utils"
 )
 
 //GetPingV1Handler returns http.StatusOK(200) when Dockyard provide the Docker Registry V1 support.
