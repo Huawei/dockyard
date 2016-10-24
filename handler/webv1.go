@@ -59,7 +59,18 @@ func GetIndexPageV1Handler(ctx *macaron.Context) {
 		return
 	}
 
-	//TODO: Generate index html page.
+	if t, err = template.ParseGlob("views/index.html"); err != nil {
+		log.Errorf("[%s] get gpg file template status: %s", ctx.Req.RequestURI, err.Error())
+
+		result, _ := json.Marshal(map[string]string{"Error": "Get Index Template Status Error"})
+
+		ctx.Resp.Write(result)
+		ctx.Resp.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	ctx.Resp.WriteHeader(http.StatusOK)
+	t.Execute(ctx.Resp, map[string]string{})
 
 	return
 }
