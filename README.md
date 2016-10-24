@@ -21,38 +21,41 @@ Dockyard is a container and artifact repository storing and distributing contain
 ## Runtime configuration
 
 ```
-runmode = dev
+runmode = "dev"
 
-listenmode = https
-httpscertfile = cert/containerops/containerops.crt
-httpskeyfile = cert/containerops/containerops.key
+listenmode = "https"
+httpscertfile = "cert/containerops/containerops.crt"
+httpskeyfile = "cert/containerops/containerops.key"
+
+[site]
+domain = "containerops.me"
 
 [log]
-filepath = log/backend.log
-level = info
+filepath = "log/backend.log"
+level = "info"
 
 [database]
-driver = mysql
-uri = containerops:containerops@/containerops?charset=utf8&parseTime=True&loc=Asia%2FShanghai
+driver = "mysql"
+uri = "containerops:containerops@/containerops?charset=utf8&parseTime=True&loc=Asia%2FShanghai"
 
 [deployment]
-domains = containerops.me
+domains = "containerops.me"
 
 [dockerv1]
-standalone = true
-version = 0.9
-storage = /tmp/data/dockerv1
+standalone = "true"
+version = "0.9"
+storage = "/tmp/data/dockerv1"
 
 [dockerv2]
-distribution = registry/2.0
-storage = /tmp/data/dockerv2
+distribution = "registry/2.0"
+storage = "/tmp/data/dockerv2"
 
 [appc]
-storage = /tmp/data/appc
+storage = "/tmp/data/appc"
 
 [updateserver]
-keymanager = /tmp/containerops_keymanager_cache
-storage = /tmp/containerops_storage_cache
+keymanager = "/tmp/containerops_keymanager_cache"
+storage = "/tmp/containerops_storage_cache"
 
 ```
 
@@ -114,30 +117,31 @@ FLUSH PRIVILEGES;
 #### Initlization Tables
 
 ```
-./dockyard db --action sync
+./dockyard database migrate
 ```
 
 ### Start dockyard service
 - Run directly:
 
 ```bash
-./dockyard web --address 0.0.0.0
+./dockyard daemon run --address 0.0.0.0 --port 443
 ```
 
 - Run with Nginx:
 
 ```bash
-./dockyard web --address 127.0.0.1 --port 9911 &
+./dockyard daemon run --address 127.0.0.1 --port 9911 &
 ```
 
 ## Update The Libraries Dependencies
 
 ```
-go get -u -v github.com/urfave/cli
 go get -u -v gopkg.in/macaron.v1
 go get -u -v github.com/jinzhu/gorm
 go get -u -v github.com/Sirupsen/logrus
 go get -u -v github.com/go-sql-driver/mysql
+go get -u -v github.com/spf13/viper
+go get -u -v github.com/spf13/cobra
 ```
 
 ## How to involve

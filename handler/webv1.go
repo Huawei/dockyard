@@ -70,7 +70,9 @@ func GetIndexPageV1Handler(ctx *macaron.Context) {
 	}
 
 	ctx.Resp.WriteHeader(http.StatusOK)
-	t.Execute(ctx.Resp, map[string]string{})
+	t.Execute(ctx.Resp, map[string]string{
+		"Title": configure.GetString("site.domain"),
+	})
 
 	return
 }
