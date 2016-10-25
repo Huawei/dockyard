@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	db *gorm.DB
+	DB *gorm.DB
 )
 
 // init()
@@ -37,15 +37,15 @@ func init() {
 // OpenDatabase is
 func OpenDatabase() {
 	var err error
-	if db, err = gorm.Open(configure.GetString("database.driver"), configure.GetString("database.uri")); err != nil {
+	if DB, err = gorm.Open(configure.GetString("database.driver"), configure.GetString("database.uri")); err != nil {
 		log.Fatal("Initlization database connection error.")
 		os.Exit(1)
 	} else {
-		db.DB()
-		db.DB().Ping()
-		db.DB().SetMaxIdleConns(10)
-		db.DB().SetMaxOpenConns(100)
-		db.SingularTable(true)
+		DB.DB()
+		DB.DB().Ping()
+		DB.DB().SetMaxIdleConns(10)
+		DB.DB().SetMaxOpenConns(100)
+		DB.SingularTable(true)
 	}
 }
 
@@ -53,11 +53,11 @@ func OpenDatabase() {
 func Migrate() {
 	OpenDatabase()
 
-	db.AutoMigrate(&AppcV1{}, &ACIv1{})
-	db.AutoMigrate(&AppV1{}, &ArtifactV1{})
-	db.AutoMigrate(&DockerV1{}, &DockerImageV1{}, &DockerTagV1{})
-	db.AutoMigrate(&DockerV2{}, &DockerImageV2{}, &DockerTagV2{})
-	db.AutoMigrate(&ImageV1{}, &VirtualV1{})
+	DB.AutoMigrate(&AppcV1{}, &ACIv1{})
+	DB.AutoMigrate(&AppV1{}, &ArtifactV1{})
+	DB.AutoMigrate(&DockerV1{}, &DockerImageV1{}, &DockerTagV1{})
+	DB.AutoMigrate(&DockerV2{}, &DockerImageV2{}, &DockerTagV2{})
+	DB.AutoMigrate(&ImageV1{}, &VirtualV1{})
 
 	log.Info("Auto Migrate Dockyard Database Structs Done.")
 }

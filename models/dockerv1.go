@@ -87,7 +87,7 @@ func (t *DockerTagV1) TableName() string {
 func (r *DockerV1) Put(namespace, repository, json, agent string) error {
 	r.Namespace, r.Repository, r.JSON, r.Agent, r.Locked = namespace, repository, json, agent, true
 
-	tx := db.Begin()
+	tx := DB.Begin()
 
 	if err := tx.Debug().Where("namespace = ? AND repository = ? ", namespace, repository).FirstOrCreate(&r).Error; err != nil {
 		tx.Rollback()
@@ -108,7 +108,7 @@ func (r *DockerV1) Put(namespace, repository, json, agent string) error {
 
 //Unlocked is Unlocked repository data so could pull.
 func (r *DockerV1) Unlocked(namespace, repository string) error {
-	tx := db.Begin()
+	tx := DB.Begin()
 
 	if err := tx.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
 		tx.Rollback()
@@ -126,7 +126,7 @@ func (r *DockerV1) Unlocked(namespace, repository string) error {
 
 //Get return Docker V1 repository data.
 func (r *DockerV1) Get(namespace, repository string) (DockerV1, error) {
-	if err := db.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
+	if err := DB.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
 		return *new(DockerV1), err
 	} else {
 		return *r, nil
@@ -135,13 +135,13 @@ func (r *DockerV1) Get(namespace, repository string) (DockerV1, error) {
 
 //GetTags return tas data of repository.
 func (r *DockerV1) GetTags(namespace, repository string) (map[string]string, error) {
-	if err := db.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
+	if err := DB.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
 		return map[string]string{}, err
 	} else {
 		var tags []DockerTagV1
 		result := map[string]string{}
 
-		if err := db.Debug().Where("docker_v1 = ?", r.ID).Find(&tags).Error; err != nil {
+		if err := DB.Debug().Where("docker_v1 = ?", r.ID).Find(&tags).Error; err != nil {
 			return map[string]string{}, err
 		}
 
@@ -155,7 +155,7 @@ func (r *DockerV1) GetTags(namespace, repository string) (map[string]string, err
 
 //Get is search image by ImageID.
 func (i *DockerImageV1) Get(imageID string) (DockerImageV1, error) {
-	if err := db.Debug().Where("image_id = ?", imageID).First(&i).Error; err != nil {
+	if err := DB.Debug().Where("image_id = ?", imageID).First(&i).Error; err != nil {
 		return *i, err
 	} else {
 		return *i, nil
@@ -166,7 +166,7 @@ func (i *DockerImageV1) Get(imageID string) (DockerImageV1, error) {
 func (i *DockerImageV1) PutJSON(imageID, json string) error {
 	i.ImageID = imageID
 
-	tx := db.Begin()
+	tx := DB.Begin()
 
 	if err := tx.Debug().Where("image_id = ?", imageID).FirstOrCreate(&i).Error; err != nil {
 		tx.Rollback()
@@ -187,7 +187,7 @@ func (i *DockerImageV1) PutJSON(imageID, json string) error {
 
 //PutLayer is put image layer, path, uploaded and size.
 func (i *DockerImageV1) PutLayer(imageID, path string, size int64) error {
-	tx := db.Begin()
+	tx := DB.Begin()
 
 	if err := tx.Debug().Where("image_id = ?", imageID).First(&i).Updates(map[string]interface{}{"path": path, "uploaded": true, "size": size}).Error; err != nil {
 		tx.Rollback()
@@ -200,7 +200,7 @@ func (i *DockerImageV1) PutLayer(imageID, path string, size int64) error {
 
 //PutChecksum is put image's checksum, payload and ancestry.
 func (i *DockerImageV1) PutChecksum(imageID, checksum, payload string) error {
-	tx := db.Begin()
+	tx := DB.Begin()
 
 	var data map[string]interface{}
 	var ancestries []string
@@ -247,7 +247,7 @@ func (i *DockerImageV1) PutChecksum(imageID, checksum, payload string) error {
 
 //Put is set tag in the database.
 func (t *DockerTagV1) Put(imageID, tag, namespace, repository string) error {
-	tx := db.Begin()
+	tx := DB.Begin()
 
 	r := new(DockerV1)
 	if err := tx.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
