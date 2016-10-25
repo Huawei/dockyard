@@ -67,7 +67,7 @@ func (i *ACIv1) TableName() string {
 func (r *AppcV1) Put(namespace, repository string) error {
 	r.Namespace, r.Repository = namespace, repository
 
-	tx := db.Begin()
+	tx := DB.Begin()
 
 	if err := tx.Debug().Where("namespace = ? AND repository = ? ", namespace, repository).FirstOrCreate(&r).Error; err != nil {
 		tx.Rollback()
@@ -80,7 +80,7 @@ func (r *AppcV1) Put(namespace, repository string) error {
 
 //Get is
 func (r *AppcV1) Get(namespace, repository string) error {
-	if err := db.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
+	if err := DB.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
 		return err
 	}
 
@@ -91,7 +91,7 @@ func (r *AppcV1) Get(namespace, repository string) error {
 func (i *ACIv1) PutManifest(appcv1 int64, version, name, manifest string) error {
 	i.AppcV1, i.Version, i.Name = appcv1, version, name
 
-	tx := db.Begin()
+	tx := DB.Begin()
 
 	if err := tx.Debug().Where("appc_v1 = ? AND name = ?", appcv1, name).FirstOrCreate(&i).Error; err != nil {
 		tx.Rollback()
@@ -111,7 +111,7 @@ func (i *ACIv1) PutManifest(appcv1 int64, version, name, manifest string) error 
 func (i *ACIv1) PutSign(appcv1 int64, version, name, sign string) error {
 	i.AppcV1, i.Version, i.Name = appcv1, version, name
 
-	tx := db.Begin()
+	tx := DB.Begin()
 
 	if err := tx.Debug().Where("appc_v1 = ? AND name = ?", appcv1, name).FirstOrCreate(&i).Error; err != nil {
 		tx.Rollback()
@@ -131,7 +131,7 @@ func (i *ACIv1) PutSign(appcv1 int64, version, name, sign string) error {
 func (i *ACIv1) PutACI(appcv1, size int64, version, name, aci string) error {
 	i.AppcV1, i.Size, i.Version, i.Name = appcv1, size, version, name
 
-	tx := db.Begin()
+	tx := DB.Begin()
 
 	if err := tx.Debug().Where("appc_v1 = ? AND name = ?", appcv1, name).FirstOrCreate(&i).Error; err != nil {
 		tx.Rollback()
@@ -151,7 +151,7 @@ func (i *ACIv1) PutACI(appcv1, size int64, version, name, aci string) error {
 func (i *ACIv1) Get(appcv1 int64, version, name string) error {
 	i.AppcV1, i.Version, i.Name = appcv1, version, name
 
-	if err := db.Debug().Where("appc_v1 = ? AND name = ? AND version = ?", appcv1, name, version).First(&i).Error; err != nil {
+	if err := DB.Debug().Where("appc_v1 = ? AND name = ? AND version = ?", appcv1, name, version).First(&i).Error; err != nil {
 		return err
 	}
 
@@ -162,7 +162,7 @@ func (i *ACIv1) Get(appcv1 int64, version, name string) error {
 func (i *ACIv1) Unlocked(appcv1 int64, version, name string) error {
 	i.AppcV1, i.Version, i.Name = appcv1, version, name
 
-	tx := db.Begin()
+	tx := DB.Begin()
 
 	if err := tx.Debug().Where("appc_v1 = ? AND name = ?", appcv1, name).FirstOrCreate(&i).Error; err != nil {
 		tx.Rollback()

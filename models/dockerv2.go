@@ -82,13 +82,13 @@ func (t *DockerTagV2) TableName() string {
 
 //GetTags return tas data of repository.
 func (r *DockerV2) GetTags(namespace, repository string) ([]string, error) {
-	if err := db.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
+	if err := DB.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
 		return []string{}, err
 	} else {
 		var tags []DockerTagV2
 		result := []string{}
 
-		if err := db.Debug().Where("docker_v2 = ?", r.ID).Find(&tags).Error; err != nil {
+		if err := DB.Debug().Where("docker_v2 = ?", r.ID).Find(&tags).Error; err != nil {
 			return []string{}, err
 		}
 
@@ -102,7 +102,7 @@ func (r *DockerV2) GetTags(namespace, repository string) ([]string, error) {
 
 //Get is
 func (r *DockerV2) Get(namespace, repository string) error {
-	if err := db.Debug().Where("namespace = ? AND repository =? ", namespace, repository).First(&r).Error; err != nil {
+	if err := DB.Debug().Where("namespace = ? AND repository =? ", namespace, repository).First(&r).Error; err != nil {
 		return err
 	}
 
@@ -113,7 +113,7 @@ func (r *DockerV2) Get(namespace, repository string) error {
 func (r *DockerV2) Put(namespace, repository string) error {
 	r.Namespace, r.Repository = namespace, repository
 
-	tx := db.Begin()
+	tx := DB.Begin()
 
 	if err := tx.Debug().Where("namespace = ? AND repository = ? ", namespace, repository).FirstOrCreate(&r).Error; err != nil {
 		tx.Rollback()
@@ -128,7 +128,7 @@ func (r *DockerV2) Put(namespace, repository string) error {
 func (r *DockerV2) PutAgent(namespace, repository, agent, version string) error {
 	r.Namespace, r.Repository = namespace, repository
 
-	tx := db.Begin()
+	tx := DB.Begin()
 
 	if err := tx.Debug().Where("namespace = ? AND repository = ? ", namespace, repository).FirstOrCreate(&r).Error; err != nil {
 		tx.Rollback()
@@ -148,7 +148,7 @@ func (r *DockerV2) PutAgent(namespace, repository, agent, version string) error 
 func (i *DockerImageV2) Get(blobsum string) error {
 	i.BlobSum = blobsum
 
-	if err := db.Debug().Where("blob_sum = ?", blobsum).First(&i).Error; err != nil {
+	if err := DB.Debug().Where("blob_sum = ?", blobsum).First(&i).Error; err != nil {
 		return err
 	}
 
@@ -159,7 +159,7 @@ func (i *DockerImageV2) Get(blobsum string) error {
 func (i *DockerImageV2) Put(tarsum, path string, size int64) error {
 	i.BlobSum, i.Path, i.Size = tarsum, path, size
 
-	tx := db.Begin()
+	tx := DB.Begin()
 
 	if err := tx.Debug().Where("blob_sum = ? ", tarsum).FirstOrCreate(&i).Error; err != nil {
 		tx.Rollback()
@@ -174,11 +174,11 @@ func (i *DockerImageV2) Put(tarsum, path string, size int64) error {
 func (t *DockerTagV2) Get(namespace, repository, tag string) (*DockerTagV2, error) {
 	r := new(DockerV2)
 
-	if err := db.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
+	if err := DB.Debug().Where("namespace = ? AND repository = ?", namespace, repository).First(&r).Error; err != nil {
 		return t, err
 	}
 
-	if err := db.Debug().Where("docker_v2 = ? AND tag = ?", r.ID, tag).First(&t).Error; err != nil {
+	if err := DB.Debug().Where("docker_v2 = ? AND tag = ?", r.ID, tag).First(&t).Error; err != nil {
 		return t, err
 	}
 
@@ -189,11 +189,11 @@ func (t *DockerTagV2) Get(namespace, repository, tag string) (*DockerTagV2, erro
 func (t *DockerTagV2) Put(namespace, repository, tag, imageID, manifest, schema string) error {
 	r := new(DockerV2)
 
-	if err := db.Debug().Where("namespace = ? AND repository = ? ", namespace, repository).First(&r).Error; err != nil {
+	if err := DB.Debug().Where("namespace = ? AND repository = ? ", namespace, repository).First(&r).Error; err != nil {
 		return err
 	}
 
-	tx := db.Begin()
+	tx := DB.Begin()
 	t.DockerV2, t.Tag, t.ImageID, t.Manifest, t.SchemaVersion = r.ID, tag, imageID, manifest, schema
 
 	if err := tx.Debug().Where("docker_v2 = ? AND tag = ?", r.ID, tag).FirstOrCreate(&t).Error; err != nil {
