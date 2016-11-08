@@ -34,6 +34,7 @@ import (
 //When with params `/?ac-discovery=1` means access from `rkt trust --prefix={domain}` possibility.
 //Other access maybe come from web browser, and will generate HTML page then return.
 func GetIndexPageV1Handler(ctx *macaron.Context) {
+	var tFile string
 	var t *template.Template
 	var err error
 
@@ -59,7 +60,13 @@ func GetIndexPageV1Handler(ctx *macaron.Context) {
 		return
 	}
 
-	if t, err = template.ParseGlob("views/index.html"); err != nil {
+	if configure.GetString("runmode") == "dev" {
+		tFile = "views/index.html"
+	} else {
+		tFile = "views/coming.html"
+	}
+
+	if t, err = template.ParseGlob(tFile); err != nil {
 		log.Errorf("[%s] get gpg file template status: %s", ctx.Req.RequestURI, err.Error())
 
 		result, _ := json.Marshal(map[string]string{"Error": "Get Index Template Status Error"})
