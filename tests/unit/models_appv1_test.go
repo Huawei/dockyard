@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/containerops/dockyard/models"
+	"github.com/Huawei/dockyard/models"
 )
 
 // TestNewAppV1

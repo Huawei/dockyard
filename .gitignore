@@ -33,3 +33,6 @@ tools/aci/dockyard-latest-linux-amd64.*
 docs/_site
 docs/.sass-cache
 docs/.jekyll-metadata
+
+# Vendoring
+vendor

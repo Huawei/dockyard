@@ -24,7 +24,7 @@ import (
 	"github.com/docker/engine-api/types/container"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/containerops/dockyard/utils"
+	"github.com/Huawei/dockyard/utils"
 )
 
 func TestUtilsContainer(t *testing.T) {
