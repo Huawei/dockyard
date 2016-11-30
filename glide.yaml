@@ -1,0 +1,33 @@
+package: github.com/Huawei/dockyard
+import:
+- package: github.com/Sirupsen/logrus
+  version: ~0.11.0
+- package: github.com/containerops/configure
+- package: github.com/docker/engine-api
+  version: ~0.4.0
+  subpackages:
+  - client
+  - types
+  - types/container
+- package: github.com/docker/libtrust
+- package: github.com/fernet/fernet-go
+- package: github.com/jinzhu/gorm
+  version: ~1.0.0
+  subpackages:
+  - dialects/mysql
+- package: github.com/satori/go.uuid
+  version: ~1.1.0
+- package: github.com/spf13/cobra
+- package: golang.org/x/crypto
+  subpackages:
+  - openpgp
+- package: golang.org/x/net
+  subpackages:
+  - context
+- package: gopkg.in/macaron.v1
+  version: ~1.1.9
+testImport:
+- package: github.com/stretchr/testify
+  version: ~1.1.4
+  subpackages:
+  - assert

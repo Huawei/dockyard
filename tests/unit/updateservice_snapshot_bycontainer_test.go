@@ -23,8 +23,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/containerops/dockyard/updateservice/snapshot"
-	"github.com/containerops/dockyard/utils"
+	"github.com/Huawei/dockyard/updateservice/snapshot"
+	"github.com/Huawei/dockyard/utils"
 )
 
 func TestByContainerNew(t *testing.T) {

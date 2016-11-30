@@ -26,7 +26,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/huawei/dockyard/utils"
+	"github.com/Huawei/dockyard/utils"
 )
 
 const (

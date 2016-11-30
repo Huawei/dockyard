@@ -24,8 +24,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	sl "github.com/containerops/dockyard/updateservice/storage"
-	"github.com/containerops/dockyard/utils"
+	sl "github.com/Huawei/dockyard/updateservice/storage"
+	"github.com/Huawei/dockyard/utils"
 )
 
 func loadSLTestData(t *testing.T) sl.UpdateServiceStorage {

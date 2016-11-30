@@ -24,7 +24,7 @@ import (
 	"github.com/fernet/fernet-go"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/containerops/dockyard/utils"
+	"github.com/Huawei/dockyard/utils"
 )
 
 // TestEncryptMethod

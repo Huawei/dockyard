@@ -21,7 +21,7 @@ import (
 
 	"github.com/docker/engine-api/types/container"
 
-	"github.com/huawei/dockyard/utils"
+	"github.com/Huawei/dockyard/utils"
 )
 
 var (

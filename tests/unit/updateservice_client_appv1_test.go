@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/containerops/dockyard/updateservice/client"
+	"github.com/Huawei/dockyard/updateservice/client"
 )
 
 // TestMCRAppV1New
