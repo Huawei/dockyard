@@ -1,0 +1,9 @@
+language: go
+go: '1.7'
+
+install:
+  - go get -v github.com/Masterminds/glide
+  - glide install
+
+script:
+  - go test $(glide novendor)

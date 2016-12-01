@@ -133,15 +133,18 @@ FLUSH PRIVILEGES;
 ./dockyard daemon run --address 127.0.0.1 --port 9911 &
 ```
 
-## Update The Libraries Dependencies
+## How to build
 
+We are using [glide](https://glide.sh/) as package manager/
+
+* retrieve dependencies
 ```
-go get -u -v gopkg.in/macaron.v1
-go get -u -v github.com/jinzhu/gorm
-go get -u -v github.com/Sirupsen/logrus
-go get -u -v github.com/go-sql-driver/mysql
-go get -u -v github.com/spf13/viper
-go get -u -v github.com/spf13/cobra
+glide install
+```
+
+* build (with go 1.6+)
+```
+go build
 ```
 
 ## How to involve
@@ -152,7 +155,7 @@ If any issues are encountered while using the dockyard project, several avenues 
 	Issue Tracker
 	</th>
 	<td>
-	https://github.com/containerops/dockyard/issues
+	https://github.com/Huawei/dockyard/issues
 	</td>
 </tr>
 <tr>

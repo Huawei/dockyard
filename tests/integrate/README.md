@@ -6,7 +6,7 @@ Each test file will talk to a server by Restful APIs.
 ### Setup the test
 First, start a dockyard web server
 ```
-$ cd $GOPATH/github.com/containerops/dockyard
+$ cd $GOPATH/github.com/Huawei/dockyard
 $ go build
 $ // modify your containerops.conf or runtime.conf
 $ ./dockyard web --port=1234 
@@ -16,7 +16,7 @@ $ ./dockyard web --port=1234
 Then you can run `go test`
 ```
 $ export US_TEST_SERVER=http://localhost:1234
-# cd $GOPATH/github.com/containerops/dockyard
+# cd $GOPATH/github.com/Huawei/dockyard
 $ cd tests/integrate
 $ go test
 ```
@@ -26,7 +26,7 @@ $ go test
 Or you can run the `dc.sh` script, which is doing this:
 
 ```
-$ cd $GOPATH/github.com/containerops/dockyard
+$ cd $GOPATH/github.com/Huawei/dockyard
 $ sh ./tests/integrate/dc.sh
 ```
 

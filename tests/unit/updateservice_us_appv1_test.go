@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/containerops/dockyard/updateservice/us"
+	"github.com/Huawei/dockyard/updateservice/us"
 )
 
 // TestUSABasic tests the basic functions

@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	kml "github.com/containerops/dockyard/updateservice/km"
+	kml "github.com/Huawei/dockyard/updateservice/km"
 )
 
 func loadTestKMLData(t *testing.T) (kml.KeyManager, string) {

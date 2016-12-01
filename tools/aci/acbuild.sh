@@ -3,7 +3,7 @@ set -e
 
 # Build and statically link acserver (this requires it to already be downloaded)
 echo "Building Dockyard ACI File..."
-CGO_ENABLED=0 GOOS=linux go build -o dockyard -a -tags netgo -ldflags '-w' github.com/containerops/dockyard
+CGO_ENABLED=0 GOOS=linux go build -o dockyard -a -tags netgo -ldflags '-w' github.com/Huawei/dockyard
 
 rmDockyard() { 
   rm dockyard; 
@@ -29,12 +29,12 @@ acbuild --debug set-name dockyard.sh/appc/genedna/dockyard
 
 # Copy the binary and its templates into the ACI
 acbuild --debug copy dockyard /dockyard
-acbuild --debug copy $GOPATH/src/github.com/containerops/dockyard/conf /conf
-acbuild --debug copy $GOPATH/src/github.com/containerops/dockyard/cert /cert
-acbuild --debug copy $GOPATH/src/github.com/containerops/dockyard/data /data
-acbuild --debug copy $GOPATH/src/github.com/containerops/dockyard/external /external
-acbuild --debug copy $GOPATH/src/github.com/containerops/dockyard/log /log
-acbuild --debug copy $GOPATH/src/github.com/containerops/dockyard/views /views
+acbuild --debug copy $GOPATH/src/github.com/Huawei/dockyard/conf /conf
+acbuild --debug copy $GOPATH/src/github.com/Huawei/dockyard/cert /cert
+acbuild --debug copy $GOPATH/src/github.com/Huawei/dockyard/data /data
+acbuild --debug copy $GOPATH/src/github.com/Huawei/dockyard/external /external
+acbuild --debug copy $GOPATH/src/github.com/Huawei/dockyard/log /log
+acbuild --debug copy $GOPATH/src/github.com/Huawei/dockyard/views /views
 
 # Add a mount point for the ACIs to serve
 acbuild --debug mount add acis /acis

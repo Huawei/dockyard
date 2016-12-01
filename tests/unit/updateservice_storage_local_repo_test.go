@@ -23,9 +23,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/containerops/dockyard/updateservice/km"
-	"github.com/containerops/dockyard/updateservice/storage"
-	"github.com/containerops/dockyard/utils"
+	"github.com/Huawei/dockyard/updateservice/km"
+	"github.com/Huawei/dockyard/updateservice/storage"
+	"github.com/Huawei/dockyard/utils"
 )
 
 // TestSLRepoBasic

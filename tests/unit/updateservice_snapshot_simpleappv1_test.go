@@ -24,7 +24,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/containerops/dockyard/updateservice/snapshot"
+	"github.com/Huawei/dockyard/updateservice/snapshot"
 )
 
 func TestAppv1New(t *testing.T) {
