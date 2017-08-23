@@ -7,7 +7,7 @@ Dockyard is a container and artifact repository storing and distributing contain
 - Multi supported distribute protocols include Docker Registry V1 & V2 and App Container Image Discovery.
 - Multi supported software artifact format include jar, war, tar and so on.
 - Multi supported virtual images of KVM, XEN, VirtualBox and so on.
-- Container image, software artifact and virtual images encryption, verification and vulnerability analytsis.
+- Container image, software artifact and virtual images encryption, verification and vulnerability analysis.
 - Custome distribute protocol by framework base HTTPS and peer to peer. 
 - Authentication in distributing process and authorization for public and private repository.
 - Supporting mainstream object storage service like Amazon S3, Google Cloud Storage. 
